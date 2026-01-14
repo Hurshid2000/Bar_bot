@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoleType {
+  ADMIN
+  MANAGER
+  WORKER
+}
+
+enum ProductType {
+  PRODUCT
+  SPORT_PIT
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  telegramId String   @unique
+  role       RoleType
+
+  bars       UserBar[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Bar {
+  id        String   @id @default(uuid())
+  name      String
+  isActive  Boolean  @default(true)
+
+  users     UserBar[]
+  products  Product[]
+  revenues  Revenue[]
+  expenses  Expense[]
+  purchases Purchase[]
+
+  createdAt DateTime @default(now())
+}
+
+model UserBar {
+  id     String @id @default(uuid())
+
+  userId String
+  barId  String
+
+  user   User @relation(fields: [userId], references: [id])
+  bar    Bar  @relation(fields: [barId], references: [id])
+
+  @@unique([userId, barId])
+}
+
+model Category {
+  id       String   @id @default(uuid())
+  name     String
+
+  products Product[]
+}
+
+model Product {
+  id         String      @id @default(uuid())
+  name       String
+  barcode    String?
+  type       ProductType @default(PRODUCT)
+
+  costPrice  Float
+  price      Float
+
+  barId      String
+  categoryId String
+
+  bar        Bar      @relation(fields: [barId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  createdAt  DateTime @default(now())
+}
+
+model Revenue {
+  id        String   @id @default(uuid())
+  barId     String
+  date      DateTime
+
+  cash      Float
+  card      Float
+
+  bar       Bar @relation(fields: [barId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([barId, date])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  barId       String
+  amount      Float
+  description String
+
+  bar         Bar @relation(fields: [barId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+
+  purchases Purchase[]
+}
+
+model Purchase {
+  id          String   @id @default(uuid())
+  barId       String
+  supplierId String
+  totalAmount Float
+
+  bar         Bar      @relation(fields: [barId], references: [id])
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  items       PurchaseItem[]
+
+  createdAt   DateTime @default(now())
+}
+
+model PurchaseItem {
+  id         String @id @default(uuid())
+  purchaseId String
+  name       String
+  amount     Float
+
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+
+  createdAt DateTime @default(now())
+}
