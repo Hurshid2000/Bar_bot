@@ -18,10 +18,8 @@ RUN npx prisma generate
 
 # Собираем приложение
 RUN npm run build && \
-    ls -la dist/ && \
-    test -f dist/main.js || (echo "ERROR: dist/main.js not found after build!" && exit 1) && \
-    ls -la dist/ && \
-    test -f dist/main.js || (echo "ERROR: dist/main.js not found!" && exit 1)
+    ls -la dist/src/ && \
+    test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found after build!" && exit 1)
 
 # Продакшен образ
 FROM node:20-alpine AS production
