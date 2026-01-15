@@ -4,7 +4,6 @@ import {
 	Post,
 	Body,
 	Query,
-	ValidationPipe,
 } from '@nestjs/common';
 import { RevenueService } from './revenue.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
@@ -14,7 +13,7 @@ export class RevenueController {
 	constructor(private readonly revenueService: RevenueService) {}
 
 	@Post()
-	create(@Body(ValidationPipe) createRevenueDto: CreateRevenueDto) {
+	create(@Body() createRevenueDto: CreateRevenueDto) {
 		return this.revenueService.create(createRevenueDto);
 	}
 

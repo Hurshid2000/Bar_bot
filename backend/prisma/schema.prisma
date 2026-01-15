@@ -116,11 +116,11 @@ model Supplier {
 model Purchase {
   id          String   @id @default(uuid())
   barId       String
-  supplierId String
+  supplierId String?
   totalAmount Float
 
   bar         Bar      @relation(fields: [barId], references: [id])
-  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
   items       PurchaseItem[]
 
   createdAt   DateTime @default(now())
