@@ -8,7 +8,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Устанавливаем зависимости (включая dev для сборки)
-RUN npm ci
+RUN npm install
 
 # Копируем исходный код
 COPY . .
@@ -28,7 +28,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --only=production && \
+RUN npm install --omit=dev && \
     npx prisma generate
 
 # Копируем собранное приложение из builder
