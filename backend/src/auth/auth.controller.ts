@@ -1,60 +1,34 @@
 import { Controller, Post, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { TelegramAuthDto } from './dto/telegram-auth.dto';
 import { Public } from '../guards/decorators/public.decorator';
-import { UsersService } from '../users/users.service';
-import { JwtService } from '@nestjs/jwt';
-import { RoleType } from '@prisma/client';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-	constructor(
-		private readonly authService: AuthService,
-		private readonly usersService: UsersService,
-		private readonly jwtService: JwtService,
-	) {}
+	constructor(private readonly authService: AuthService) {}
 
 	@Public()
 	@Post('telegram')
+	@ApiOperation({ summary: 'Авторизация через Telegram Mini App' })
+	@ApiResponse({
+		status: 200,
+		description: 'Успешная авторизация',
+		schema: {
+			example: {
+				accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+				user: {
+					id: 'uuid',
+					telegramId: '123456789',
+					name: 'Иван Иванов',
+					role: 'WORKER',
+				},
+			},
+		},
+	})
+	@ApiResponse({ status: 401, description: 'Неверные данные Telegram' })
 	async authenticate(@Body() telegramAuthDto: TelegramAuthDto) {
 		return this.authService.authenticate(telegramAuthDto);
-	}
-
-	// ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ ТЕСТИРОВАНИЯ (только для разработки!)
-	// Удалить в продакшене!
-	@Public()
-	@Post('test')
-	async testAuth(@Body() body: { telegramId: string; name: string; role?: RoleType }) {
-		const { telegramId, name, role } = body;
-
-		// Находим или создаем пользователя
-		let user = await this.usersService.findByTelegramId(telegramId);
-
-		if (!user) {
-			user = await this.usersService.create({
-				telegramId,
-				name,
-				role: role || RoleType.WORKER,
-			});
-		}
-
-		// Генерируем JWT
-		const payload = {
-			sub: user.id,
-			role: user.role,
-		};
-
-		const accessToken = this.jwtService.sign(payload, {
-			expiresIn: '7d',
-		});
-
-		return {
-			accessToken,
-			user: {
-				id: user.id,
-				role: user.role,
-				name: user.name,
-			},
-		};
 	}
 }

@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
+import { PurchaseFilterDto } from '../common/dto/filter.dto';
+import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
+import {
+	createPaginatedResponse,
+	getSkip,
+} from '../common/utils/pagination.util';
 
 @Injectable()
 export class PurchasesService {
@@ -8,6 +14,14 @@ export class PurchasesService {
 
 	async create(createPurchaseDto: CreatePurchaseDto) {
 		const { barId, items } = createPurchaseDto;
+
+		// Проверяем существование бара
+		const bar = await this.prisma.bar.findUnique({
+			where: { id: barId },
+		});
+		if (!bar) {
+			throw new NotFoundException(`Bar with ID ${barId} not found`);
+		}
 
 		// Создаем Purchase и связанные PurchaseItem в транзакции
 		return this.prisma.$transaction(async (tx) => {
@@ -25,7 +39,7 @@ export class PurchasesService {
 				const foundIds = products.map((p) => p.id);
 				const missingIds = productIds.filter((id) => !foundIds.includes(id));
 				throw new NotFoundException(
-					`Products not found: ${missingIds.join(', ')}`,
+					`Products with IDs [${missingIds.join(', ')}] not found or do not belong to bar ${bar.name}`,
 				);
 			}
 
@@ -87,17 +101,37 @@ export class PurchasesService {
 		});
 	}
 
-	async findAll(barId?: string) {
-		const where = barId ? { barId } : {};
+	async findAll(
+		filter: PurchaseFilterDto,
+		pagination: PaginationDto,
+	): Promise<PaginatedResponse<any>> {
+		const { barId, startDate, endDate } = filter;
+		const { page = 1, limit = 20 } = pagination;
 
-		return this.prisma.purchase.findMany({
-			where,
-			include: {
-				items: true,
-			},
-			orderBy: {
-				createdAt: 'desc',
-			},
-		});
+		const where: any = {};
+		if (barId) where.barId = barId;
+		if (startDate || endDate) {
+			where.createdAt = {};
+			if (startDate) where.createdAt.gte = new Date(startDate);
+			if (endDate) where.createdAt.lte = new Date(endDate);
+		}
+
+		const [purchases, total] = await Promise.all([
+			this.prisma.purchase.findMany({
+				where,
+				include: {
+					items: true,
+					supplier: true,
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
+				skip: getSkip(page, limit),
+				take: limit,
+			}),
+			this.prisma.purchase.count({ where }),
+		]);
+
+		return createPaginatedResponse(purchases, total, page, limit);
 	}
 }

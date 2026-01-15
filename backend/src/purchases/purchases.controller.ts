@@ -4,11 +4,17 @@ import {
 	Post,
 	Body,
 	Query,
+	UseGuards,
 } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
+import { RolesGuard } from '../guards/roles.guard';
+import { BarAccessGuard } from '../guards/bar-access.guard';
+import { PurchaseFilterDto } from '../common/dto/filter.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('purchases')
+@UseGuards(RolesGuard, BarAccessGuard)
 export class PurchasesController {
 	constructor(private readonly purchasesService: PurchasesService) {}
 
@@ -18,7 +24,10 @@ export class PurchasesController {
 	}
 
 	@Get()
-	findAll(@Query('barId') barId?: string) {
-		return this.purchasesService.findAll(barId);
+	findAll(
+		@Query() filter: PurchaseFilterDto,
+		@Query() pagination: PaginationDto,
+	) {
+		return this.purchasesService.findAll(filter, pagination);
 	}
 }

@@ -8,6 +8,7 @@ import {
 	Delete,
 	UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { BarsService } from './bars.service';
 import { CreateBarDto } from './dto/create-bar.dto';
 import { UpdateBarDto } from './dto/update-bar.dto';
@@ -17,6 +18,8 @@ import { Roles } from '../guards/decorators/roles.decorator';
 import { CurrentUser } from '../guards/decorators/current-user.decorator';
 import { RoleType } from '@prisma/client';
 
+@ApiTags('bars')
+@ApiBearerAuth('JWT-auth')
 @Controller('bars')
 @UseGuards(RolesGuard, BarAccessGuard)
 export class BarsController {

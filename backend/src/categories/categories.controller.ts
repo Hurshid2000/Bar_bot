@@ -6,15 +6,20 @@ import {
 	Patch,
 	Param,
 	Delete,
+	Query,
 	UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../guards/decorators/roles.decorator';
 import { RoleType } from '@prisma/client';
+import { SearchDto } from '../common/dto/search.dto';
 
+@ApiTags('categories')
+@ApiBearerAuth('JWT-auth')
 @Controller('categories')
 @UseGuards(RolesGuard)
 export class CategoriesController {
@@ -27,8 +32,8 @@ export class CategoriesController {
 	}
 
 	@Get()
-	findAll() {
-		return this.categoriesService.findAll();
+	findAll(@Query() search: SearchDto) {
+		return this.categoriesService.findAll(search);
 	}
 
 	@Get(':id')

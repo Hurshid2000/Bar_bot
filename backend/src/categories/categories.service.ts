@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { SearchDto } from '../common/dto/search.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -15,8 +16,17 @@ export class CategoriesService {
 		});
 	}
 
-	async findAll() {
+	async findAll(search?: SearchDto) {
+		const where: any = {};
+		if (search?.search) {
+			where.name = {
+				contains: search.search,
+				mode: 'insensitive',
+			};
+		}
+
 		return this.prisma.category.findMany({
+			where,
 			orderBy: {
 				name: 'asc',
 			},

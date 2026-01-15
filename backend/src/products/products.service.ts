@@ -3,6 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { RoleType } from '@prisma/client';
+import { ProductFilterDto } from '../common/dto/filter.dto';
+import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
+import { SearchDto } from '../common/dto/search.dto';
+import {
+	createPaginatedResponse,
+	getSkip,
+} from '../common/utils/pagination.util';
 
 @Injectable()
 export class ProductsService {
@@ -39,29 +46,55 @@ export class ProductsService {
 		});
 	}
 
-	async findAll(barId?: string, userRole?: RoleType) {
-		const where = barId ? { barId } : {};
+	async findAll(
+		filter: ProductFilterDto,
+		pagination: PaginationDto,
+		userRole?: RoleType,
+		search?: SearchDto,
+	): Promise<PaginatedResponse<any>> {
+		const { barId, categoryId, type } = filter;
+		const { page = 1, limit = 20 } = pagination;
+		const searchTerm = search?.search;
 
-		const products = await this.prisma.product.findMany({
-			where,
-			include: {
-				bar: true,
-				category: true,
-			},
-			orderBy: {
-				createdAt: 'desc',
-			},
-		});
+		const where: any = {};
+		if (barId) where.barId = barId;
+		if (categoryId) where.categoryId = categoryId;
+		if (type) where.type = type;
+
+		// Поиск по имени и barcode
+		if (searchTerm) {
+			where.OR = [
+				{ name: { contains: searchTerm, mode: 'insensitive' } },
+				{ barcode: { contains: searchTerm, mode: 'insensitive' } },
+			];
+		}
+
+		const [products, total] = await Promise.all([
+			this.prisma.product.findMany({
+				where,
+				include: {
+					bar: true,
+					category: true,
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
+				skip: getSkip(page, limit),
+				take: limit,
+			}),
+			this.prisma.product.count({ where }),
+		]);
 
 		// WORKER не должен видеть costPrice
+		let processedProducts: any[] = products;
 		if (userRole === RoleType.WORKER) {
-			return products.map((product) => {
+			processedProducts = products.map((product) => {
 				const { costPrice, ...productWithoutCostPrice } = product;
 				return productWithoutCostPrice;
 			});
 		}
 
-		return products;
+		return createPaginatedResponse(processedProducts, total, page, limit);
 	}
 
 	async findOne(id: string, userRole?: RoleType) {
@@ -86,8 +119,12 @@ export class ProductsService {
 		return product;
 	}
 
-	async findByBar(barId: string, userRole?: RoleType) {
-		return this.findAll(barId, userRole);
+	async findByBar(
+		barId: string,
+		pagination: PaginationDto,
+		userRole?: RoleType,
+	): Promise<PaginatedResponse<any>> {
+		return this.findAll({ barId }, pagination, userRole);
 	}
 
 	async update(id: string, updateProductDto: UpdateProductDto) {

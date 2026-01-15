@@ -1,9 +1,88 @@
-import { Controller } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Post,
+	Body,
+	Patch,
+	Param,
+	Delete,
+	UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../guards/decorators/roles.decorator';
+import { RoleType } from '@prisma/client';
 
+@ApiTags('users')
+@ApiBearerAuth('JWT-auth')
 @Controller('users')
+@UseGuards(RolesGuard)
 export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
-	// CRUD методы будут добавлены позже
+	@Get()
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	@ApiOperation({ summary: 'Получить список всех пользователей' })
+	@ApiResponse({ status: 200, description: 'Список пользователей' })
+	findAll() {
+		return this.usersService.findAll();
+	}
+
+	@Get(':id')
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	@ApiOperation({ summary: 'Получить пользователя по ID' })
+	@ApiParam({ name: 'id', description: 'ID пользователя' })
+	@ApiResponse({ status: 200, description: 'Данные пользователя' })
+	@ApiResponse({ status: 404, description: 'Пользователь не найден' })
+	findOne(@Param('id') id: string) {
+		return this.usersService.findOne(id);
+	}
+
+	@Patch(':id')
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Обновить данные пользователя' })
+	@ApiParam({ name: 'id', description: 'ID пользователя' })
+	@ApiResponse({ status: 200, description: 'Пользователь обновлен' })
+	@ApiResponse({ status: 404, description: 'Пользователь не найден' })
+	update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+		return this.usersService.update(id, updateUserDto);
+	}
+
+	@Delete(':id')
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Удалить пользователя' })
+	@ApiParam({ name: 'id', description: 'ID пользователя' })
+	@ApiResponse({ status: 200, description: 'Пользователь удален' })
+	@ApiResponse({ status: 404, description: 'Пользователь не найден' })
+	remove(@Param('id') id: string) {
+		return this.usersService.remove(id);
+	}
+
+	// Управление привязкой к барам (уже было, но убираем @Public)
+	@Post(':userId/bars')
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	assignBarToUser(
+		@Param('userId') userId: string,
+		@Body() body: { barId: string },
+	) {
+		return this.usersService.assignBarToUser(userId, body.barId);
+	}
+
+	@Delete(':userId/bars/:barId')
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	removeBarFromUser(
+		@Param('userId') userId: string,
+		@Param('barId') barId: string,
+	) {
+		return this.usersService.removeBarFromUser(userId, barId);
+	}
+
+	@Get(':userId/bars')
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	getUserBars(@Param('userId') userId: string) {
+		return this.usersService.getUserBars(userId);
+	}
 }
