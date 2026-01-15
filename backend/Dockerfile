@@ -17,7 +17,11 @@ COPY . .
 RUN npx prisma generate
 
 # Собираем приложение
-RUN npm run build
+RUN npm run build && \
+    ls -la dist/ && \
+    test -f dist/main.js || (echo "ERROR: dist/main.js not found after build!" && exit 1) && \
+    ls -la dist/ && \
+    test -f dist/main.js || (echo "ERROR: dist/main.js not found!" && exit 1)
 
 # Продакшен образ
 FROM node:20-alpine AS production
@@ -35,9 +39,16 @@ RUN npm install --omit=dev && \
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# Проверяем, что файл скопирован
+RUN ls -la dist/src/ && \
+    test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found after copy!" && exit 1)
+
 # Создаем непривилегированного пользователя
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001
+
+# Меняем владельца файлов
+RUN chown -R nestjs:nodejs /app
 
 USER nestjs
 
@@ -47,4 +58,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main.js"]
