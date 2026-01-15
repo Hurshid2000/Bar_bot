@@ -119,6 +119,8 @@ GET /reports/compare?barIds=id1,id2&startDate=2024-01-01&endDate=2024-01-31
 
 ## Запуск в продакшене
 
+### Вариант 1: Без Docker
+
 ```bash
 # Сборка
 npm run build
@@ -128,6 +130,77 @@ npm run start:prod
 ```
 
 Убедитесь, что установлены все переменные окружения в продакшене!
+
+### Вариант 2: С Docker (рекомендуется)
+
+#### Быстрый старт с Docker Compose
+
+1. Создайте файл `.env` в корне `backend/`:
+
+```env
+# Database
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_secure_password
+POSTGRES_DB=bar_crm
+POSTGRES_PORT=5432
+
+# Backend
+JWT_SECRET=your_jwt_secret_key_here_min_32_characters
+BOT_TOKEN=your_telegram_bot_token_from_botfather
+PORT=3000
+NODE_ENV=production
+CORS_ORIGINS=https://your-frontend-domain.com
+```
+
+2. Запустите все сервисы:
+
+```bash
+docker-compose up -d
+```
+
+3. Проверьте логи:
+
+```bash
+docker-compose logs -f backend
+```
+
+4. Остановка:
+
+```bash
+docker-compose down
+```
+
+#### Сборка Docker образа
+
+```bash
+# Сборка образа
+docker build -t bar-bot-backend:latest .
+
+# Запуск контейнера
+docker run -d \
+  --name bar-bot-backend \
+  -p 3000:3000 \
+  -e DATABASE_URL=postgresql://user:password@host:5432/bar_crm \
+  -e JWT_SECRET=your_jwt_secret \
+  -e BOT_TOKEN=your_bot_token \
+  -e NODE_ENV=production \
+  -e CORS_ORIGINS=https://your-frontend-domain.com \
+  bar-bot-backend:latest
+```
+
+#### Миграции базы данных
+
+При использовании Docker Compose миграции применяются автоматически при старте.
+
+Для ручного применения:
+
+```bash
+# Внутри контейнера
+docker exec -it bar-bot-backend npx prisma migrate deploy
+
+# Или локально (если DATABASE_URL настроен)
+npx prisma migrate deploy
+```
 
 ## Swagger документация
 
