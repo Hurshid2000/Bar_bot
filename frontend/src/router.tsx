@@ -6,6 +6,8 @@ import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { BarsListPage } from './pages/Bars/BarsListPage';
 import { BarDashboardPage } from './pages/Bars/BarDashboardPage';
+import { BarsManagementPage } from './pages/Bars/BarsManagementPage';
+import { UsersManagementPage } from './pages/Users/UsersManagementPage';
 import { ProductsListPage } from './pages/Products/ProductsListPage';
 import { ProductDetailPage } from './pages/Products/ProductDetailPage';
 import { CategoriesListPage } from './pages/Categories/CategoriesListPage';
@@ -42,6 +44,22 @@ export const router = createBrowserRouter([
 			{
 				path: '/bars/:id',
 				element: <BarDashboardPage />,
+			},
+			{
+				path: '/management/bars',
+				element: (
+					<ProtectedRoute requiredRoles={[RoleType.ADMIN]}>
+						<BarsManagementPage />
+					</ProtectedRoute>
+				),
+			},
+			{
+				path: '/management/users',
+				element: (
+					<ProtectedRoute requiredRoles={[RoleType.ADMIN]}>
+						<UsersManagementPage />
+					</ProtectedRoute>
+				),
 			},
 			{
 				path: '/products',

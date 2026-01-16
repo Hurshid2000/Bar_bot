@@ -7,6 +7,7 @@ import { revenueApi } from '../api/revenue.api';
 import { BarCard } from '../components/BarCard';
 import { Loading } from '../components/ui/Loading';
 import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { RoleType, type Bar } from '../types/common.types';
 import { format, startOfToday } from 'date-fns';
 import './HomePage.css';
@@ -99,6 +100,29 @@ export function HomePage() {
 					</Card>
 				)}
 			</section>
+
+			{hasRole([RoleType.ADMIN]) && (
+				<section className="home-management-section">
+					<div className="home-management-buttons">
+						<Button
+							variant="outline"
+							size="lg"
+							className="home-management-button"
+							onClick={() => navigate('/management/bars')}
+						>
+							Бары
+						</Button>
+						<Button
+							variant="outline"
+							size="lg"
+							className="home-management-button"
+							onClick={() => navigate('/management/users')}
+						>
+							Пользователи
+						</Button>
+					</div>
+				</section>
+			)}
 		</div>
 	);
 }
