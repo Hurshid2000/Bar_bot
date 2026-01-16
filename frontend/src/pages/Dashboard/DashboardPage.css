@@ -1,0 +1,57 @@
+.dashboard h1 {
+	margin-bottom: 24px;
+	color: #333;
+}
+
+.dashboard-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 20px;
+	margin-bottom: 32px;
+}
+
+.dashboard-stat-card {
+	text-align: center;
+}
+
+.dashboard-stat-value {
+	font-size: 32px;
+	font-weight: 600;
+	margin-top: 12px;
+}
+
+.dashboard-stat-value.revenue {
+	color: #28a745;
+}
+
+.dashboard-stat-value.expense {
+	color: #dc3545;
+}
+
+.dashboard-stat-value.profit {
+	color: #667eea;
+}
+
+.dashboard-actions {
+	margin-top: 32px;
+}
+
+.dashboard-actions-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
+}
+
+.dashboard-actions-grid a {
+	text-decoration: none;
+}
+
+@media (max-width: 768px) {
+	.dashboard-stats {
+		grid-template-columns: 1fr;
+	}
+
+	.dashboard-actions-grid {
+		grid-template-columns: 1fr;
+	}
+}

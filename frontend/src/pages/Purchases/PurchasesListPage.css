@@ -1,0 +1,20 @@
+.purchases-list-page {
+	width: 100%;
+}
+
+.purchases-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+.purchase-info p {
+	margin: 8px 0;
+	color: #666;
+}
+
+@media (max-width: 768px) {
+	.purchases-list {
+		grid-template-columns: 1fr;
+	}
+}

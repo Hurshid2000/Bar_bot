@@ -1,0 +1,30 @@
+.card {
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	overflow: hidden;
+}
+
+.card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px 20px;
+	border-bottom: 1px solid #eee;
+}
+
+.card-title {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: #333;
+}
+
+.card-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.card-body {
+	padding: 20px;
+}

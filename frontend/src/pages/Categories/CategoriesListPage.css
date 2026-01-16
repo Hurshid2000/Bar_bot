@@ -1,0 +1,20 @@
+.categories-list-page {
+	width: 100%;
+}
+
+.categories-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 20px;
+}
+
+.categories-list h3 {
+	margin: 0;
+	color: #333;
+}
+
+@media (max-width: 768px) {
+	.categories-list {
+		grid-template-columns: 1fr;
+	}
+}
