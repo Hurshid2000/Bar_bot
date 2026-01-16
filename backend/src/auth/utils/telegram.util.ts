@@ -63,6 +63,7 @@ export function parseInitData(initData: string): ParsedInitData {
 export function verifyTelegramSignature(
 	initData: string,
 	botToken: string,
+	enableLogging = false,
 ): boolean {
 	try {
 		const { hash, dataCheckString } = parseInitData(initData);
@@ -79,9 +80,21 @@ export function verifyTelegramSignature(
 			.update(dataCheckString)
 			.digest('hex');
 
+		// Логирование для отладки
+		if (enableLogging || process.env.NODE_ENV === 'development') {
+			console.log('🔍 Отладка проверки подписи Telegram:');
+			console.log(`  Hash из initData: ${hash}`);
+			console.log(`  Вычисленный hash: ${calculatedHash}`);
+			console.log(`  Data check string: ${dataCheckString.substring(0, 100)}...`);
+			console.log(`  Совпадение: ${calculatedHash === hash}`);
+		}
+
 		// Сравниваем хеши
 		return calculatedHash === hash;
 	} catch (error) {
+		if (enableLogging || process.env.NODE_ENV === 'development') {
+			console.error('❌ Ошибка при проверке подписи:', error);
+		}
 		return false;
 	}
 }
