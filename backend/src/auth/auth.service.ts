@@ -11,6 +11,7 @@ import { TelegramAuthDto } from './dto/telegram-auth.dto';
 import {
 	parseInitData,
 	verifyTelegramSignature,
+	verifyAuthDate,
 } from './utils/telegram.util';
 
 export interface AuthResponse {
@@ -82,6 +83,17 @@ export class AuthService {
 			const successMsg = '✅ Подпись Telegram проверена успешно';
 			this.logger.log(successMsg);
 			console.log('[AUTH]', successMsg);
+
+			// Проверка auth_date (защита от replay-атак)
+			const isAuthDateValid = verifyAuthDate(parsedData.authDate);
+			if (!isAuthDateValid) {
+				const errorMsg = '❌ Неверный auth_date (данные устарели или отсутствуют)';
+				this.logger.error(errorMsg);
+				console.error('[AUTH]', errorMsg);
+				console.error('[AUTH] auth_date:', parsedData.authDate);
+				throw new UnauthorizedException('Invalid or expired auth_date');
+			}
+			console.log('[AUTH] ✅ auth_date проверен успешно');
 		}
 
 		// Шаг 3: Получение данных пользователя из Telegram

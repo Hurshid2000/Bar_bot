@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 interface ParsedInitData {
 	hash: string;
 	dataCheckString: string;
+	authDate?: number;
 	user?: {
 		id: string;
 		first_name: string;
@@ -36,6 +37,10 @@ export function parseInitData(initData: string): ParsedInitData {
 		.map(([key, value]) => `${key}=${value}`)
 		.join('\n');
 
+	// Парсим auth_date если есть
+	const authDateParam = params.get('auth_date');
+	const authDate = authDateParam ? parseInt(authDateParam, 10) : undefined;
+
 	// Парсим user если есть
 	let user;
 	const userParam = params.get('user');
@@ -50,14 +55,50 @@ export function parseInitData(initData: string): ParsedInitData {
 	return {
 		hash,
 		dataCheckString,
+		authDate,
 		user,
 	};
 }
 
 /**
+ * Проверяет, что auth_date не старше указанного времени (защита от replay-атак)
+ * @param authDate - timestamp из initData
+ * @param maxAgeSeconds - максимальный возраст данных в секундах (по умолчанию 86400 = 24 часа)
+ * @returns true если auth_date валиден
+ */
+export function verifyAuthDate(
+	authDate?: number,
+	maxAgeSeconds = 86400,
+): boolean {
+	if (!authDate) {
+		return false;
+	}
+
+	const currentTime = Math.floor(Date.now() / 1000);
+	const age = currentTime - authDate;
+
+	if (age < 0) {
+		// auth_date в будущем - подозрительно
+		return false;
+	}
+
+	if (age > maxAgeSeconds) {
+		// auth_date слишком старый
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Проверяет подпись Telegram initData
+ * Согласно документации Telegram:
+ * 1. secret = HMAC_SHA256(key="WebAppData", message=botToken)
+ * 2. calculatedHash = HMAC_SHA256(key=secret, message=dataCheckString)
+ * 
  * @param initData - строка initData от Telegram
  * @param botToken - токен бота из BOT_TOKEN
+ * @param enableLogging - включить детальное логирование
  * @returns true если подпись валидна
  */
 export function verifyTelegramSignature(
@@ -68,13 +109,14 @@ export function verifyTelegramSignature(
 	try {
 		const { hash, dataCheckString } = parseInitData(initData);
 
-		// Вычисляем secret = SHA256(BOT_TOKEN)
+		// Шаг 1: Вычисляем secret = HMAC_SHA256(key="WebAppData", message=botToken)
+		// Это правильный алгоритм согласно документации Telegram
 		const secret = crypto
-			.createHash('sha256')
+			.createHmac('sha256', 'WebAppData')
 			.update(botToken)
 			.digest();
 
-		// Вычисляем HMAC SHA256(secret, data_check_string)
+		// Шаг 2: Вычисляем HMAC SHA256(secret, data_check_string)
 		const calculatedHash = crypto
 			.createHmac('sha256', secret)
 			.update(dataCheckString)
@@ -85,8 +127,14 @@ export function verifyTelegramSignature(
 			console.log('🔍 Отладка проверки подписи Telegram:');
 			console.log(`  Hash из initData: ${hash}`);
 			console.log(`  Вычисленный hash: ${calculatedHash}`);
-			console.log(`  Data check string: ${dataCheckString.substring(0, 100)}...`);
+			console.log(`  Data check string (первые 100 символов): ${dataCheckString.substring(0, 100)}...`);
+			console.log(`  Data check string (полная длина): ${dataCheckString.length} символов`);
 			console.log(`  Совпадение: ${calculatedHash === hash}`);
+			if (calculatedHash !== hash) {
+				console.log(`  ❌ Хеши не совпадают!`);
+				console.log(`  Ожидалось: ${hash}`);
+				console.log(`  Получено:  ${calculatedHash}`);
+			}
 		}
 
 		// Сравниваем хеши
