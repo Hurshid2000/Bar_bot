@@ -1,0 +1,47 @@
+:root {
+	/* Primary Colors */
+	--color-primary-50: #eaf2fd;
+	--color-primary-100: #d6e5fb;
+	--color-primary-200: #adcdf7;
+	--color-primary-300: #84b6f3;
+	--color-primary-400: #5a9ef0;
+	--color-primary-500: #4a90e2;
+	--color-primary-600: #3f7cc5;
+	--color-primary-700: #3468a8;
+	--color-primary-800: #29548b;
+	--color-primary-900: #1e406e;
+
+	/* Accent Colors */
+	--color-info: #3bafda;
+	--color-highlight: #5b6cff;
+	--color-success: #10b981;
+	--color-danger: #ef4444;
+	--color-warning: #f59e0b;
+
+	/* Background Colors */
+	--color-background-base: #0a1628;
+	--color-background-card: #141f32;
+	--color-background-muted: #1f2d3d;
+
+	/* Text Colors */
+	--color-text-primary: #e5eaf0;
+	--color-text-secondary: #8a94a6;
+	--color-text-muted: #8a94a6;
+
+	/* Border */
+	--color-border: rgba(255, 255, 255, 0.06);
+
+	/* Radius */
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 16px;
+
+	/* Shadows */
+	--shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+	--shadow-hover: 0 5px 15px rgba(74, 144, 226, 0.2);
+
+	/* Transitions */
+	--transition-fast: 0.15s ease;
+	--transition-base: 0.2s ease;
+	--transition-slow: 0.3s ease;
+}

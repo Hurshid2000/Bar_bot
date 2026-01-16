@@ -11,7 +11,7 @@
 
 .page-header h1 {
 	margin: 0;
-	color: #333;
+	color: var(--color-text-primary);
 }
 
 .bars-grid {
@@ -26,7 +26,7 @@
 
 .bar-info p {
 	margin: 8px 0;
-	color: #666;
+	color: var(--color-text-secondary);
 }
 
 .bar-actions {

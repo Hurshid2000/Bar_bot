@@ -10,12 +10,12 @@
 
 .product-info h3 {
 	margin: 0 0 12px 0;
-	color: #333;
+	color: var(--color-text-primary);
 }
 
 .product-info p {
 	margin: 8px 0;
-	color: #666;
+	color: var(--color-text-secondary);
 }
 
 .product-actions {

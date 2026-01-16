@@ -1,6 +1,11 @@
 .header {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	color: white;
+	background: var(--color-background-card);
+	border-bottom: 1px solid var(--color-border);
+	color: var(--color-text-primary);
+	backdrop-filter: blur(10px);
+	position: sticky;
+	top: 0;
+	z-index: 50;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -15,7 +20,7 @@
 
 .header-logo {
 	text-decoration: none;
-	color: white;
+	color: var(--color-text-primary);
 }
 
 .header-logo h1 {
@@ -39,11 +44,12 @@
 
 .header-user-name {
 	font-weight: 500;
+	color: var(--color-text-primary);
 }
 
 .header-user-role {
 	font-size: 12px;
-	opacity: 0.8;
+	color: var(--color-text-muted);
 }
 
 @media (max-width: 768px) {

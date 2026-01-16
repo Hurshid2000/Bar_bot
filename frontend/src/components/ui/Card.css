@@ -1,8 +1,15 @@
 .card {
-	background: white;
-	border-radius: 12px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	background: var(--color-background-card);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+	box-shadow: var(--shadow-card);
 	overflow: hidden;
+	transition: all var(--transition-base);
+}
+
+.card:hover {
+	border-color: var(--color-primary-500);
+	box-shadow: var(--shadow-hover);
 }
 
 .card-header {
@@ -10,14 +17,14 @@
 	justify-content: space-between;
 	align-items: center;
 	padding: 16px 20px;
-	border-bottom: 1px solid #eee;
+	border-bottom: 1px solid var(--color-border);
 }
 
 .card-title {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
-	color: #333;
+	color: var(--color-text-primary);
 }
 
 .card-actions {

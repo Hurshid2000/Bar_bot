@@ -1,6 +1,6 @@
 .dashboard h1 {
 	margin-bottom: 24px;
-	color: #333;
+	color: var(--color-text-primary);
 }
 
 .dashboard-stats {
@@ -21,15 +21,15 @@
 }
 
 .dashboard-stat-value.revenue {
-	color: #28a745;
+	color: var(--color-success);
 }
 
 .dashboard-stat-value.expense {
-	color: #dc3545;
+	color: var(--color-danger);
 }
 
 .dashboard-stat-value.profit {
-	color: #667eea;
+	color: var(--color-primary-500);
 }
 
 .dashboard-actions {
