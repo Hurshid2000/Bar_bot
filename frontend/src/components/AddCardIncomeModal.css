@@ -1,0 +1,28 @@
+.add-card-income-form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.add-card-income-date {
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	color: var(--color-text-primary);
+	font-size: 14px;
+}
+
+.add-card-income-error {
+	color: var(--color-danger);
+	font-size: 14px;
+	padding: 8px;
+	background: rgba(239, 68, 68, 0.1);
+	border-radius: var(--radius-sm);
+}
+
+.add-card-income-actions {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+	margin-top: 8px;
+}

@@ -1,0 +1,36 @@
+.home-page {
+	padding: 20px;
+	max-width: 600px;
+	margin: 0 auto;
+	padding-bottom: 100px; /* Отступ для bottom navigation */
+}
+
+.home-section {
+	margin-bottom: 32px;
+}
+
+.home-section-title {
+	font-size: 18px;
+	font-weight: 500;
+	color: var(--color-text-primary);
+	margin-bottom: 16px;
+}
+
+.home-bars-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.home-empty-message {
+	color: var(--color-text-secondary);
+	text-align: center;
+	padding: 20px;
+}
+
+@media (max-width: 768px) {
+	.home-page {
+		padding: 16px;
+		padding-bottom: 100px;
+	}
+}

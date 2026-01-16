@@ -2,9 +2,10 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './guards/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/Auth/LoginPage';
+import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { BarsListPage } from './pages/Bars/BarsListPage';
-import { BarDetailPage } from './pages/Bars/BarDetailPage';
+import { BarDashboardPage } from './pages/Bars/BarDashboardPage';
 import { ProductsListPage } from './pages/Products/ProductsListPage';
 import { ProductDetailPage } from './pages/Products/ProductDetailPage';
 import { CategoriesListPage } from './pages/Categories/CategoriesListPage';
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
 		children: [
 			{
 				path: '/',
+				element: <HomePage />,
+			},
+			{
+				path: '/dashboard',
 				element: <DashboardPage />,
 			},
 			{
@@ -36,7 +41,7 @@ export const router = createBrowserRouter([
 			},
 			{
 				path: '/bars/:id',
-				element: <BarDetailPage />,
+				element: <BarDashboardPage />,
 			},
 			{
 				path: '/products',
