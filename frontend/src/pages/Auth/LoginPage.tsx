@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { authenticateWithTelegram } from '../../api/auth.api';
+import { authenticateWithTelegram, saveToken } from '../../api/auth.api';
 import { useTelegram } from '../../hooks/useTelegram';
 import { Button } from '../../components/ui/Button';
 import './LoginPage.css';
@@ -30,6 +30,8 @@ export function LoginPage() {
 				'user=%7B%22id%22%3A123456789%7D&auth_date=1234567890&hash=test';
 
 			const response = await authenticateWithTelegram(telegramInitData);
+			// Сохраняем токен в localStorage
+			saveToken(response.accessToken);
 			setToken(response.accessToken);
 			setUser(response.user);
 			navigate('/');

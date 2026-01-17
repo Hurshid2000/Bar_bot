@@ -18,7 +18,22 @@ export interface AuthResponse {
 	accessToken: string;
 	user: {
 		id: string;
+		telegramId: string;
+		name: string;
 		role: string;
+		createdAt: string;
+		updatedAt: string;
+		bars?: Array<{
+			id: string;
+			userId: string;
+			barId: string;
+			bar?: {
+				id: string;
+				name: string;
+				isActive: boolean;
+				createdAt: string;
+			};
+		}>;
 	};
 }
 
@@ -140,11 +155,31 @@ export class AuthService {
 
 		console.log('[AUTH] Авторизация успешна для пользователя:', user.id);
 
+		// Получаем полные данные пользователя с барами для фронтенда
+		const userWithBars = await this.usersService.findOne(user.id);
+
 		return {
 			accessToken,
 			user: {
-				id: user.id,
-				role: user.role,
+				id: userWithBars.id,
+				telegramId: userWithBars.telegramId,
+				name: userWithBars.name,
+				role: userWithBars.role,
+				createdAt: userWithBars.createdAt.toISOString(),
+				updatedAt: userWithBars.updatedAt.toISOString(),
+				bars: userWithBars.bars.map((ub) => ({
+					id: ub.id,
+					userId: ub.userId,
+					barId: ub.barId,
+					bar: ub.bar
+						? {
+								id: ub.bar.id,
+								name: ub.bar.name,
+								isActive: ub.bar.isActive,
+								createdAt: ub.bar.createdAt.toISOString(),
+							}
+						: undefined,
+				})),
 			},
 		};
 	}
