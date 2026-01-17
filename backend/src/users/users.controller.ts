@@ -7,6 +7,7 @@ import {
 	Param,
 	Delete,
 	UseGuards,
+	Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -22,6 +23,37 @@ import { RoleType } from '@prisma/client';
 @UseGuards(RolesGuard)
 export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
+
+	@Get('me')
+	@ApiOperation({ summary: 'Получить данные текущего пользователя' })
+	@ApiResponse({ status: 200, description: 'Данные пользователя' })
+	@ApiResponse({ status: 401, description: 'Не авторизован' })
+	findMe(@Request() req: any) {
+		// JWT Strategy уже загрузил полного пользователя в req.user
+		// Форматируем данные для фронтенда
+		const user = req.user;
+		return {
+			id: user.id,
+			telegramId: user.telegramId,
+			name: user.name,
+			role: user.role,
+			createdAt: user.createdAt.toISOString(),
+			updatedAt: user.updatedAt.toISOString(),
+			bars: user.bars?.map((ub: any) => ({
+				id: ub.id,
+				userId: ub.userId,
+				barId: ub.barId,
+				bar: ub.bar
+					? {
+							id: ub.bar.id,
+							name: ub.bar.name,
+							isActive: ub.bar.isActive,
+							createdAt: ub.bar.createdAt.toISOString(),
+						}
+					: undefined,
+			})) || [],
+		};
+	}
 
 	@Get()
 	@Roles(RoleType.ADMIN, RoleType.MANAGER)

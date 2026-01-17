@@ -9,6 +9,8 @@ export interface UpdateUserDto {
 export const usersApi = {
 	getAll: (): Promise<User[]> => apiGet<User[]>('/users'),
 
+	getCurrent: (): Promise<User> => apiGet<User>('/users/me'),
+
 	getById: (id: string): Promise<User> => apiGet<User>(`/users/${id}`),
 
 	update: (id: string, data: UpdateUserDto): Promise<User> =>
