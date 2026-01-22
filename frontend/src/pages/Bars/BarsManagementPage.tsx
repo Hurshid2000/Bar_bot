@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { barsApi, type CreateBarDto, type UpdateBarDto } from '../../api/bars.api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -14,13 +15,16 @@ import './BarsManagementPage.css';
 export function BarsManagementPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [editingBar, setEditingBar] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
 	const [formData, setFormData] = useState({ name: '', isActive: true });
 
-	const { data: bars, isLoading } = useQuery({
+	const { data: bars, isLoading, error: barsError } = useQuery({
 		queryKey: ['bars'],
 		queryFn: () => barsApi.getAll(),
+		enabled: !isLoadingAuth && isAuthenticated,
+		retry: false,
 	});
 
 	const createMutation = useMutation({
@@ -80,8 +84,27 @@ export function BarsManagementPage() {
 		}
 	};
 
-	if (isLoading) {
+	if (isLoadingAuth || isLoading) {
 		return <Loading />;
+	}
+
+	if (barsError) {
+		return (
+			<div className="bars-management-page">
+				<button onClick={() => navigate('/')} className="page-back-button">
+					<ArrowLeft className="page-back-icon" />
+					<span>Back to Home</span>
+				</button>
+				<div className="page-header">
+					<h1>Управление барами</h1>
+				</div>
+				<Card>
+					<p className="empty-message">
+						Ошибка загрузки баров: {(barsError as any)?.message || 'Неизвестная ошибка'}
+					</p>
+				</Card>
+			</div>
+		);
 	}
 
 	return (

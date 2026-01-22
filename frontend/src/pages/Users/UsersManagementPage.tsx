@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { usersApi, type UpdateUserDto } from '../../api/users.api';
 import { barsApi } from '../../api/bars.api';
 import { Card } from '../../components/ui/Card';
@@ -17,6 +18,7 @@ import './UsersManagementPage.css';
 export function UsersManagementPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
 	const [editingUser, setEditingUser] = useState<{
 		id: string;
 		name: string;
@@ -27,14 +29,17 @@ export function UsersManagementPage() {
 		role: RoleType;
 	}>({ name: '', role: RoleType.WORKER });
 
-	const { data: users, isLoading } = useQuery({
+	const { data: users, isLoading, error: usersError } = useQuery({
 		queryKey: ['users'],
 		queryFn: () => usersApi.getAll(),
+		enabled: !isLoadingAuth && isAuthenticated,
+		retry: false,
 	});
 
 	const { data: bars } = useQuery({
 		queryKey: ['bars'],
 		queryFn: () => barsApi.getAll(),
+		enabled: !isLoadingAuth && isAuthenticated,
 	});
 
 	const updateMutation = useMutation({
@@ -99,8 +104,27 @@ export function UsersManagementPage() {
 		removeBarMutation.mutate({ userId, barId });
 	};
 
-	if (isLoading) {
+	if (isLoadingAuth || isLoading) {
 		return <Loading />;
+	}
+
+	if (usersError) {
+		return (
+			<div className="users-management-page">
+				<button onClick={() => navigate('/')} className="page-back-button">
+					<ArrowLeft className="page-back-icon" />
+					<span>Back to Home</span>
+				</button>
+				<div className="page-header">
+					<h1>Управление пользователями</h1>
+				</div>
+				<Card>
+					<p className="empty-message">
+						Ошибка загрузки пользователей: {(usersError as any)?.message || 'Неизвестная ошибка'}
+					</p>
+				</Card>
+			</div>
+		);
 	}
 
 	return (

@@ -9,6 +9,7 @@ export interface CreateExpenseDto {
 
 export interface ExpenseFilterParams extends PaginationParams {
 	barId?: string;
+	date?: string;
 	startDate?: string;
 	endDate?: string;
 }
@@ -19,6 +20,7 @@ export const expensesApi = {
 	): Promise<PaginatedResponse<Expense>> => {
 		const queryParams = new URLSearchParams();
 		if (params?.barId) queryParams.append('barId', params.barId);
+		if (params?.date) queryParams.append('date', params.date);
 		if (params?.startDate) queryParams.append('startDate', params.startDate);
 		if (params?.endDate) queryParams.append('endDate', params.endDate);
 		if (params?.page) queryParams.append('page', params.page.toString());

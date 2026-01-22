@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
-import { ExpenseFilterDto } from '../common/dto/filter.dto';
-import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
+import { ExpenseFilterDto } from './dto/expense-filter.dto';
+import { PaginatedResponse } from '../common/dto/pagination.dto';
 import {
 	createPaginatedResponse,
 	getSkip,
@@ -30,17 +30,22 @@ export class ExpensesService {
 
 	async findAll(
 		filter: ExpenseFilterDto,
-		pagination: PaginationDto,
 	): Promise<PaginatedResponse<any>> {
-		const { barId, startDate, endDate } = filter;
-		const { page = 1, limit = 20 } = pagination;
+		const { barId, date, page = 1, limit = 20 } = filter;
 
 		const where: any = {};
 		if (barId) where.barId = barId;
-		if (startDate || endDate) {
-			where.createdAt = {};
-			if (startDate) where.createdAt.gte = new Date(startDate);
-			if (endDate) where.createdAt.lte = new Date(endDate);
+		
+		// Если передан date, используем его для точного дня (startOfDay <= createdAt < nextDay)
+		if (date) {
+			// Создаем дату с началом дня в UTC
+			const dateObj = new Date(date + 'T00:00:00.000Z');
+			const nextDay = new Date(dateObj);
+			nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+			where.createdAt = {
+				gte: dateObj,
+				lt: nextDay, // Меньше следующего дня = точный день
+			};
 		}
 
 		const [expenses, total] = await Promise.all([

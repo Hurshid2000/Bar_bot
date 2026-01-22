@@ -1,3 +1,7 @@
+// Импорт reflect-metadata необходим для корректной работы ValidationPipe с DTO в @Query()
+// Без него метаданные типов теряются, и ValidationPipe не может определить поля DTO
+import 'reflect-metadata';
+
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
@@ -12,11 +16,13 @@ async function bootstrap() {
 	app.useGlobalFilters(new HttpExceptionFilter());
 
 	// Глобальная валидация для всех endpoints
+	// whitelist и forbidNonWhitelisted отключены, так как они вызывают проблемы с @Query() параметрами
+	// (NestJS не может определить metatype для query, что приводит к ошибкам валидации)
 	app.useGlobalPipes(
 		new ValidationPipe({
-			whitelist: true, // Удаляет свойства, которых нет в DTO
-			forbidNonWhitelisted: true, // Выбрасывает ошибку, если есть лишние свойства
-			transform: true, // Автоматически преобразует типы
+			whitelist: false,
+			forbidNonWhitelisted: false,
+			transform: true,
 			transformOptions: {
 				enableImplicitConversion: true,
 			},
@@ -36,7 +42,10 @@ async function bootstrap() {
 		origin: corsOrigins,
 		credentials: true,
 		methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
-		allowedHeaders: ['Content-Type', 'Authorization'],
+		allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+		exposedHeaders: ['Content-Type', 'Authorization'],
+		preflightContinue: false,
+		optionsSuccessStatus: 204,
 	});
 
 	// Swagger документация

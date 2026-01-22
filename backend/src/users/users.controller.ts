@@ -93,7 +93,7 @@ export class UsersController {
 		return this.usersService.remove(id);
 	}
 
-	// Управление привязкой к барам (уже было, но убираем @Public)
+	// Управление привязкой к барам
 	@Post(':userId/bars')
 	@Roles(RoleType.ADMIN, RoleType.MANAGER)
 	assignBarToUser(

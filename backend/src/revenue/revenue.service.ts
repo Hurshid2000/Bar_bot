@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
-import { RevenueFilterDto } from '../common/dto/filter.dto';
-import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
+import { RevenueFilterDto } from './dto/revenue-filter.dto';
+import { PaginatedResponse } from '../common/dto/pagination.dto';
 import {
 	createPaginatedResponse,
 	getSkip,
@@ -54,17 +54,37 @@ export class RevenueService {
 
 	async findAll(
 		filter: RevenueFilterDto,
-		pagination: PaginationDto,
 	): Promise<PaginatedResponse<any>> {
-		const { barId, startDate, endDate } = filter;
-		const { page = 1, limit = 20 } = pagination;
+		const { barId, date, startDate, endDate, page = 1, limit = 20 } = filter;
 
 		const where: any = {};
 		if (barId) where.barId = barId;
-		if (startDate || endDate) {
+		
+		// Если передан date, используем его для точного дня (startOfDay <= date < nextDay)
+		if (date) {
+			// Создаем дату с началом дня в UTC
+			const dateObj = new Date(date + 'T00:00:00.000Z');
+			const nextDay = new Date(dateObj);
+			nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+			where.date = {
+				gte: dateObj,
+				lt: nextDay, // Меньше следующего дня = точный день
+			};
+		} else if (startDate || endDate) {
+			// Фильтрация по полю date в диапазоне (inclusive)
 			where.date = {};
-			if (startDate) where.date.gte = new Date(startDate);
-			if (endDate) where.date.lte = new Date(endDate);
+			if (startDate) {
+				// startOfDay для startDate
+				const startDateObj = new Date(startDate + 'T00:00:00.000Z');
+				where.date.gte = startDateObj;
+			}
+			if (endDate) {
+				// startOfDay(endDate + 1 day) для inclusive endDate
+				const endDateObj = new Date(endDate + 'T00:00:00.000Z');
+				const nextDay = new Date(endDateObj);
+				nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+				where.date.lt = nextDay; // Меньше следующего дня = включительно до конца endDate
+			}
 		}
 
 		const [revenues, total] = await Promise.all([

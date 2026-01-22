@@ -20,17 +20,18 @@ import './BarDashboardPage.css';
 export function BarDashboardPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
-	const { hasRole } = useAuth();
+	const { hasRole, isAuthenticated, isLoading: isLoadingAuth } = useAuth();
 	const [selectedDate, setSelectedDate] = useState(startOfToday());
 	const [cashModalOpen, setCashModalOpen] = useState(false);
 	const [cardModalOpen, setCardModalOpen] = useState(false);
 	const [expenseModalOpen, setExpenseModalOpen] = useState(false);
 
 	// Загружаем данные бара
-	const { data: bar, isLoading: barLoading } = useQuery({
+	const { data: bar, isLoading: barLoading, error: barError } = useQuery({
 		queryKey: ['bars', id],
 		queryFn: () => barsApi.getById(id!),
-		enabled: !!id,
+		enabled: !!id && !isLoadingAuth && isAuthenticated,
+		retry: false,
 	});
 
 	// Загружаем выручку за выбранную дату
@@ -40,10 +41,9 @@ export function BarDashboardPage() {
 		queryFn: () =>
 			revenueApi.getAll({
 				barId: id!,
-				startDate: dateStr,
-				endDate: dateStr,
+				date: dateStr,
 			}),
-		enabled: !!id,
+		enabled: !!id && !isLoadingAuth && isAuthenticated,
 	});
 
 	// Загружаем расходы за выбранную дату
@@ -52,14 +52,21 @@ export function BarDashboardPage() {
 		queryFn: () =>
 			expensesApi.getAll({
 				barId: id!,
-				startDate: dateStr,
-				endDate: dateStr,
+				date: dateStr,
 			}),
-		enabled: !!id,
+		enabled: !!id && !isLoadingAuth && isAuthenticated,
 	});
 
-	if (barLoading || revenueLoading || expensesLoading) {
+	if (isLoadingAuth || barLoading || revenueLoading || expensesLoading) {
 		return <Loading />;
+	}
+
+	if (barError) {
+		return (
+			<div className="bar-dashboard-page">
+				<p>Ошибка загрузки бара: {(barError as any)?.message || 'Неизвестная ошибка'}</p>
+			</div>
+		);
 	}
 
 	if (!bar) {

@@ -4,11 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import { authenticateWithTelegram, saveToken } from '../../api/auth.api';
 import { useTelegram } from '../../hooks/useTelegram';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import './LoginPage.css';
 
 export function LoginPage() {
 	const [error, setError] = useState<string>('');
 	const [loading, setLoading] = useState(false);
+	const [telegramId, setTelegramId] = useState<string>('');
 	const { setUser, setToken, isAuthenticated } = useAuth();
 	const { isAvailable, initData } = useTelegram();
 	const navigate = useNavigate();
@@ -25,9 +27,20 @@ export function LoginPage() {
 			setLoading(true);
 
 			// Используем initData из Telegram или fallback для разработки
-			const telegramInitData =
-				initData ||
-				'user=%7B%22id%22%3A123456789%7D&auth_date=1234567890&hash=test';
+			// Генерируем актуальный auth_date для fallback режима
+			let telegramInitData = initData;
+			if (!telegramInitData) {
+				// В fallback режиме используем telegramId из input или дефолтный
+				const userId = telegramId.trim() || '123456789';
+				const currentAuthDate = Math.floor(Date.now() / 1000);
+				// URL-encoded JSON с пользовательским telegramId
+				const userData = JSON.stringify({
+					id: parseInt(userId, 10),
+					first_name: 'Test',
+					last_name: 'User'
+				});
+				telegramInitData = `user=${encodeURIComponent(userData)}&auth_date=${currentAuthDate}&hash=test`;
+			}
 
 			const response = await authenticateWithTelegram(telegramInitData);
 			// Сохраняем токен в localStorage
@@ -53,6 +66,22 @@ export function LoginPage() {
 						<p>⚠️ Telegram WebApp не доступен</p>
 						<p className="login-warning-note">
 							Для тестирования используется fallback режим
+						</p>
+					</div>
+				)}
+
+				{/* Показываем поле ввода если нет initData от Telegram */}
+				{!initData && (
+					<div style={{ marginTop: '16px', width: '100%' }}>
+						<Input
+							label="Telegram ID (для входа в свой аккаунт)"
+							type="text"
+							value={telegramId}
+							onChange={(e) => setTelegramId(e.target.value)}
+							placeholder="Введите ваш Telegram ID"
+						/>
+						<p style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+							Оставьте пустым для использования тестового аккаунта (123456789)
 						</p>
 					</div>
 				)}

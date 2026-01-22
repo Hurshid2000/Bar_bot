@@ -85,6 +85,7 @@ export class AuthService {
 			const message = '⚠️  Пропуск проверки подписи Telegram (режим разработки)';
 			this.logger.warn(message);
 			console.log('[AUTH]', message);
+			console.log('[AUTH] ⚠️  Пропуск проверки auth_date (режим разработки)');
 		} else {
 			console.log('[AUTH] Проверка подписи Telegram...');
 			const isValid = verifyTelegramSignature(initData, botToken, true);

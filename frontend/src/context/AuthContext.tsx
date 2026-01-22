@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				try {
 					const userData = await usersApi.getCurrent();
 					setUser(userData);
-				} catch (error) {
+				} catch (error: any) {
 					console.error('Failed to load user on init:', error);
 					// Если токен невалидный, удаляем его
 					removeToken();

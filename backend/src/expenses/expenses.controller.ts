@@ -10,8 +10,7 @@ import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { RolesGuard } from '../guards/roles.guard';
 import { BarAccessGuard } from '../guards/bar-access.guard';
-import { ExpenseFilterDto } from '../common/dto/filter.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { ExpenseFilterDto } from './dto/expense-filter.dto';
 
 @Controller('expenses')
 @UseGuards(RolesGuard, BarAccessGuard)
@@ -24,10 +23,7 @@ export class ExpensesController {
 	}
 
 	@Get()
-	findAll(
-		@Query() filter: ExpenseFilterDto,
-		@Query() pagination: PaginationDto,
-	) {
-		return this.expensesService.findAll(filter, pagination);
+	findAll(@Query() filter: ExpenseFilterDto) {
+		return this.expensesService.findAll(filter);
 	}
 }
