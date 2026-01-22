@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { usersApi, type UpdateUserDto } from '../../api/users.api';
+import { usersApi, type UpdateUserDto, type CreateUserDto } from '../../api/users.api';
 import { barsApi } from '../../api/bars.api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -18,7 +18,8 @@ import './UsersManagementPage.css';
 export function UsersManagementPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
+	const { isAuthenticated, isLoading: isLoadingAuth, user: currentUser } = useAuth();
+	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 	const [editingUser, setEditingUser] = useState<{
 		id: string;
 		name: string;
@@ -28,6 +29,11 @@ export function UsersManagementPage() {
 		name: string;
 		role: RoleType;
 	}>({ name: '', role: RoleType.WORKER });
+	const [addFormData, setAddFormData] = useState<CreateUserDto>({
+		telegramId: '',
+		name: '',
+		role: RoleType.WORKER,
+	});
 
 	const { data: users, isLoading, error: usersError } = useQuery({
 		queryKey: ['users'],
@@ -40,6 +46,15 @@ export function UsersManagementPage() {
 		queryKey: ['bars'],
 		queryFn: () => barsApi.getAll(),
 		enabled: !isLoadingAuth && isAuthenticated,
+	});
+
+	const createMutation = useMutation({
+		mutationFn: (data: CreateUserDto) => usersApi.create(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['users'] });
+			setIsAddModalOpen(false);
+			setAddFormData({ telegramId: '', name: '', role: RoleType.WORKER });
+		},
 	});
 
 	const updateMutation = useMutation({
@@ -90,6 +105,11 @@ export function UsersManagementPage() {
 		}
 	};
 
+	const handleAddSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		createMutation.mutate(addFormData);
+	};
+
 	const handleDelete = (id: string) => {
 		if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
 			deleteMutation.mutate(id);
@@ -136,6 +156,12 @@ export function UsersManagementPage() {
 
 			<div className="page-header">
 				<h1>Управление пользователями</h1>
+				{currentUser?.role === RoleType.ADMIN && (
+					<Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+						<UserPlus className="button-icon" />
+						<span>Добавить пользователя</span>
+					</Button>
+				)}
 			</div>
 
 			{users && users.length > 0 ? (
@@ -295,6 +321,60 @@ export function UsersManagementPage() {
 							loading={updateMutation.isPending}
 						>
 							Сохранить
+						</Button>
+					</div>
+				</form>
+			</Modal>
+
+			{/* Add User Modal */}
+			<Modal
+				isOpen={isAddModalOpen}
+				onClose={() => setIsAddModalOpen(false)}
+				title="Добавить пользователя"
+			>
+				<form onSubmit={handleAddSubmit} className="user-form">
+					<Input
+						label="Telegram ID"
+						type="text"
+						value={addFormData.telegramId}
+						onChange={(e) => setAddFormData({ ...addFormData, telegramId: e.target.value })}
+						required
+						placeholder="Введите Telegram ID"
+					/>
+					<Input
+						label="Имя пользователя"
+						type="text"
+						value={addFormData.name}
+						onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })}
+						required
+						placeholder="Введите имя"
+					/>
+					<Select
+						label="Роль"
+						value={addFormData.role || RoleType.WORKER}
+						onChange={(e) =>
+							setAddFormData({ ...addFormData, role: e.target.value as RoleType })
+						}
+						options={[
+							{ value: RoleType.ADMIN, label: 'ADMIN' },
+							{ value: RoleType.MANAGER, label: 'MANAGER' },
+							{ value: RoleType.WORKER, label: 'WORKER' },
+						]}
+					/>
+					<div className="form-actions">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsAddModalOpen(false)}
+						>
+							Отмена
+						</Button>
+						<Button
+							type="submit"
+							variant="primary"
+							loading={createMutation.isPending}
+						>
+							Создать
 						</Button>
 					</div>
 				</form>

@@ -63,6 +63,15 @@ export class UsersController {
 		return this.usersService.findAll();
 	}
 
+	@Post()
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Создать нового пользователя' })
+	@ApiResponse({ status: 201, description: 'Пользователь создан' })
+	@ApiResponse({ status: 400, description: 'Некорректные данные' })
+	create(@Body() createUserDto: CreateUserDto) {
+		return this.usersService.create(createUserDto);
+	}
+
 	@Get(':id')
 	@Roles(RoleType.ADMIN, RoleType.MANAGER)
 	@ApiOperation({ summary: 'Получить пользователя по ID' })

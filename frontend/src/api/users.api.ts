@@ -1,6 +1,12 @@
 import { apiGet, apiPatch, apiDelete, apiPost } from './client';
 import type { User } from '../types/common.types';
 
+export interface CreateUserDto {
+	telegramId: string;
+	name: string;
+	role?: string;
+}
+
 export interface UpdateUserDto {
 	name?: string;
 	role?: string;
@@ -8,6 +14,9 @@ export interface UpdateUserDto {
 
 export const usersApi = {
 	getAll: (): Promise<User[]> => apiGet<User[]>('/users'),
+
+	create: (data: CreateUserDto): Promise<User> =>
+		apiPost<User>('/users', data),
 
 	getCurrent: (): Promise<User> => apiGet<User>('/users/me'),
 
