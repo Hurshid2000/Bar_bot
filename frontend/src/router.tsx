@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createHashRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './guards/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/Auth/LoginPage';
@@ -17,7 +17,10 @@ import { PurchasesListPage } from './pages/Purchases/PurchasesListPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { RoleType } from './types/common.types';
 
-export const router = createBrowserRouter([
+// Используем HashRouter для совместимости с Telegram Mini App
+// HashRouter использует URL с # (например, /#/bars/123), что позволяет
+// работать без серверного fallback при перезагрузке страницы
+export const router = createHashRouter([
 	{
 		path: '/auth/login',
 		element: <LoginPage />,
