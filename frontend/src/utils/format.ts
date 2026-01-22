@@ -1,12 +1,11 @@
 import { format, parseISO } from 'date-fns';
 
 export function formatCurrency(amount: number): string {
-	return new Intl.NumberFormat('ru-RU', {
-		style: 'currency',
-		currency: 'RUB',
+	const formatted = new Intl.NumberFormat('ru-RU', {
 		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
+		maximumFractionDigits: 0,
 	}).format(amount);
+	return `${formatted} сум`;
 }
 
 export function formatDate(date: string | Date, pattern = 'dd.MM.yyyy'): string {

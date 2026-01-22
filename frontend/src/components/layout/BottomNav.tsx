@@ -7,17 +7,16 @@ export function BottomNav() {
 	const location = useLocation();
 
 	const tabs = [
-		{ id: 'home', label: 'Home', icon: Home, path: '/' },
-		{ id: 'catalog', label: 'Catalog', icon: Package, path: '/catalog' },
-		{ id: 'orders', label: 'Orders', icon: ShoppingCart, path: '/orders' },
-		{ id: 'reports', label: 'Reports', icon: BarChart3, path: '/reports' },
+		{ id: 'home', label: 'Home', icon: Home, path: '/', enabled: true },
+		{ id: 'catalog', label: 'Catalog', icon: Package, path: '/catalog', enabled: true },
+		{ id: 'orders', label: 'Orders', icon: ShoppingCart, path: '/orders', enabled: false },
+		{ id: 'reports', label: 'Reports', icon: BarChart3, path: '/reports', enabled: true },
 	];
 
-	const handleTabClick = (path: string, id: string) => {
-		if (id === 'home') {
+	const handleTabClick = (path: string, enabled: boolean) => {
+		if (enabled) {
 			navigate(path);
 		} else {
-			// Заглушки для остальных табов
 			alert('Coming soon');
 		}
 	};
@@ -38,7 +37,7 @@ export function BottomNav() {
 					return (
 						<button
 							key={tab.id}
-							onClick={() => handleTabClick(tab.path, tab.id)}
+							onClick={() => handleTabClick(tab.path, tab.enabled)}
 							className={`bottom-nav-item ${active ? 'bottom-nav-item-active' : ''}`}
 						>
 							<Icon className="bottom-nav-icon" />

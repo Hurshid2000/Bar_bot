@@ -11,6 +11,7 @@ import { UsersManagementPage } from './pages/Users/UsersManagementPage';
 import { ProductsListPage } from './pages/Products/ProductsListPage';
 import { ProductDetailPage } from './pages/Products/ProductDetailPage';
 import { CategoriesListPage } from './pages/Categories/CategoriesListPage';
+import { CatalogPage } from './pages/Catalog';
 import { RevenueListPage } from './pages/Revenue/RevenueListPage';
 import { ExpensesListPage } from './pages/Expenses/ExpensesListPage';
 import { PurchasesListPage } from './pages/Purchases/PurchasesListPage';
@@ -64,14 +65,18 @@ export const router = createHashRouter([
 					</ProtectedRoute>
 				),
 			},
-			{
-				path: '/products',
-				element: <ProductsListPage />,
-			},
-			{
-				path: '/products/:id',
-				element: <ProductDetailPage />,
-			},
+		{
+			path: '/catalog',
+			element: <CatalogPage />,
+		},
+		{
+			path: '/products',
+			element: <ProductsListPage />,
+		},
+		{
+			path: '/products/:id',
+			element: <ProductDetailPage />,
+		},
 			{
 				path: '/categories',
 				element: (

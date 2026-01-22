@@ -40,6 +40,8 @@ export interface Bar {
 export interface Category {
 	id: string;
 	name: string;
+	icon?: string;
+	type?: ProductType;
 }
 
 export interface Product {
@@ -54,6 +56,9 @@ export interface Product {
 	createdAt: string;
 	bar?: Bar;
 	category?: Category;
+	imageUrl?: string;
+	description?: string;
+	stock?: number;
 }
 
 export interface Revenue {

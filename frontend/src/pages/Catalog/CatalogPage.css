@@ -1,0 +1,362 @@
+.catalog-page {
+	padding: 16px;
+	padding-bottom: 100px;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.catalog-no-bar {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+}
+
+/* Tabs */
+.catalog-tabs {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.catalog-tab {
+	flex: 1;
+	padding: 14px 20px;
+	border: 2px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.catalog-tab:hover {
+	border-color: var(--color-primary-400);
+}
+
+.catalog-tab-active {
+	background: var(--color-primary-500);
+	border-color: var(--color-primary-500);
+	color: white;
+}
+
+/* Search Row */
+.catalog-search-row {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.catalog-search {
+	flex: 1;
+	position: relative;
+}
+
+.catalog-search-icon {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--color-text-muted);
+}
+
+.catalog-search-input {
+	width: 100%;
+	padding: 14px 14px 14px 44px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	font-size: 14px;
+	outline: none;
+	transition: all var(--transition-base);
+}
+
+.catalog-search-input::placeholder {
+	color: var(--color-text-muted);
+}
+
+.catalog-search-input:focus {
+	border-color: var(--color-primary-500);
+}
+
+.catalog-add-btn {
+	width: 52px;
+	height: 52px;
+	border: none;
+	border-radius: var(--radius-lg);
+	background: var(--color-primary-500);
+	color: white;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all var(--transition-base);
+}
+
+.catalog-add-btn:hover {
+	background: var(--color-primary-600);
+}
+
+.catalog-add-btn:active {
+	transform: scale(0.95);
+}
+
+/* Category Filter */
+.category-filter {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+	overflow-x: auto;
+	padding-bottom: 8px;
+	-webkit-overflow-scrolling: touch;
+}
+
+.category-filter::-webkit-scrollbar {
+	display: none;
+}
+
+.category-chip {
+	padding: 8px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 20px;
+	background: var(--color-background-card);
+	color: var(--color-text-secondary);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all var(--transition-base);
+}
+
+.category-chip:hover {
+	border-color: var(--color-primary-400);
+	color: var(--color-text-primary);
+}
+
+.category-chip-active {
+	background: var(--color-primary-500);
+	border-color: var(--color-primary-500);
+	color: white;
+}
+
+/* Products List */
+.catalog-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.catalog-empty {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+	background: var(--color-background-card);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--color-border);
+}
+
+/* Product Card */
+.product-card {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 16px;
+	background: var(--color-background-card);
+	border: 2px solid transparent;
+	border-radius: var(--radius-lg);
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.product-card:hover {
+	border-color: var(--color-primary-500);
+}
+
+.product-card-selected {
+	border-color: var(--color-primary-500);
+	background: rgba(74, 144, 226, 0.1);
+}
+
+.product-card-icon {
+	width: 56px;
+	height: 56px;
+	border-radius: var(--radius-md);
+	background: var(--color-background-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 28px;
+	flex-shrink: 0;
+}
+
+.product-card-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.product-card-name {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	margin: 0 0 4px 0;
+}
+
+.product-card-meta {
+	font-size: 13px;
+	color: var(--color-text-secondary);
+	margin: 0 0 6px 0;
+}
+
+.product-card-stock {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 13px;
+	color: var(--color-success);
+}
+
+.product-card-stock-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.product-card-stock-low {
+	color: var(--color-warning);
+}
+
+.product-card-stock-out {
+	color: var(--color-danger);
+}
+
+.product-card-price {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	white-space: nowrap;
+}
+
+/* Sportpit Card */
+.sportpit-card {
+	display: flex;
+	flex-direction: column;
+	padding: 16px;
+	background: var(--color-background-card);
+	border: 2px solid transparent;
+	border-radius: var(--radius-lg);
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.sportpit-card:hover {
+	border-color: var(--color-primary-500);
+}
+
+.sportpit-card-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	margin-bottom: 12px;
+}
+
+.sportpit-card-image {
+	width: 64px;
+	height: 64px;
+	border-radius: var(--radius-md);
+	background: var(--color-background-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 32px;
+	flex-shrink: 0;
+	overflow: hidden;
+}
+
+.sportpit-card-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.sportpit-card-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.sportpit-card-name {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	margin: 0 0 8px 0;
+}
+
+.sportpit-card-category {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	background: var(--color-background-muted);
+	border-radius: 12px;
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.sportpit-card-category-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.sportpit-card-price {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--color-primary-400);
+	text-align: right;
+	white-space: nowrap;
+}
+
+.sportpit-card-price-currency {
+	display: block;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--color-primary-400);
+}
+
+.sportpit-card-description {
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-sm);
+	margin-bottom: 8px;
+}
+
+.sportpit-card-description-text {
+	font-size: 13px;
+	color: var(--color-text-secondary);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.sportpit-card-label {
+	font-size: 12px;
+	font-style: italic;
+	color: var(--color-text-muted);
+}
+
+@media (max-width: 480px) {
+	.catalog-page {
+		padding: 12px;
+		padding-bottom: 100px;
+	}
+
+	.catalog-tab {
+		padding: 12px 16px;
+		font-size: 14px;
+	}
+
+	.product-card-icon,
+	.sportpit-card-image {
+		width: 48px;
+		height: 48px;
+		font-size: 24px;
+	}
+}
