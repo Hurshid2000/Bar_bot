@@ -18,7 +18,7 @@ import './UsersManagementPage.css';
 export function UsersManagementPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { isAuthenticated, isLoading: isLoadingAuth, user: currentUser } = useAuth();
+	const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 	const [editingUser, setEditingUser] = useState<{
 		id: string;
@@ -156,12 +156,10 @@ export function UsersManagementPage() {
 
 			<div className="page-header">
 				<h1>Управление пользователями</h1>
-				{currentUser?.role === RoleType.ADMIN && (
-					<Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
-						<UserPlus className="button-icon" />
-						<span>Добавить пользователя</span>
-					</Button>
-				)}
+				<Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+					<UserPlus className="button-icon" />
+					<span>Добавить пользователя</span>
+				</Button>
 			</div>
 
 			{users && users.length > 0 ? (
