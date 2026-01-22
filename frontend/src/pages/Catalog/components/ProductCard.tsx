@@ -56,12 +56,10 @@ export function ProductCard({ product, selected, onClick, onEditProduct, onEditP
 				<h3 className="product-card-name">{product.name}</h3>
 				<p className="product-card-meta">
 					{product.category?.name || 'Без категории'}
-					{product.barcode && ` • ${product.barcode}`}
 				</p>
-			</div>
-
-			<div className="product-card-price">
-				{product.price != null ? formatCurrency(product.price) : '—'}
+				<div className="product-card-price">
+					{product.price != null ? formatCurrency(product.price) : (product.defaultPrice != null ? formatCurrency(product.defaultPrice) : '—')}
+				</div>
 			</div>
 
 			{(onEditProduct || onEditPrice) && (

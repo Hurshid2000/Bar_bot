@@ -285,10 +285,11 @@
 }
 
 .product-card-price {
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--color-text-primary);
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--color-primary-400);
 	white-space: nowrap;
+	margin-top: 4px;
 }
 
 /* Sportpit Card */
