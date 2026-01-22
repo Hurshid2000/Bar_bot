@@ -23,7 +23,7 @@ export class RevenueService {
 	 * - Можно обновлять только cash или только card
 	 */
 	async create(createRevenueDto: CreateRevenueDto) {
-		const { barId, date, cash, card } = createRevenueDto;
+		const { barId, date } = createRevenueDto;
 
 		// Проверяем существование бара
 		const bar = await this.prisma.bar.findUnique({
@@ -35,6 +35,16 @@ export class RevenueService {
 
 		const dateObj = new Date(date);
 
+		// Проверяем, какие поля реально были переданы в запросе
+		// hasOwnProperty проверяет наличие ключа, даже если значение undefined/null
+		const hasCash = 'cash' in createRevenueDto && createRevenueDto.cash !== undefined && createRevenueDto.cash !== null;
+		const hasCard = 'card' in createRevenueDto && createRevenueDto.card !== undefined && createRevenueDto.card !== null;
+
+		// Формируем объект для update - только реально переданные поля
+		const updateData: { cash?: number; card?: number } = {};
+		if (hasCash) updateData.cash = createRevenueDto.cash;
+		if (hasCard) updateData.card = createRevenueDto.card;
+
 		// Используем upsert: создаём если нет, обновляем если есть
 		return this.prisma.revenue.upsert({
 			where: {
@@ -43,18 +53,15 @@ export class RevenueService {
 					date: dateObj,
 				},
 			},
-			// При создании новой записи
+			// При создании новой записи - устанавливаем переданные значения или 0
 			create: {
 				barId,
 				date: dateObj,
-				cash: cash ?? 0,
-				card: card ?? 0,
+				cash: hasCash ? createRevenueDto.cash : 0,
+				card: hasCard ? createRevenueDto.card : 0,
 			},
-			// При обновлении существующей - обновляем только переданные поля
-			update: {
-				...(cash !== undefined && { cash }),
-				...(card !== undefined && { card }),
-			},
+			// При обновлении - обновляем ТОЛЬКО реально переданные поля
+			update: updateData,
 		});
 	}
 
