@@ -8,12 +8,34 @@ export class BarsService {
 	constructor(private prisma: PrismaService) {}
 
 	async create(createBarDto: CreateBarDto) {
-		return this.prisma.bar.create({
+		// Создаем бар
+		const bar = await this.prisma.bar.create({
 			data: {
 				name: createBarDto.name,
 				isActive: createBarDto.isActive ?? true,
 			},
 		});
+
+		// Получаем все продукты с defaultPrice и создаем для них BarProduct
+		const productsWithDefaultPrice = await this.prisma.product.findMany({
+			where: {
+				defaultPrice: { not: null },
+			},
+		});
+
+		if (productsWithDefaultPrice.length > 0) {
+			await this.prisma.barProduct.createMany({
+				data: productsWithDefaultPrice.map((product) => ({
+					barId: bar.id,
+					productId: product.id,
+					price: product.defaultPrice!,
+					isActive: true,
+				})),
+				skipDuplicates: true,
+			});
+		}
+
+		return bar;
 	}
 
 	async findAll() {

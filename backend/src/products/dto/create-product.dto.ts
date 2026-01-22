@@ -35,6 +35,12 @@ export class CreateProductDto {
 	@Min(0)
 	costPrice: number;
 
+	@ApiPropertyOptional({ description: 'Цена по умолчанию для всех баров', example: 100.0, minimum: 0 })
+	@IsOptional()
+	@IsNumber()
+	@Min(0)
+	defaultPrice?: number;
+
 	@ApiProperty({ description: 'ID категории', example: 'uuid' })
 	@IsString()
 	@IsNotEmpty()

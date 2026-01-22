@@ -45,17 +45,18 @@ model Category {
 }
 
 model Product {
-  id          String       @id @default(uuid())
-  name        String
-  barcode     String?      @unique
-  type        ProductType  @default(PRODUCT)
-  costPrice   Float
-  categoryId  String
-  imageUrl    String?
-  description String?
-  createdAt   DateTime     @default(now())
-  category    Category     @relation(fields: [categoryId], references: [id])
-  barProducts BarProduct[]
+  id           String       @id @default(uuid())
+  name         String
+  barcode      String?      @unique
+  type         ProductType  @default(PRODUCT)
+  costPrice    Float
+  defaultPrice Float?       // Цена по умолчанию для всех баров
+  categoryId   String
+  imageUrl     String?
+  description  String?
+  createdAt    DateTime     @default(now())
+  category     Category     @relation(fields: [categoryId], references: [id])
+  barProducts  BarProduct[]
 }
 
 model BarProduct {

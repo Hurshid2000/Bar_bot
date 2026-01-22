@@ -22,6 +22,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 		barcode: '',
 		type: defaultType,
 		costPrice: 0,
+		defaultPrice: undefined,
 		categoryId: '',
 		imageUrl: '',
 		description: '',
@@ -50,6 +51,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 			barcode: '',
 			type: defaultType,
 			costPrice: 0,
+			defaultPrice: undefined,
 			categoryId: '',
 			imageUrl: '',
 			description: '',
@@ -58,7 +60,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 		onClose();
 	};
 
-	const handleChange = (field: keyof CreateProductDto, value: string | number) => {
+	const handleChange = (field: keyof CreateProductDto, value: string | number | undefined) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		setErrors((prev) => ({ ...prev, [field]: '' }));
 	};
@@ -87,6 +89,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 		const data: CreateProductDto = {
 			...formData,
 			barcode: formData.barcode || undefined,
+			defaultPrice: formData.defaultPrice || undefined,
 			imageUrl: formData.imageUrl || undefined,
 			description: formData.description || undefined,
 		};
@@ -138,16 +141,25 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 					placeholder="4600051000057"
 				/>
 
-				<Input
-					label="Себестоимость *"
-					type="number"
-					value={formData.costPrice}
-					onChange={(e) => handleChange('costPrice', parseFloat(e.target.value) || 0)}
-					error={errors.costPrice}
-					min={0}
-				/>
+			<Input
+				label="Себестоимость *"
+				type="number"
+				value={formData.costPrice}
+				onChange={(e) => handleChange('costPrice', parseFloat(e.target.value) || 0)}
+				error={errors.costPrice}
+				min={0}
+			/>
 
-				{(formData.type === ProductType.SPORT_PIT || formData.type === ProductType.FOOD) && (
+			<Input
+				label="Цена для всех баров"
+				type="number"
+				value={formData.defaultPrice ?? ''}
+				onChange={(e) => handleChange('defaultPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
+				placeholder="Оставьте пустым, если цена будет разной"
+				min={0}
+			/>
+
+			{(formData.type === ProductType.SPORT_PIT || formData.type === ProductType.FOOD) && (
 					<>
 						<Input
 							label="URL изображения"

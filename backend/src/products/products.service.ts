@@ -26,12 +26,14 @@ export class ProductsService {
 			);
 		}
 
-		return this.prisma.product.create({
+		// Создаем продукт
+		const product = await this.prisma.product.create({
 			data: {
 				name: createProductDto.name,
 				barcode: createProductDto.barcode,
 				type: createProductDto.type || 'PRODUCT',
 				costPrice: createProductDto.costPrice,
+				defaultPrice: createProductDto.defaultPrice,
 				categoryId: createProductDto.categoryId,
 				imageUrl: createProductDto.imageUrl,
 				description: createProductDto.description,
@@ -40,6 +42,27 @@ export class ProductsService {
 				category: true,
 			},
 		});
+
+		// Если указана defaultPrice, создаем BarProduct для всех активных баров
+		if (createProductDto.defaultPrice != null) {
+			const bars = await this.prisma.bar.findMany({
+				where: { isActive: true },
+			});
+
+			if (bars.length > 0) {
+				await this.prisma.barProduct.createMany({
+					data: bars.map((bar) => ({
+						barId: bar.id,
+						productId: product.id,
+						price: createProductDto.defaultPrice!,
+						isActive: true,
+					})),
+					skipDuplicates: true,
+				});
+			}
+		}
+
+		return product;
 	}
 
 	async findAll(

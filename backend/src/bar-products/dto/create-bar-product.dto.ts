@@ -12,10 +12,11 @@ export class CreateBarProductDto {
 	@IsNotEmpty()
 	productId: string;
 
-	@ApiProperty({ description: 'Цена продажи в этом баре', example: 100.0, minimum: 0 })
+	@ApiPropertyOptional({ description: 'Цена продажи в этом баре (если не указана, берётся из defaultPrice продукта)', example: 100.0, minimum: 0 })
+	@IsOptional()
 	@IsNumber()
 	@Min(0)
-	price: number;
+	price?: number;
 
 	@ApiPropertyOptional({ description: 'Активен ли продукт в баре', default: true })
 	@IsOptional()

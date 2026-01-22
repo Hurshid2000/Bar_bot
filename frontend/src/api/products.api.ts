@@ -11,6 +11,7 @@ export interface CreateProductDto {
 	barcode?: string;
 	type?: ProductType;
 	costPrice: number;
+	defaultPrice?: number; // Цена по умолчанию для всех баров
 	categoryId: string;
 	imageUrl?: string;
 	description?: string;
@@ -21,6 +22,7 @@ export interface UpdateProductDto {
 	barcode?: string;
 	type?: ProductType;
 	costPrice?: number;
+	defaultPrice?: number;
 	categoryId?: string;
 	imageUrl?: string;
 	description?: string;

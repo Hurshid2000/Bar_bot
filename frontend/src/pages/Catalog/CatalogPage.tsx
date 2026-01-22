@@ -48,18 +48,21 @@ export function CatalogPage() {
 	const canManage = hasRole([RoleType.ADMIN, RoleType.MANAGER]);
 	const tabConfig = TAB_CONFIG[activeTab];
 
+	// Админ видит глобальный каталог даже без выбранного бара
+	const showGlobalCatalog = isAdmin && !selectedBar;
+
 	const { data: productsData, isLoading: productsLoading } = useQuery({
 		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery],
 		queryFn: () =>
 			productsApi.getAll({
-				barId: selectedBar?.id,
+				barId: selectedBar?.id, // undefined для глобального каталога
 				type: tabConfig.type,
 				categoryId: selectedCategoryId || undefined,
 				search: searchQuery || undefined,
 				page: 1,
 				limit: 50,
 			}),
-		enabled: !!selectedBar,
+		enabled: !!selectedBar || isAdmin, // Админ может видеть без бара
 	});
 
 	const { data: categories } = useQuery({
@@ -109,7 +112,8 @@ export function CatalogPage() {
 		}
 	};
 
-	if (!selectedBar) {
+	// Не-админы должны выбрать бар
+	if (!selectedBar && !isAdmin) {
 		return (
 			<div className="catalog-page">
 				<p className="catalog-no-bar">Выберите бар для просмотра каталога</p>
@@ -119,6 +123,13 @@ export function CatalogPage() {
 
 	return (
 		<div className="catalog-page">
+			{/* Global Catalog Banner */}
+			{showGlobalCatalog && (
+				<div className="catalog-global-banner">
+					Глобальный каталог — продукты будут добавлены во все бары
+				</div>
+			)}
+
 			{/* Tabs */}
 			<div className="catalog-tabs catalog-tabs-3">
 				{(Object.keys(TAB_CONFIG) as TabType[]).map((tab) => (
@@ -146,7 +157,7 @@ export function CatalogPage() {
 				</div>
 				{canManage && (
 					<div className="catalog-action-buttons">
-						{isAdmin && (
+						{isAdmin && selectedBar && (
 							<button
 								className="catalog-add-btn catalog-add-btn-secondary"
 								onClick={() => setShowAssignModal(true)}
@@ -155,13 +166,15 @@ export function CatalogPage() {
 								<PackagePlus size={22} />
 							</button>
 						)}
-						<button
-							className="catalog-add-btn"
-							onClick={handleAddProduct}
-							title={isAdmin ? 'Создать новый продукт' : 'Добавить из каталога'}
-						>
-							<Plus size={24} />
-						</button>
+						{(isAdmin || selectedBar) && (
+							<button
+								className="catalog-add-btn"
+								onClick={handleAddProduct}
+								title={isAdmin ? 'Создать новый продукт' : 'Добавить из каталога'}
+							>
+								<Plus size={24} />
+							</button>
+						)}
 					</div>
 				)}
 			</div>

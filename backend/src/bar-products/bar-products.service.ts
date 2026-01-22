@@ -37,11 +37,17 @@ export class BarProductsService {
 			throw new ConflictException('Product is already assigned to this bar');
 		}
 
+		// Если цена не указана, используем defaultPrice из продукта
+		const price = createBarProductDto.price ?? product.defaultPrice;
+		if (price == null) {
+			throw new NotFoundException('Price must be specified or product must have defaultPrice');
+		}
+
 		return this.prisma.barProduct.create({
 			data: {
 				barId: createBarProductDto.barId,
 				productId: createBarProductDto.productId,
-				price: createBarProductDto.price,
+				price: price,
 				isActive: createBarProductDto.isActive ?? true,
 			},
 			include: {
