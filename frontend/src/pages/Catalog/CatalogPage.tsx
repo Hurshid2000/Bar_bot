@@ -6,13 +6,15 @@ import { categoriesApi } from '../../api/categories.api';
 import { useBar } from '../../context/BarContext';
 import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
-import { ProductType, RoleType } from '../../types/common.types';
+import { ProductType, RoleType, type Product } from '../../types/common.types';
 import { ProductCard } from './components/ProductCard';
 import { SportpitCard } from './components/SportpitCard';
 import { FoodCard } from './components/FoodCard';
 import { CategoryFilter } from './components/CategoryFilter';
 import { AddProductModal } from './components/AddProductModal';
 import { AssignProductModal } from './components/AssignProductModal';
+import { EditProductModal } from './components/EditProductModal';
+import { EditPriceModal } from './components/EditPriceModal';
 import './CatalogPage.css';
 
 type TabType = 'products' | 'sportpit' | 'food';
@@ -43,6 +45,8 @@ export function CatalogPage() {
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showAssignModal, setShowAssignModal] = useState(false);
+	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+	const [editingPriceProduct, setEditingPriceProduct] = useState<Product | null>(null);
 
 	const isAdmin = hasRole([RoleType.ADMIN]);
 	const canManage = hasRole([RoleType.ADMIN, RoleType.MANAGER]);
@@ -101,14 +105,27 @@ export function CatalogPage() {
 		return 'Поиск по названию';
 	};
 
-	const renderProductCard = (product: any) => {
+	const handleEditProduct = (product: Product) => {
+		setEditingProduct(product);
+	};
+
+	const handleEditPrice = (product: Product) => {
+		setEditingPriceProduct(product);
+	};
+
+	const renderProductCard = (product: Product) => {
+		const editProps = {
+			onEditProduct: isAdmin ? handleEditProduct : undefined,
+			onEditPrice: canManage && selectedBar ? handleEditPrice : undefined,
+		};
+
 		switch (activeTab) {
 			case 'products':
-				return <ProductCard key={product.id} product={product} />;
+				return <ProductCard key={product.id} product={product} {...editProps} />;
 			case 'sportpit':
-				return <SportpitCard key={product.id} product={product} />;
+				return <SportpitCard key={product.id} product={product} {...editProps} />;
 			case 'food':
-				return <FoodCard key={product.id} product={product} />;
+				return <FoodCard key={product.id} product={product} {...editProps} />;
 		}
 	};
 
@@ -218,6 +235,18 @@ export function CatalogPage() {
 				isOpen={showAssignModal}
 				onClose={() => setShowAssignModal(false)}
 				productType={tabConfig.type}
+			/>
+
+			<EditProductModal
+				isOpen={!!editingProduct}
+				onClose={() => setEditingProduct(null)}
+				product={editingProduct}
+			/>
+
+			<EditPriceModal
+				isOpen={!!editingPriceProduct}
+				onClose={() => setEditingPriceProduct(null)}
+				product={editingPriceProduct}
 			/>
 		</div>
 	);

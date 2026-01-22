@@ -1,4 +1,4 @@
-import { Tag } from 'lucide-react';
+import { Tag, Edit2, DollarSign } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 
 // Default sportpit icons for categories
@@ -30,9 +30,21 @@ function formatPrice(price: number): string {
 interface SportpitCardProps {
 	product: Product;
 	onClick?: () => void;
+	onEditProduct?: (product: Product) => void;
+	onEditPrice?: (product: Product) => void;
 }
 
-export function SportpitCard({ product, onClick }: SportpitCardProps) {
+export function SportpitCard({ product, onClick, onEditProduct, onEditPrice }: SportpitCardProps) {
+	const handleEditProduct = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onEditProduct?.(product);
+	};
+
+	const handleEditPrice = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onEditPrice?.(product);
+	};
+
 	return (
 		<div className="sportpit-card" onClick={onClick}>
 			<div className="sportpit-card-header">
@@ -64,7 +76,20 @@ export function SportpitCard({ product, onClick }: SportpitCardProps) {
 				</div>
 			)}
 
-			<span className="sportpit-card-label">Информационный каталог</span>
+			{(onEditProduct || onEditPrice) && (
+				<div className="card-actions">
+					{onEditProduct && (
+						<button className="card-action-btn" onClick={handleEditProduct} title="Редактировать">
+							<Edit2 size={16} />
+						</button>
+					)}
+					{onEditPrice && (
+						<button className="card-action-btn card-action-btn-price" onClick={handleEditPrice} title="Изменить цену">
+							<DollarSign size={16} />
+						</button>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
