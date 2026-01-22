@@ -1,25 +1,31 @@
 @import './styles/theme.css';
 
-:root {
-	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-	line-height: 1.5;
-	font-weight: 400;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-* {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-}
+@layer base {
+	:root {
+		font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+		line-height: 1.5;
+		font-weight: 400;
+	}
 
-body {
-	margin: 0;
-	min-width: 320px;
-	min-height: 100vh;
-	background: var(--color-background-base);
-	color: var(--color-text-primary);
-}
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
 
-#root {
-	min-height: 100vh;
+	body {
+		margin: 0;
+		min-width: 320px;
+		min-height: 100vh;
+		background: var(--color-background-base);
+		color: var(--color-text-primary);
+	}
+
+	#root {
+		min-height: 100vh;
+	}
 }
