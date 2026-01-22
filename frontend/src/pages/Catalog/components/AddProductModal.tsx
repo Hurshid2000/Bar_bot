@@ -30,8 +30,8 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
 	const { data: categories } = useQuery({
-		queryKey: ['categories'],
-		queryFn: () => categoriesApi.getAll(),
+		queryKey: ['categories', formData.type],
+		queryFn: () => categoriesApi.getAll({ type: formData.type }),
 	});
 
 	const createMutation = useMutation({

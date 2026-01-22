@@ -18,17 +18,20 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // Создаем категории если их нет
+  // Создаем категории если их нет (с типами)
   const categories = [
-    { name: 'Напитки', icon: '🥤' },
-    { name: 'Снеки', icon: '🍿' },
-    { name: 'Алкоголь', icon: '🍺' },
-    { name: 'Протеин', icon: '💪' },
-    { name: 'Витамины', icon: '💊' },
-    { name: 'Гейнеры', icon: '🏋️' },
-    { name: 'Завтраки', icon: '🍳' },
-    { name: 'Обеды', icon: '🍝' },
-    { name: 'Десерты', icon: '🍰' },
+    // PRODUCT categories
+    { name: 'Напитки', type: ProductType.PRODUCT },
+    { name: 'Снеки', type: ProductType.PRODUCT },
+    { name: 'Алкоголь', type: ProductType.PRODUCT },
+    // SPORT_PIT categories
+    { name: 'Протеин', type: ProductType.SPORT_PIT },
+    { name: 'Витамины', type: ProductType.SPORT_PIT },
+    { name: 'Гейнеры', type: ProductType.SPORT_PIT },
+    // FOOD categories
+    { name: 'Завтраки', type: ProductType.FOOD },
+    { name: 'Обеды', type: ProductType.FOOD },
+    { name: 'Десерты', type: ProductType.FOOD },
   ];
 
   const categoryMap: Record<string, string> = {};
@@ -38,14 +41,19 @@ async function main() {
       where: { name: cat.name },
     });
     if (existing) {
+      // Update type if exists
+      await prisma.category.update({
+        where: { id: existing.id },
+        data: { type: cat.type },
+      });
       categoryMap[cat.name] = existing.id;
-      console.log(`✓ Category "${cat.name}" already exists`);
+      console.log(`✓ Category "${cat.name}" updated (type: ${cat.type})`);
     } else {
       const created = await prisma.category.create({
-        data: { name: cat.name },
+        data: { name: cat.name, type: cat.type },
       });
       categoryMap[cat.name] = created.id;
-      console.log(`✓ Created category "${cat.name}"`);
+      console.log(`✓ Created category "${cat.name}" (type: ${cat.type})`);
     }
   }
 

@@ -46,8 +46,8 @@ export function EditProductModal({ isOpen, onClose, product }: EditProductModalP
 	}, [product, isOpen]);
 
 	const { data: categories } = useQuery({
-		queryKey: ['categories'],
-		queryFn: () => categoriesApi.getAll(),
+		queryKey: ['categories', formData.type],
+		queryFn: () => categoriesApi.getAll({ type: formData.type }),
 	});
 
 	const updateMutation = useMutation({

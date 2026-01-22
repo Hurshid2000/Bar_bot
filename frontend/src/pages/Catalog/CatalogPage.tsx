@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Plus, PackagePlus } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
@@ -70,15 +70,12 @@ export function CatalogPage() {
 	});
 
 	const { data: categories } = useQuery({
-		queryKey: ['categories'],
-		queryFn: () => categoriesApi.getAll(),
+		queryKey: ['categories', tabConfig.type],
+		queryFn: () => categoriesApi.getAll({ type: tabConfig.type }),
 	});
 
-	// Filter categories based on active tab type
-	const filteredCategories = useMemo(() => {
-		if (!categories) return [];
-		return categories;
-	}, [categories]);
+	// Categories already filtered by API
+	const filteredCategories = categories || [];
 
 	const handleTabChange = (tab: TabType) => {
 		setActiveTab(tab);

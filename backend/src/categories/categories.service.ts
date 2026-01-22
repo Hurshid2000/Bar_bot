@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { SearchDto } from '../common/dto/search.dto';
+import { ProductType } from '@prisma/client';
 
 @Injectable()
 export class CategoriesService {
@@ -12,17 +13,21 @@ export class CategoriesService {
 		return this.prisma.category.create({
 			data: {
 				name: createCategoryDto.name,
+				type: createCategoryDto.type || ProductType.PRODUCT,
 			},
 		});
 	}
 
-	async findAll(search?: SearchDto) {
+	async findAll(search?: SearchDto, type?: ProductType) {
 		const where: any = {};
 		if (search?.search) {
 			where.name = {
 				contains: search.search,
 				mode: 'insensitive',
 			};
+		}
+		if (type) {
+			where.type = type;
 		}
 
 		return this.prisma.category.findMany({

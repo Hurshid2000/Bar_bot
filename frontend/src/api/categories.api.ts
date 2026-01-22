@@ -1,24 +1,28 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from './client';
-import type { Category } from '../types/common.types';
+import type { Category, ProductType } from '../types/common.types';
 
 export interface CreateCategoryDto {
 	name: string;
+	type?: ProductType;
 }
 
 export interface UpdateCategoryDto {
 	name?: string;
+	type?: ProductType;
 }
 
-export interface SearchParams {
+export interface CategoryFilterParams {
 	search?: string;
+	type?: ProductType;
 }
 
 export const categoriesApi = {
-	getAll: (params?: SearchParams): Promise<Category[]> => {
-		const query = params?.search
-			? `?search=${encodeURIComponent(params.search)}`
-			: '';
-		return apiGet<Category[]>(`/categories${query}`);
+	getAll: (params?: CategoryFilterParams): Promise<Category[]> => {
+		const queryParams = new URLSearchParams();
+		if (params?.search) queryParams.append('search', params.search);
+		if (params?.type) queryParams.append('type', params.type);
+		const query = queryParams.toString();
+		return apiGet<Category[]>(`/categories${query ? `?${query}` : ''}`);
 	},
 
 	getById: (id: string): Promise<Category> =>
