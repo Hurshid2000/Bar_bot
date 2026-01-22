@@ -65,8 +65,12 @@ export function SportpitCard({ product, onClick, onEditProduct, onEditPrice }: S
 				</div>
 
 				<div className="sportpit-card-price">
-					{product.price != null ? formatPrice(product.price) : '—'}
-					{product.price != null && <span className="sportpit-card-price-currency">сум</span>}
+					{product.price != null 
+						? formatPrice(product.price) 
+						: (product.defaultPrice != null ? formatPrice(product.defaultPrice) : '—')}
+					{(product.price != null || product.defaultPrice != null) && (
+						<span className="sportpit-card-price-currency">сум</span>
+					)}
 				</div>
 			</div>
 

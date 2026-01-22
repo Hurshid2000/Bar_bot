@@ -62,7 +62,9 @@ export function FoodCard({ product, onClick, onEditProduct, onEditPrice }: FoodC
 				<div className="food-card-header">
 					<h3 className="food-card-name">{product.name}</h3>
 					<div className="food-card-price">
-						{product.price != null ? formatCurrency(product.price) : '—'}
+						{product.price != null 
+							? formatCurrency(product.price) 
+							: (product.defaultPrice != null ? formatCurrency(product.defaultPrice) : '—')}
 					</div>
 				</div>
 
