@@ -28,12 +28,15 @@ export class UpdateProductDto {
 	costPrice?: number;
 
 	@IsOptional()
-	@IsNumber()
-	@Min(0)
-	price?: number;
-
-	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
 	categoryId?: string;
+
+	@IsOptional()
+	@IsString()
+	imageUrl?: string;
+
+	@IsOptional()
+	@IsString()
+	description?: string;
 }

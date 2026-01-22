@@ -8,10 +8,29 @@ import { Loading } from '../../components/ui/Loading';
 import { ProductType } from '../../types/common.types';
 import { ProductCard } from './components/ProductCard';
 import { SportpitCard } from './components/SportpitCard';
+import { FoodCard } from './components/FoodCard';
 import { CategoryFilter } from './components/CategoryFilter';
 import './CatalogPage.css';
 
-type TabType = 'products' | 'sportpit';
+type TabType = 'products' | 'sportpit' | 'food';
+
+const TAB_CONFIG: Record<TabType, { type: ProductType; label: string; emptyText: string }> = {
+	products: {
+		type: ProductType.PRODUCT,
+		label: 'Products',
+		emptyText: 'Продукты не найдены',
+	},
+	sportpit: {
+		type: ProductType.SPORT_PIT,
+		label: 'Sportpit',
+		emptyText: 'Спортпит не найден',
+	},
+	food: {
+		type: ProductType.FOOD,
+		label: 'Food',
+		emptyText: 'Еда не найдена',
+	},
+};
 
 export function CatalogPage() {
 	const { selectedBar } = useBar();
@@ -19,14 +38,14 @@ export function CatalogPage() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-	const productType = activeTab === 'products' ? ProductType.PRODUCT : ProductType.SPORT_PIT;
+	const tabConfig = TAB_CONFIG[activeTab];
 
 	const { data: productsData, isLoading: productsLoading } = useQuery({
-		queryKey: ['products', selectedBar?.id, productType, selectedCategoryId, searchQuery],
+		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery],
 		queryFn: () =>
 			productsApi.getAll({
 				barId: selectedBar?.id,
-				type: productType,
+				type: tabConfig.type,
 				categoryId: selectedCategoryId || undefined,
 				search: searchQuery || undefined,
 				page: 1,
@@ -43,8 +62,6 @@ export function CatalogPage() {
 	// Filter categories based on active tab type
 	const filteredCategories = useMemo(() => {
 		if (!categories) return [];
-		// In a real app, categories would have a type field
-		// For now, return all categories
 		return categories;
 	}, [categories]);
 
@@ -63,6 +80,22 @@ export function CatalogPage() {
 		alert('Добавление продукта - Coming soon');
 	};
 
+	const getSearchPlaceholder = () => {
+		if (activeTab === 'products') return 'Поиск по названию или штрих-коду';
+		return 'Поиск по названию';
+	};
+
+	const renderProductCard = (product: any) => {
+		switch (activeTab) {
+			case 'products':
+				return <ProductCard key={product.id} product={product} />;
+			case 'sportpit':
+				return <SportpitCard key={product.id} product={product} />;
+			case 'food':
+				return <FoodCard key={product.id} product={product} />;
+		}
+	};
+
 	if (!selectedBar) {
 		return (
 			<div className="catalog-page">
@@ -74,19 +107,16 @@ export function CatalogPage() {
 	return (
 		<div className="catalog-page">
 			{/* Tabs */}
-			<div className="catalog-tabs">
-				<button
-					className={`catalog-tab ${activeTab === 'products' ? 'catalog-tab-active' : ''}`}
-					onClick={() => handleTabChange('products')}
-				>
-					Products
-				</button>
-				<button
-					className={`catalog-tab ${activeTab === 'sportpit' ? 'catalog-tab-active' : ''}`}
-					onClick={() => handleTabChange('sportpit')}
-				>
-					Sportpit
-				</button>
+			<div className="catalog-tabs catalog-tabs-3">
+				{(Object.keys(TAB_CONFIG) as TabType[]).map((tab) => (
+					<button
+						key={tab}
+						className={`catalog-tab ${activeTab === tab ? 'catalog-tab-active' : ''}`}
+						onClick={() => handleTabChange(tab)}
+					>
+						{TAB_CONFIG[tab].label}
+					</button>
+				))}
 			</div>
 
 			{/* Search and Add */}
@@ -96,11 +126,7 @@ export function CatalogPage() {
 					<input
 						type="text"
 						className="catalog-search-input"
-						placeholder={
-							activeTab === 'products'
-								? 'Поиск по названию или штрих-коду'
-								: 'Поиск по названию'
-						}
+						placeholder={getSearchPlaceholder()}
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
@@ -122,21 +148,11 @@ export function CatalogPage() {
 				<Loading />
 			) : productsData && productsData.data.length > 0 ? (
 				<div className="catalog-list">
-					{productsData.data.map((product) =>
-						activeTab === 'products' ? (
-							<ProductCard key={product.id} product={product} />
-						) : (
-							<SportpitCard key={product.id} product={product} />
-						),
-					)}
+					{productsData.data.map(renderProductCard)}
 				</div>
 			) : (
 				<div className="catalog-empty">
-					<p>
-						{activeTab === 'products'
-							? 'Продукты не найдены'
-							: 'Спортпит не найден'}
-					</p>
+					<p>{tabConfig.emptyText}</p>
 				</div>
 			)}
 		</div>

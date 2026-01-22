@@ -56,7 +56,7 @@ export function ProductCard({ product, selected, onClick }: ProductCardProps) {
 			</div>
 
 			<div className="product-card-price">
-				{formatCurrency(product.price)}
+				{product.price != null ? formatCurrency(product.price) : '—'}
 			</div>
 		</div>
 	);

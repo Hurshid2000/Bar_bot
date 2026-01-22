@@ -9,6 +9,7 @@ export type RoleType = (typeof RoleType)[keyof typeof RoleType];
 export const ProductType = {
 	PRODUCT: 'PRODUCT',
 	SPORT_PIT: 'SPORT_PIT',
+	FOOD: 'FOOD',
 } as const;
 
 export type ProductType = (typeof ProductType)[keyof typeof ProductType];
@@ -50,15 +51,26 @@ export interface Product {
 	barcode?: string;
 	type: ProductType;
 	costPrice: number;
-	price: number;
-	barId: string;
 	categoryId: string;
 	createdAt: string;
-	bar?: Bar;
 	category?: Category;
 	imageUrl?: string;
 	description?: string;
-	stock?: number;
+	// Цена из BarProduct (если запрашивали с barId)
+	price?: number | null;
+	barProduct?: BarProduct | null;
+	barProducts?: BarProduct[];
+}
+
+export interface BarProduct {
+	id: string;
+	barId: string;
+	productId: string;
+	price: number;
+	isActive: boolean;
+	createdAt: string;
+	bar?: Bar;
+	product?: Product;
 }
 
 export interface Revenue {

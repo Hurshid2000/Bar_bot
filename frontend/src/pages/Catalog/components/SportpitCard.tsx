@@ -53,8 +53,8 @@ export function SportpitCard({ product, onClick }: SportpitCardProps) {
 				</div>
 
 				<div className="sportpit-card-price">
-					{formatPrice(product.price)}
-					<span className="sportpit-card-price-currency">сум</span>
+					{product.price != null ? formatPrice(product.price) : '—'}
+					{product.price != null && <span className="sportpit-card-price-currency">сум</span>}
 				</div>
 			</div>
 

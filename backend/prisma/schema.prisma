@@ -17,15 +17,15 @@ model User {
 }
 
 model Bar {
-  id        String     @id @default(uuid())
-  name      String
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  expenses  Expense[]
-  products  Product[]
-  purchases Purchase[]
-  revenues  Revenue[]
-  users     UserBar[]
+  id          String       @id @default(uuid())
+  name        String
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  expenses    Expense[]
+  barProducts BarProduct[]
+  purchases   Purchase[]
+  revenues    Revenue[]
+  users       UserBar[]
 }
 
 model UserBar {
@@ -45,17 +45,30 @@ model Category {
 }
 
 model Product {
-  id         String      @id @default(uuid())
-  name       String
-  barcode    String?
-  type       ProductType @default(PRODUCT)
-  costPrice  Float
-  price      Float
-  barId      String
-  categoryId String
-  createdAt  DateTime    @default(now())
-  bar        Bar         @relation(fields: [barId], references: [id])
-  category   Category    @relation(fields: [categoryId], references: [id])
+  id          String       @id @default(uuid())
+  name        String
+  barcode     String?      @unique
+  type        ProductType  @default(PRODUCT)
+  costPrice   Float
+  categoryId  String
+  imageUrl    String?
+  description String?
+  createdAt   DateTime     @default(now())
+  category    Category     @relation(fields: [categoryId], references: [id])
+  barProducts BarProduct[]
+}
+
+model BarProduct {
+  id        String   @id @default(uuid())
+  barId     String
+  productId String
+  price     Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  bar       Bar      @relation(fields: [barId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([barId, productId])
 }
 
 model Revenue {
@@ -122,4 +135,5 @@ enum RoleType {
 enum ProductType {
   PRODUCT
   SPORT_PIT
+  FOOD
 }

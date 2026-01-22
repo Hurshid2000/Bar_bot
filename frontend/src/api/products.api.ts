@@ -11,9 +11,9 @@ export interface CreateProductDto {
 	barcode?: string;
 	type?: ProductType;
 	costPrice: number;
-	price: number;
-	barId: string;
 	categoryId: string;
+	imageUrl?: string;
+	description?: string;
 }
 
 export interface UpdateProductDto {
@@ -21,8 +21,9 @@ export interface UpdateProductDto {
 	barcode?: string;
 	type?: ProductType;
 	costPrice?: number;
-	price?: number;
 	categoryId?: string;
+	imageUrl?: string;
+	description?: string;
 }
 
 export interface ProductFilterParams extends PaginationParams {
@@ -62,7 +63,10 @@ export const productsApi = {
 		);
 	},
 
-	getById: (id: string): Promise<Product> => apiGet<Product>(`/products/${id}`),
+	getById: (id: string, barId?: string): Promise<Product> => {
+		const query = barId ? `?barId=${barId}` : '';
+		return apiGet<Product>(`/products/${id}${query}`);
+	},
 
 	create: (data: CreateProductDto): Promise<Product> =>
 		apiPost<Product>('/products', data),

@@ -5,6 +5,7 @@ import {
 	Min,
 	IsOptional,
 	IsEnum,
+	IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductType } from '@prisma/client';
@@ -34,18 +35,18 @@ export class CreateProductDto {
 	@Min(0)
 	costPrice: number;
 
-	@ApiProperty({ description: 'Цена продажи', example: 100.0, minimum: 0 })
-	@IsNumber()
-	@Min(0)
-	price: number;
-
-	@ApiProperty({ description: 'ID бара', example: 'uuid' })
-	@IsString()
-	@IsNotEmpty()
-	barId: string;
-
 	@ApiProperty({ description: 'ID категории', example: 'uuid' })
 	@IsString()
 	@IsNotEmpty()
 	categoryId: string;
+
+	@ApiPropertyOptional({ description: 'URL изображения продукта' })
+	@IsOptional()
+	@IsString()
+	imageUrl?: string;
+
+	@ApiPropertyOptional({ description: 'Описание продукта' })
+	@IsOptional()
+	@IsString()
+	description?: string;
 }

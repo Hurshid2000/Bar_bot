@@ -10,6 +10,7 @@ import { BarsModule } from './bars/bars.module';
 import { GuardsModule } from './guards/guards.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
+import { BarProductsModule } from './bar-products/bar-products.module';
 import { ReportsModule } from './reports/reports.module';
 import { HealthModule } from './health/health.module';
 
@@ -29,6 +30,7 @@ import { HealthModule } from './health/health.module';
 		GuardsModule,
 		CategoriesModule,
 		ProductsModule,
+		BarProductsModule,
 		ReportsModule,
 		HealthModule,
 	],

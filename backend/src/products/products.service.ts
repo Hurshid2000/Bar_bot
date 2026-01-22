@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -16,14 +16,7 @@ export class ProductsService {
 	constructor(private prisma: PrismaService) {}
 
 	async create(createProductDto: CreateProductDto) {
-		// Проверяем существование бара и категории
-		const bar = await this.prisma.bar.findUnique({
-			where: { id: createProductDto.barId },
-		});
-		if (!bar) {
-			throw new NotFoundException(`Bar with ID ${createProductDto.barId} not found`);
-		}
-
+		// Проверяем существование категории
 		const category = await this.prisma.category.findUnique({
 			where: { id: createProductDto.categoryId },
 		});
@@ -39,9 +32,12 @@ export class ProductsService {
 				barcode: createProductDto.barcode,
 				type: createProductDto.type || 'PRODUCT',
 				costPrice: createProductDto.costPrice,
-				price: createProductDto.price,
-				barId: createProductDto.barId,
 				categoryId: createProductDto.categoryId,
+				imageUrl: createProductDto.imageUrl,
+				description: createProductDto.description,
+			},
+			include: {
+				category: true,
 			},
 		});
 	}
@@ -57,9 +53,18 @@ export class ProductsService {
 		const searchTerm = search?.search;
 
 		const where: any = {};
-		if (barId) where.barId = barId;
 		if (categoryId) where.categoryId = categoryId;
 		if (type) where.type = type;
+
+		// Если указан barId, фильтруем по продуктам, которые есть в этом баре
+		if (barId) {
+			where.barProducts = {
+				some: {
+					barId,
+					isActive: true,
+				},
+			};
+		}
 
 		// Поиск по имени и barcode
 		if (searchTerm) {
@@ -73,8 +78,15 @@ export class ProductsService {
 			this.prisma.product.findMany({
 				where,
 				include: {
-					bar: true,
 					category: true,
+					barProducts: barId
+						? {
+								where: { barId, isActive: true },
+								include: { bar: true },
+							}
+						: {
+								include: { bar: true },
+							},
 				},
 				orderBy: {
 					createdAt: 'desc',
@@ -85,24 +97,37 @@ export class ProductsService {
 			this.prisma.product.count({ where }),
 		]);
 
-		// WORKER не должен видеть costPrice
-		let processedProducts: any[] = products;
-		if (userRole === RoleType.WORKER) {
-			processedProducts = products.map((product) => {
-				const { costPrice, ...productWithoutCostPrice } = product;
-				return productWithoutCostPrice;
-			});
-		}
+		// Преобразуем продукты: добавляем price из barProduct если есть barId
+		let processedProducts = products.map((product) => {
+			const barProduct = barId
+				? product.barProducts.find((bp) => bp.barId === barId)
+				: null;
+
+			const result: any = {
+				...product,
+				price: barProduct?.price ?? null,
+				barProduct: barProduct ?? null,
+			};
+
+			// WORKER не должен видеть costPrice
+			if (userRole === RoleType.WORKER) {
+				delete result.costPrice;
+			}
+
+			return result;
+		});
 
 		return createPaginatedResponse(processedProducts, total, page, limit);
 	}
 
-	async findOne(id: string, userRole?: RoleType) {
+	async findOne(id: string, userRole?: RoleType, barId?: string) {
 		const product = await this.prisma.product.findUnique({
 			where: { id },
 			include: {
-				bar: true,
 				category: true,
+				barProducts: {
+					include: { bar: true },
+				},
 			},
 		});
 
@@ -110,13 +135,23 @@ export class ProductsService {
 			throw new NotFoundException(`Product with ID ${id} not found`);
 		}
 
+		// Если указан barId, добавляем price из barProduct
+		const barProduct = barId
+			? product.barProducts.find((bp) => bp.barId === barId)
+			: null;
+
+		const result: any = {
+			...product,
+			price: barProduct?.price ?? null,
+			barProduct: barProduct ?? null,
+		};
+
 		// WORKER не должен видеть costPrice
 		if (userRole === RoleType.WORKER) {
-			const { costPrice, ...productWithoutCostPrice } = product;
-			return productWithoutCostPrice;
+			delete result.costPrice;
 		}
 
-		return product;
+		return result;
 	}
 
 	async findByBar(
@@ -146,12 +181,20 @@ export class ProductsService {
 		return this.prisma.product.update({
 			where: { id },
 			data: updateProductDto,
+			include: {
+				category: true,
+			},
 		});
 	}
 
 	async remove(id: string) {
 		// Проверяем существование продукта
 		await this.findOne(id);
+
+		// Сначала удаляем все связи с барами
+		await this.prisma.barProduct.deleteMany({
+			where: { productId: id },
+		});
 
 		return this.prisma.product.delete({
 			where: { id },

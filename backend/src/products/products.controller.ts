@@ -8,14 +8,12 @@ import {
 	Delete,
 	Query,
 	UseGuards,
-	ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { RolesGuard } from '../guards/roles.guard';
-import { BarAccessGuard } from '../guards/bar-access.guard';
 import { Roles } from '../guards/decorators/roles.decorator';
 import { CurrentUser } from '../guards/decorators/current-user.decorator';
 import { RoleType } from '@prisma/client';
@@ -26,25 +24,25 @@ import { SearchDto } from '../common/dto/search.dto';
 @ApiTags('products')
 @ApiBearerAuth('JWT-auth')
 @Controller('products')
-@UseGuards(RolesGuard, BarAccessGuard)
+@UseGuards(RolesGuard)
 export class ProductsController {
 	constructor(private readonly productsService: ProductsService) {}
 
 	@Post()
-	@Roles(RoleType.ADMIN, RoleType.MANAGER)
-	@ApiOperation({ summary: 'Создать новый продукт' })
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Создать новый продукт (глобальный)' })
 	@ApiResponse({ status: 201, description: 'Продукт создан' })
 	@ApiResponse({ status: 400, description: 'Неверные данные' })
-	@ApiResponse({ status: 404, description: 'Бар или категория не найдены' })
+	@ApiResponse({ status: 404, description: 'Категория не найдена' })
 	create(@Body() createProductDto: CreateProductDto) {
 		return this.productsService.create(createProductDto);
 	}
 
 	@Get()
 	@ApiOperation({ summary: 'Получить список продуктов с фильтрацией и пагинацией' })
-	@ApiQuery({ name: 'barId', required: false, description: 'Фильтр по ID бара' })
+	@ApiQuery({ name: 'barId', required: false, description: 'Фильтр по ID бара (показать только продукты доступные в баре)' })
 	@ApiQuery({ name: 'categoryId', required: false, description: 'Фильтр по ID категории' })
-	@ApiQuery({ name: 'type', required: false, description: 'Фильтр по типу продукта' })
+	@ApiQuery({ name: 'type', required: false, description: 'Фильтр по типу продукта (PRODUCT, SPORT_PIT, FOOD)' })
 	@ApiQuery({ name: 'search', required: false, description: 'Поиск по названию или штрих-коду' })
 	@ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
 	@ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
@@ -59,6 +57,7 @@ export class ProductsController {
 	}
 
 	@Get('bar/:barId')
+	@ApiOperation({ summary: 'Получить продукты доступные в баре' })
 	findByBar(
 		@Param('barId') barId: string,
 		@Query() pagination: PaginationDto,
@@ -68,30 +67,26 @@ export class ProductsController {
 	}
 
 	@Get(':id')
-	async findOne(@Param('id') id: string, @CurrentUser() user?: any) {
-		const product = await this.productsService.findOne(id, user?.role);
-		
-		// Проверяем доступ к бару продукта (если не ADMIN)
-		if (user && user.role !== RoleType.ADMIN && product.bar) {
-			const hasAccess = user.bars?.some(
-				(userBar) => userBar.barId === product.bar.id,
-			);
-			if (!hasAccess) {
-				throw new ForbiddenException('You do not have access to this bar');
-			}
-		}
-		
-		return product;
+	@ApiOperation({ summary: 'Получить продукт по ID' })
+	@ApiQuery({ name: 'barId', required: false, description: 'ID бара для получения цены' })
+	async findOne(
+		@Param('id') id: string,
+		@Query('barId') barId?: string,
+		@CurrentUser() user?: any,
+	) {
+		return this.productsService.findOne(id, user?.role, barId);
 	}
 
 	@Patch(':id')
-	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Обновить продукт' })
 	update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
 		return this.productsService.update(id, updateProductDto);
 	}
 
 	@Delete(':id')
 	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Удалить продукт' })
 	remove(@Param('id') id: string) {
 		return this.productsService.remove(id);
 	}
