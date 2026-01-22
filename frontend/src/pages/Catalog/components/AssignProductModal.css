@@ -1,0 +1,142 @@
+.assign-modal {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	max-height: 60vh;
+}
+
+.assign-search {
+	position: relative;
+}
+
+.assign-search-icon {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--color-text-muted);
+}
+
+.assign-search-input {
+	width: 100%;
+	padding: 12px 12px 12px 40px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-background-muted);
+	color: var(--color-text-primary);
+	font-size: 14px;
+	outline: none;
+	transition: all var(--transition-base);
+}
+
+.assign-search-input:focus {
+	border-color: var(--color-primary-500);
+}
+
+.assign-products-list {
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-height: 200px;
+	max-height: 300px;
+}
+
+.assign-loading,
+.assign-empty {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+}
+
+.assign-product-item {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border: 2px solid transparent;
+	transition: all var(--transition-base);
+}
+
+.assign-product-selected {
+	border-color: var(--color-primary-500);
+	background: rgba(74, 144, 226, 0.1);
+}
+
+.assign-product-info {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+}
+
+.assign-checkbox {
+	width: 22px;
+	height: 22px;
+	border: 2px solid var(--color-border);
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: all var(--transition-base);
+}
+
+.assign-checkbox-checked {
+	background: var(--color-primary-500);
+	border-color: var(--color-primary-500);
+	color: white;
+}
+
+.assign-product-details {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+	min-width: 0;
+}
+
+.assign-product-name {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--color-text-primary);
+}
+
+.assign-product-meta {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.assign-price-input {
+	padding-left: 34px;
+}
+
+.assign-price-input .input-wrapper {
+	margin: 0;
+}
+
+.assign-price-input input {
+	padding: 8px 12px;
+	font-size: 14px;
+}
+
+.assign-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border);
+}
+
+.assign-selected-count {
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.assign-actions {
+	display: flex;
+	gap: 12px;
+}

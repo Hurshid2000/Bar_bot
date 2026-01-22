@@ -1,15 +1,18 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, PackagePlus } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
 import { categoriesApi } from '../../api/categories.api';
 import { useBar } from '../../context/BarContext';
+import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
-import { ProductType } from '../../types/common.types';
+import { ProductType, RoleType } from '../../types/common.types';
 import { ProductCard } from './components/ProductCard';
 import { SportpitCard } from './components/SportpitCard';
 import { FoodCard } from './components/FoodCard';
 import { CategoryFilter } from './components/CategoryFilter';
+import { AddProductModal } from './components/AddProductModal';
+import { AssignProductModal } from './components/AssignProductModal';
 import './CatalogPage.css';
 
 type TabType = 'products' | 'sportpit' | 'food';
@@ -34,10 +37,15 @@ const TAB_CONFIG: Record<TabType, { type: ProductType; label: string; emptyText:
 
 export function CatalogPage() {
 	const { selectedBar } = useBar();
+	const { hasRole } = useAuth();
 	const [activeTab, setActiveTab] = useState<TabType>('products');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+	const [showAddModal, setShowAddModal] = useState(false);
+	const [showAssignModal, setShowAssignModal] = useState(false);
 
+	const isAdmin = hasRole([RoleType.ADMIN]);
+	const canManage = hasRole([RoleType.ADMIN, RoleType.MANAGER]);
 	const tabConfig = TAB_CONFIG[activeTab];
 
 	const { data: productsData, isLoading: productsLoading } = useQuery({
@@ -76,8 +84,13 @@ export function CatalogPage() {
 	};
 
 	const handleAddProduct = () => {
-		// TODO: Open add product modal
-		alert('Добавление продукта - Coming soon');
+		if (isAdmin) {
+			// Admin can create new global products
+			setShowAddModal(true);
+		} else if (canManage) {
+			// Manager can assign existing products to bar
+			setShowAssignModal(true);
+		}
 	};
 
 	const getSearchPlaceholder = () => {
@@ -131,9 +144,26 @@ export function CatalogPage() {
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
 				</div>
-				<button className="catalog-add-btn" onClick={handleAddProduct}>
-					<Plus size={24} />
-				</button>
+				{canManage && (
+					<div className="catalog-action-buttons">
+						{isAdmin && (
+							<button
+								className="catalog-add-btn catalog-add-btn-secondary"
+								onClick={() => setShowAssignModal(true)}
+								title="Добавить из каталога"
+							>
+								<PackagePlus size={22} />
+							</button>
+						)}
+						<button
+							className="catalog-add-btn"
+							onClick={handleAddProduct}
+							title={isAdmin ? 'Создать новый продукт' : 'Добавить из каталога'}
+						>
+							<Plus size={24} />
+						</button>
+					</div>
+				)}
 			</div>
 
 			{/* Category Filter */}
@@ -153,8 +183,29 @@ export function CatalogPage() {
 			) : (
 				<div className="catalog-empty">
 					<p>{tabConfig.emptyText}</p>
+					{canManage && (
+						<button
+							className="catalog-empty-btn"
+							onClick={() => setShowAssignModal(true)}
+						>
+							Добавить из каталога
+						</button>
+					)}
 				</div>
 			)}
+
+			{/* Modals */}
+			<AddProductModal
+				isOpen={showAddModal}
+				onClose={() => setShowAddModal(false)}
+				defaultType={tabConfig.type}
+			/>
+
+			<AssignProductModal
+				isOpen={showAssignModal}
+				onClose={() => setShowAssignModal(false)}
+				productType={tabConfig.type}
+			/>
 		</div>
 	);
 }
