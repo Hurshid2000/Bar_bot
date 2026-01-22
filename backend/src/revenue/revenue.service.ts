@@ -16,6 +16,12 @@ import {
 export class RevenueService {
 	constructor(private prisma: PrismaService) {}
 
+	/**
+	 * Создаёт или обновляет запись выручки (upsert)
+	 * - Если запись на эту дату не существует - создаёт новую
+	 * - Если существует - обновляет переданные поля (cash/card)
+	 * - Можно обновлять только cash или только card
+	 */
 	async create(createRevenueDto: CreateRevenueDto) {
 		const { barId, date, cash, card } = createRevenueDto;
 
@@ -27,27 +33,27 @@ export class RevenueService {
 			throw new NotFoundException(`Bar with ID ${barId} not found`);
 		}
 
-		const existingRevenue = await this.prisma.revenue.findUnique({
+		const dateObj = new Date(date);
+
+		// Используем upsert: создаём если нет, обновляем если есть
+		return this.prisma.revenue.upsert({
 			where: {
 				barId_date: {
 					barId,
-					date: new Date(date),
+					date: dateObj,
 				},
 			},
-		});
-
-		if (existingRevenue) {
-			throw new BadRequestException(
-				`Revenue record already exists for bar ${bar.name} on date ${new Date(date).toISOString().split('T')[0]}`,
-			);
-		}
-
-		return this.prisma.revenue.create({
-			data: {
+			// При создании новой записи
+			create: {
 				barId,
-				date: new Date(date),
-				cash,
-				card,
+				date: dateObj,
+				cash: cash ?? 0,
+				card: card ?? 0,
+			},
+			// При обновлении существующей - обновляем только переданные поля
+			update: {
+				...(cash !== undefined && { cash }),
+				...(card !== undefined && { card }),
 			},
 		});
 	}
