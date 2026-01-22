@@ -1,4 +1,3 @@
-import { RefreshCw } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 import { formatCurrency } from '../../../utils/format';
 
@@ -31,9 +30,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, selected, onClick }: ProductCardProps) {
-	const stock = product.stock ?? 0;
-	const stockClass = stock === 0 ? 'product-card-stock-out' : stock < 10 ? 'product-card-stock-low' : '';
-
 	return (
 		<div
 			className={`product-card ${selected ? 'product-card-selected' : ''}`}
@@ -49,10 +45,6 @@ export function ProductCard({ product, selected, onClick }: ProductCardProps) {
 					{product.category?.name || 'Без категории'}
 					{product.barcode && ` • ${product.barcode}`}
 				</p>
-				<div className={`product-card-stock ${stockClass}`}>
-					<RefreshCw className="product-card-stock-icon" />
-					<span>{stock} шт</span>
-				</div>
 			</div>
 
 			<div className="product-card-price">

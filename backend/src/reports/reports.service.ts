@@ -142,11 +142,16 @@ export class ReportsService {
 			},
 		});
 
-		// Получаем все продукты бара для маппинга по имени
-		const products = await this.prisma.product.findMany({
-			where: { barId },
-			select: { id: true, name: true, type: true },
+		// Получаем все продукты, которые есть в баре, для маппинга по имени
+		const barProducts = await this.prisma.barProduct.findMany({
+			where: { barId, isActive: true },
+			include: {
+				product: {
+					select: { id: true, name: true, type: true },
+				},
+			},
 		});
+		const products = barProducts.map((bp) => bp.product);
 
 		// Создаем маппинг имя+тип -> productId
 		const productNameMap = new Map<string, string>();

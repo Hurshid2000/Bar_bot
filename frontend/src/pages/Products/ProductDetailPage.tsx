@@ -37,9 +37,11 @@ export function ProductDetailPage() {
 					<p>
 						<strong>ID:</strong> {product.id}
 					</p>
-					<p>
-						<strong>Цена:</strong> {formatCurrency(product.price)}
-					</p>
+					{product.price != null && (
+						<p>
+							<strong>Цена:</strong> {formatCurrency(product.price)}
+						</p>
+					)}
 					<p>
 						<strong>Себестоимость:</strong> {formatCurrency(product.costPrice)}
 					</p>

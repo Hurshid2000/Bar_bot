@@ -30,7 +30,11 @@ export class PurchasesService {
 			const products = await tx.product.findMany({
 				where: {
 					id: { in: productIds },
-					barId, // Проверяем, что продукт принадлежит бару
+				},
+				include: {
+					barProducts: {
+						where: { barId, isActive: true },
+					},
 				},
 			});
 
@@ -39,7 +43,7 @@ export class PurchasesService {
 				const foundIds = products.map((p) => p.id);
 				const missingIds = productIds.filter((id) => !foundIds.includes(id));
 				throw new NotFoundException(
-					`Products with IDs [${missingIds.join(', ')}] not found or do not belong to bar ${bar.name}`,
+					`Products with IDs [${missingIds.join(', ')}] not found`,
 				);
 			}
 
@@ -57,7 +61,11 @@ export class PurchasesService {
 					throw new NotFoundException(`Product ${item.productId} not found`);
 				}
 
-				const itemPriceAmount = product.price * item.quantity;
+				// Получаем цену из BarProduct или используем 0 если не назначена
+				const barProduct = product.barProducts?.[0];
+				const price = barProduct?.price ?? 0;
+
+				const itemPriceAmount = price * item.quantity;
 				const itemCostAmount = product.costPrice * item.quantity;
 
 				totalPriceAmount += itemPriceAmount;
@@ -69,7 +77,7 @@ export class PurchasesService {
 					name: JSON.stringify({
 						productName: product.name,
 						productType: product.type,
-						price: product.price,
+						price: price,
 						costPrice: product.costPrice,
 						quantity: item.quantity,
 					}),

@@ -30,9 +30,11 @@ export function ProductsListPage() {
 						<Card key={product.id}>
 							<div className="product-info">
 								<h3>{product.name}</h3>
-								<p>
-									<strong>Цена:</strong> {formatCurrency(product.price)}
-								</p>
+								{product.price != null && (
+									<p>
+										<strong>Цена:</strong> {formatCurrency(product.price)}
+									</p>
+								)}
 								<p>
 									<strong>Себестоимость:</strong>{' '}
 									{formatCurrency(product.costPrice)}
