@@ -4,8 +4,8 @@ import type { Revenue, PaginatedResponse, PaginationParams } from '../types/comm
 export interface CreateRevenueDto {
 	barId: string;
 	date: string;
-	cash: number;
-	card: number;
+	cash?: number;  // Опционально - можно обновлять только cash
+	card?: number;  // Опционально - можно обновлять только card
 }
 
 export interface RevenueFilterParams extends PaginationParams {

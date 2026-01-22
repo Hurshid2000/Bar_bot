@@ -27,7 +27,7 @@ export function AddCashModal({
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation({
-		mutationFn: (data: { barId: string; date: string; cash: number; card: number }) =>
+		mutationFn: (data: { barId: string; date: string; cash: number }) =>
 			revenueApi.create(data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['revenue'] });
@@ -52,13 +52,11 @@ export function AddCashModal({
 
 		const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-		// Если есть существующие данные, нужно обновить (пока создаем новую запись)
-		// TODO: Добавить API для обновления revenue
+		// Отправляем ТОЛЬКО cash - card не трогаем
 		mutation.mutate({
 			barId,
 			date: dateStr,
 			cash: cashValue,
-			card: existingCash !== undefined ? 0 : 0, // Если редактируем, сохраняем card как 0
 		});
 	};
 
