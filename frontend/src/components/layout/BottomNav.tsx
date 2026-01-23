@@ -9,7 +9,7 @@ export function BottomNav() {
 	const tabs = [
 		{ id: 'home', label: 'Home', icon: Home, path: '/', enabled: true },
 		{ id: 'catalog', label: 'Catalog', icon: Package, path: '/catalog', enabled: true },
-		{ id: 'orders', label: 'Orders', icon: ShoppingCart, path: '/orders', enabled: false },
+		{ id: 'orders', label: 'Orders', icon: ShoppingCart, path: '/orders', enabled: true },
 		{ id: 'reports', label: 'Reports', icon: BarChart3, path: '/reports', enabled: true },
 	];
 
