@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, ArrowLeft } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
 import { categoriesApi } from '../../api/categories.api';
 import { ordersApi, type CreateOrderItemDto } from '../../api/orders.api';
@@ -161,6 +161,12 @@ export function OrderCreatePage() {
 	if (!selectedBar && !isAdmin) {
 		return (
 			<div className="order-create-page">
+				<div className="order-create-header">
+					<Button variant="ghost" onClick={() => navigate('/orders')} className="order-create-back-btn">
+						<ArrowLeft size={20} />
+						Назад
+					</Button>
+				</div>
 				<p className="order-create-no-bar">Выберите бар для создания заказа</p>
 			</div>
 		);
@@ -168,6 +174,14 @@ export function OrderCreatePage() {
 
 	return (
 		<div className="order-create-page">
+			{/* Back Button */}
+			<div className="order-create-header">
+				<Button variant="ghost" onClick={() => navigate('/orders')} className="order-create-back-btn">
+					<ArrowLeft size={20} />
+					Назад
+				</Button>
+			</div>
+
 			{/* Tabs */}
 			<div className="order-create-tabs">
 				{(Object.keys(TAB_CONFIG) as TabType[]).map((tab) => (

@@ -5,6 +5,16 @@
 	margin: 0 auto;
 }
 
+.order-create-header {
+	margin-bottom: 16px;
+}
+
+.order-create-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
 .order-create-no-bar {
 	text-align: center;
 	color: var(--color-text-secondary);

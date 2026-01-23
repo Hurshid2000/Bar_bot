@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { ordersApi } from '../../api/orders.api';
 import { Loading } from '../../components/ui/Loading';
 import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { formatDate } from '../../utils/format';
 import { OrderStatus } from '../../types/common.types';
 import './OrderHistoryPage.css';
@@ -37,7 +39,13 @@ export function OrderHistoryPage() {
 
 	return (
 		<div className="order-history-page">
-			<h1>История заказов</h1>
+			<div className="order-history-header">
+				<Button variant="ghost" onClick={() => navigate('/orders')} className="order-history-back-btn">
+					<ArrowLeft size={20} />
+					Назад
+				</Button>
+				<h1>История заказов</h1>
+			</div>
 
 			{orders.length > 0 ? (
 				<div className="order-history-list">
