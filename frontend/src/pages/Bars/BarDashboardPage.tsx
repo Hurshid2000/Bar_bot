@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, DollarSign, CreditCard, TrendingDown, Calculator } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { barsApi } from '../../api/bars.api';
 import { revenueApi } from '../../api/revenue.api';
@@ -97,13 +98,12 @@ export function BarDashboardPage() {
 	return (
 		<div className="bar-dashboard-page">
 			{showBackButton && (
-				<button
-					onClick={() => navigate('/')}
-					className="bar-dashboard-back"
-				>
-					<ArrowLeft className="bar-dashboard-back-icon" />
-					<span>Back to Home</span>
-				</button>
+				<div className="bar-dashboard-header-back">
+					<Button variant="ghost" onClick={() => navigate('/')} className="bar-dashboard-back-btn">
+						<ArrowLeft size={20} />
+						Назад
+					</Button>
+				</div>
 			)}
 
 			<div className="bar-dashboard-header">

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { barsApi } from '../../api/bars.api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,6 +10,7 @@ import { formatDate } from '../../utils/format';
 import './BarsListPage.css';
 
 export function BarsListPage() {
+	const navigate = useNavigate();
 	const { data: bars, isLoading } = useQuery({
 		queryKey: ['bars'],
 		queryFn: () => barsApi.getAll(),
@@ -19,6 +22,12 @@ export function BarsListPage() {
 
 	return (
 		<div className="bars-list-page">
+			<div className="page-header-back">
+				<Button variant="ghost" onClick={() => navigate('/')} className="page-back-btn">
+					<ArrowLeft size={20} />
+					Назад
+				</Button>
+			</div>
 			<div className="page-header">
 				<h1>Бары</h1>
 				<Button variant="primary">Добавить бар</Button>

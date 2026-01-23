@@ -5,27 +5,14 @@
 	padding-bottom: 100px; /* Отступ для bottom navigation */
 }
 
-.bar-dashboard-back {
+.bar-dashboard-header-back {
+	margin-bottom: 16px;
+}
+
+.bar-dashboard-back-btn {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	background: none;
-	border: none;
-	color: var(--color-text-muted);
-	cursor: pointer;
-	padding: 8px 0;
-	margin-bottom: 16px;
-	transition: color var(--transition-base);
-	font-size: 14px;
-}
-
-.bar-dashboard-back:hover {
-	color: var(--color-text-primary);
-}
-
-.bar-dashboard-back-icon {
-	width: 20px;
-	height: 20px;
 }
 
 .bar-dashboard-header {

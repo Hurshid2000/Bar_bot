@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Trash2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Edit2, Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { categoriesApi, type CreateCategoryDto, type UpdateCategoryDto } from '../../api/categories.api';
 import { Card } from '../../components/ui/Card';
@@ -13,6 +14,7 @@ import { ProductType, type Category } from '../../types/common.types';
 import './CategoriesListPage.css';
 
 export function CategoriesListPage() {
+	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -150,6 +152,12 @@ export function CategoriesListPage() {
 
 	return (
 		<div className="categories-list-page">
+			<div className="page-header-back">
+				<Button variant="ghost" onClick={() => navigate('/')} className="page-back-btn">
+					<ArrowLeft size={20} />
+					Назад
+				</Button>
+			</div>
 			<div className="page-header">
 				<h1>Категории</h1>
 				<Button variant="primary" onClick={handleAdd}>

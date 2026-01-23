@@ -131,10 +131,12 @@ export function UsersManagementPage() {
 	if (usersError) {
 		return (
 			<div className="users-management-page">
-				<button onClick={() => navigate('/')} className="page-back-button">
-					<ArrowLeft className="page-back-icon" />
-					<span>Back to Home</span>
-				</button>
+				<div className="page-header-back">
+					<Button variant="ghost" onClick={() => navigate('/')} className="page-back-btn">
+						<ArrowLeft size={20} />
+						Назад
+					</Button>
+				</div>
 				<div className="page-header">
 					<h1>Управление пользователями</h1>
 				</div>
@@ -149,10 +151,12 @@ export function UsersManagementPage() {
 
 	return (
 		<div className="users-management-page">
-			<button onClick={() => navigate('/')} className="page-back-button">
-				<ArrowLeft className="page-back-icon" />
-				<span>Back to Home</span>
-			</button>
+			<div className="page-header-back">
+				<Button variant="ghost" onClick={() => navigate('/')} className="page-back-btn">
+					<ArrowLeft size={20} />
+					Назад
+				</Button>
+			</div>
 
 			<div className="page-header">
 				<h1>Управление пользователями</h1>
