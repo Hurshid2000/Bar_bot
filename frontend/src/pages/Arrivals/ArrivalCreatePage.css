@@ -1,0 +1,132 @@
+.arrival-create-page {
+	padding: 16px;
+	padding-bottom: 120px; /* Space for fixed button */
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.arrival-create-no-bar {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+}
+
+.arrival-create-header {
+	margin-bottom: 16px;
+}
+
+.arrival-create-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Tabs */
+.arrival-create-tabs {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.arrival-create-tab {
+	flex: 1;
+	padding: 12px 8px;
+	border: 2px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.arrival-create-tab:hover {
+	border-color: var(--color-primary-400);
+}
+
+.arrival-create-tab-active {
+	background: var(--color-primary-500);
+	border-color: var(--color-primary-500);
+	color: white;
+}
+
+/* Search */
+.arrival-create-search {
+	position: relative;
+	margin-bottom: 16px;
+}
+
+.arrival-create-search-icon {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--color-text-muted);
+}
+
+.arrival-create-search-input {
+	width: 100%;
+	padding: 14px 14px 14px 44px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	font-size: 14px;
+	outline: none;
+	transition: all var(--transition-base);
+}
+
+.arrival-create-search-input::placeholder {
+	color: var(--color-text-muted);
+}
+
+.arrival-create-search-input:focus {
+	border-color: var(--color-primary-500);
+}
+
+/* Products List */
+.arrival-create-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.arrival-create-empty {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+	background: var(--color-background-card);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--color-border);
+}
+
+/* Fixed Arrival Button */
+.arrival-create-fixed-btn {
+	position: fixed;
+	bottom: 80px; /* Above bottom nav */
+	left: 0;
+	right: 0;
+	padding: 12px 16px;
+	background: var(--color-background-base);
+	border-top: 1px solid var(--color-border);
+	z-index: 40;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.arrival-create-btn-full {
+	width: 100%;
+}
+
+@media (max-width: 768px) {
+	.arrival-create-page {
+		padding: 12px;
+		padding-bottom: 120px;
+	}
+
+	.arrival-create-fixed-btn {
+		bottom: 80px;
+		padding: 12px;
+	}
+}

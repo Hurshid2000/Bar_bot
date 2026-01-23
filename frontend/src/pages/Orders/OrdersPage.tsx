@@ -34,8 +34,6 @@ export function OrdersPage() {
 					size="lg"
 					className="orders-mode-btn"
 					onClick={() => setMode('arrival')}
-					disabled
-					title="Скоро будет доступно"
 				>
 					Приход
 				</Button>
@@ -59,9 +57,17 @@ export function OrdersPage() {
 			)}
 
 			{mode === 'arrival' && (
-				<Card className="orders-coming-soon">
-					<p>Функция "Приход" будет реализована позже</p>
-				</Card>
+				<div className="orders-actions">
+					<Card className="orders-action-card">
+						<h2>Приход</h2>
+						<p>Зафиксируйте приход или списание товаров</p>
+						<div className="orders-action-buttons">
+							<Button variant="primary" size="lg" onClick={() => navigate('/arrivals/create')}>
+								Создать приход
+							</Button>
+						</div>
+					</Card>
+				</div>
 			)}
 		</div>
 	);

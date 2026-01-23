@@ -23,6 +23,13 @@ export const OrderStatus = {
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
+export const ArrivalType = {
+	ARRIVAL: 'ARRIVAL',
+	WRITE_OFF: 'WRITE_OFF',
+} as const;
+
+export type ArrivalType = (typeof ArrivalType)[keyof typeof ArrivalType];
+
 export interface User {
 	id: string;
 	telegramId: string;
@@ -158,4 +165,26 @@ export interface Order {
 	bar?: Bar;
 	user?: User;
 	items: OrderItem[];
+}
+
+export interface ArrivalItem {
+	id: string;
+	arrivalId: string;
+	productId: string;
+	quantity: number;
+	price: number;
+	product?: Product;
+}
+
+export interface Arrival {
+	id: string;
+	barId: string;
+	userId: string;
+	type: ArrivalType;
+	comment?: string | null;
+	createdAt: string;
+	updatedAt: string;
+	bar?: Bar;
+	user?: User;
+	items: ArrivalItem[];
 }

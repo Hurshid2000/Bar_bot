@@ -15,6 +15,7 @@ model User {
   updatedAt  DateTime    @updatedAt
   bars       UserBar[]
   orders     Order[]
+  arrivals   Arrival[]
 }
 
 model Bar {
@@ -28,6 +29,7 @@ model Bar {
   revenues    Revenue[]
   users       UserBar[]
   orders      Order[]
+  arrivals    Arrival[]
 }
 
 model UserBar {
@@ -61,6 +63,7 @@ model Product {
   category     Category     @relation(fields: [categoryId], references: [id])
   barProducts  BarProduct[]
   orderItems   OrderItem[]
+  arrivalItems ArrivalItem[]
 }
 
 model BarProduct {
@@ -150,6 +153,11 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum ArrivalType {
+  ARRIVAL
+  WRITE_OFF
+}
+
 model Order {
   id        String      @id @default(uuid())
   barId     String
@@ -170,5 +178,28 @@ model OrderItem {
   quantity  Int
   price     Float    // Цена на момент заказа
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model Arrival {
+  id        String       @id @default(uuid())
+  barId     String
+  userId    String
+  type      ArrivalType  @default(ARRIVAL)
+  comment   String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  bar       Bar          @relation(fields: [barId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  items     ArrivalItem[]
+}
+
+model ArrivalItem {
+  id        String   @id @default(uuid())
+  arrivalId String
+  productId String
+  quantity  Int
+  price     Float    // Цена на момент прихода/списания
+  arrival   Arrival  @relation(fields: [arrivalId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id])
 }
