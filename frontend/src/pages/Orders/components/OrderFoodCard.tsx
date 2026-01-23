@@ -1,4 +1,4 @@
-import { Plus, Minus, UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 
 const foodIcons: Record<string, string> = {
@@ -62,26 +62,26 @@ export function OrderFoodCard({ product, quantity, onQuantityChange }: OrderFood
 				</div>
 
 				<div className="order-food-card-quantity">
-				<button
-					className="order-quantity-btn order-quantity-btn-minus"
-					onClick={handleDecrement}
-					disabled={quantity === 0}
-				>
-					<Minus size={18} />
-				</button>
-				<input
-					type="number"
-					className="order-quantity-input"
-					value={quantity}
-					onChange={handleInputChange}
-					min="0"
-				/>
-				<button
-					className="order-quantity-btn order-quantity-btn-plus"
-					onClick={handleIncrement}
-				>
-					<Plus size={18} />
-				</button>
+					<button
+						className="order-quantity-btn order-quantity-btn-minus"
+						onClick={handleDecrement}
+						disabled={quantity === 0}
+					>
+						−
+					</button>
+					<input
+						type="number"
+						className="order-quantity-input"
+						value={quantity}
+						onChange={handleInputChange}
+						min="0"
+					/>
+					<button
+						className="order-quantity-btn order-quantity-btn-plus"
+						onClick={handleIncrement}
+					>
+						+
+					</button>
 				</div>
 			</div>
 		</div>

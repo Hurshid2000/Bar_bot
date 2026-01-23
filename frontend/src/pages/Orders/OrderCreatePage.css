@@ -271,10 +271,10 @@
 	cursor: not-allowed;
 }
 
-.order-quantity-btn svg {
-	width: 18px;
-	height: 18px;
-	stroke-width: 2.5;
+.order-quantity-btn {
+	font-size: 24px;
+	font-weight: 700;
+	line-height: 1;
 }
 
 .order-quantity-input {

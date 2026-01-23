@@ -1,4 +1,4 @@
-import { Plus, Minus, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 
 const sportpitIcons: Record<string, string> = {
@@ -61,26 +61,26 @@ export function OrderSportpitCard({ product, quantity, onQuantityChange }: Order
 				</div>
 
 				<div className="order-sportpit-card-quantity">
-				<button
-					className="order-quantity-btn order-quantity-btn-minus"
-					onClick={handleDecrement}
-					disabled={quantity === 0}
-				>
-					<Minus size={18} />
-				</button>
-				<input
-					type="number"
-					className="order-quantity-input"
-					value={quantity}
-					onChange={handleInputChange}
-					min="0"
-				/>
-				<button
-					className="order-quantity-btn order-quantity-btn-plus"
-					onClick={handleIncrement}
-				>
-					<Plus size={18} />
-				</button>
+					<button
+						className="order-quantity-btn order-quantity-btn-minus"
+						onClick={handleDecrement}
+						disabled={quantity === 0}
+					>
+						−
+					</button>
+					<input
+						type="number"
+						className="order-quantity-input"
+						value={quantity}
+						onChange={handleInputChange}
+						min="0"
+					/>
+					<button
+						className="order-quantity-btn order-quantity-btn-plus"
+						onClick={handleIncrement}
+					>
+						+
+					</button>
 				</div>
 			</div>
 		</div>
