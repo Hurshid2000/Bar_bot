@@ -79,6 +79,9 @@ export async function apiPatch<T>(
 	});
 }
 
-export async function apiDelete<T>(endpoint: string): Promise<T> {
-	return apiRequest<T>(endpoint, { method: 'DELETE' });
+export async function apiDelete<T>(endpoint: string, options?: { data?: any }): Promise<T> {
+	return apiRequest<T>(endpoint, {
+		method: 'DELETE',
+		body: options?.data ? JSON.stringify(options.data) : undefined,
+	});
 }

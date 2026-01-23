@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderFilterDto } from './dto/order-filter.dto';
@@ -16,7 +17,10 @@ import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		private notificationsService: NotificationsService,
+	) {}
 
 	async create(userId: string, createOrderDto: CreateOrderDto) {
 		const { barId, items, comment } = createOrderDto;
@@ -91,6 +95,14 @@ export class OrdersService {
 				},
 			},
 		});
+
+		// Отправляем уведомление о создании заказа
+		try {
+			await this.notificationsService.notifyOrderCreated(order);
+		} catch (error) {
+			// Логируем ошибку, но не прерываем создание заказа
+			console.error('Failed to send order notification:', error);
+		}
 
 		return order;
 	}

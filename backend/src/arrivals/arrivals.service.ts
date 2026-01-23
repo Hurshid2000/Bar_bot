@@ -4,6 +4,7 @@ import {
 	BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateArrivalDto } from './dto/create-arrival.dto';
 import { ArrivalFilterDto } from './dto/arrival-filter.dto';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
@@ -15,7 +16,10 @@ import { ArrivalType } from '@prisma/client';
 
 @Injectable()
 export class ArrivalsService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		private notificationsService: NotificationsService,
+	) {}
 
 	async create(userId: string, createArrivalDto: CreateArrivalDto) {
 		const { barId, type, items, comment } = createArrivalDto;
@@ -90,6 +94,14 @@ export class ArrivalsService {
 				},
 			},
 		});
+
+		// Отправляем уведомление о создании прихода/списания
+		try {
+			await this.notificationsService.notifyArrivalCreated(arrival);
+		} catch (error) {
+			// Логируем ошибку, но не прерываем создание прихода
+			console.error('Failed to send arrival notification:', error);
+		}
 
 		return arrival;
 	}

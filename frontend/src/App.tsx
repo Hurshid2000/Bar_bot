@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { BarProvider } from './context/BarContext';
 import { router } from './router';
 import { useTelegram } from './hooks/useTelegram';
+import { PushNotificationsInit } from './components/PushNotificationsInit';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -21,6 +22,7 @@ function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
+				<PushNotificationsInit />
 				<BarProvider>
 					<RouterProvider router={router} />
 				</BarProvider>

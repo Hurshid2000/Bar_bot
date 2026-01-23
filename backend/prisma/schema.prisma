@@ -16,6 +16,7 @@ model User {
   bars       UserBar[]
   orders     Order[]
   arrivals   Arrival[]
+  pushTokens PushToken[]
 }
 
 model Bar {
@@ -202,4 +203,14 @@ model ArrivalItem {
   price     Float    // Цена на момент прихода/списания
   arrival   Arrival  @relation(fields: [arrivalId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id])
+}
+
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  deviceInfo String? // Опциональная информация об устройстве
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
