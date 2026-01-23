@@ -18,6 +18,8 @@ model User {
   arrivals   Arrival[]
   pushTokens PushToken[]
   inventories Inventory[]
+  clientTransactions ClientTransaction[]
+  clientEditLogs ClientEditLog[]
 }
 
 model Bar {
@@ -33,6 +35,7 @@ model Bar {
   orders      Order[]
   arrivals    Arrival[]
   inventories Inventory[]
+  clients     Client[]
 }
 
 model UserBar {
@@ -216,6 +219,52 @@ model PushToken {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Client {
+  id          String             @id @default(uuid())
+  barId       String
+  name        String
+  phone       String?
+  balance     Float              @default(0) // Может быть отрицательным (долг) или положительным (депозит)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  bar         Bar                @relation(fields: [barId], references: [id])
+  transactions ClientTransaction[]
+  editLogs    ClientEditLog[]
+
+  @@unique([barId, name]) // Уникальность имени в рамках бара
+}
+
+enum ClientTransactionType {
+  DEPOSIT  // Депозит (пополнение)
+  DEBT     // Долг (списание)
+  PAYMENT  // Платеж (внесение денег)
+}
+
+model ClientTransaction {
+  id        String                @id @default(uuid())
+  clientId  String
+  userId    String
+  type      ClientTransactionType
+  amount    Float                 // Всегда положительное число
+  comment   String?
+  createdAt DateTime              @default(now())
+  client    Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id])
+}
+
+model ClientEditLog {
+  id          String   @id @default(uuid())
+  clientId    String
+  userId      String
+  fieldName   String   // Какое поле было изменено (name, phone, balance)
+  oldValue    String?  // Старое значение (JSON строка для сложных типов)
+  newValue    String?  // Новое значение (JSON строка для сложных типов)
+  createdAt   DateTime @default(now())
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model Inventory {
