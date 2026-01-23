@@ -56,10 +56,6 @@ export function OrdersPage() {
 		navigate('/orders/create');
 	};
 
-	const handleHistoryClick = () => {
-		navigate('/orders/history');
-	};
-
 	return (
 		<div className="orders-page">
 			<div className="orders-mode-selector">
@@ -90,9 +86,6 @@ export function OrdersPage() {
 							<div className="orders-action-buttons">
 								<Button variant="primary" size="lg" onClick={handleOrderClick}>
 									Заказать
-								</Button>
-								<Button variant="outline" size="lg" onClick={handleHistoryClick}>
-									История
 								</Button>
 							</div>
 						</Card>
