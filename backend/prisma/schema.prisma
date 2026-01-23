@@ -7,13 +7,14 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(uuid())
+  id         String      @id @default(uuid())
   name       String
-  telegramId String    @unique
+  telegramId String      @unique
   role       RoleType
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
   bars       UserBar[]
+  orders     Order[]
 }
 
 model Bar {
@@ -26,6 +27,7 @@ model Bar {
   purchases   Purchase[]
   revenues    Revenue[]
   users       UserBar[]
+  orders      Order[]
 }
 
 model UserBar {
@@ -58,6 +60,7 @@ model Product {
   createdAt    DateTime     @default(now())
   category     Category     @relation(fields: [categoryId], references: [id])
   barProducts  BarProduct[]
+  orderItems   OrderItem[]
 }
 
 model BarProduct {
@@ -138,4 +141,34 @@ enum ProductType {
   PRODUCT
   SPORT_PIT
   FOOD
+}
+
+enum OrderStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  barId     String
+  userId    String
+  status    OrderStatus @default(NEW)
+  comment   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  bar       Bar         @relation(fields: [barId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float    // Цена на момент заказа
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
 }

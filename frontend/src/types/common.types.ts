@@ -14,6 +14,15 @@ export const ProductType = {
 
 export type ProductType = (typeof ProductType)[keyof typeof ProductType];
 
+export const OrderStatus = {
+	NEW: 'NEW',
+	IN_PROGRESS: 'IN_PROGRESS',
+	COMPLETED: 'COMPLETED',
+	CANCELLED: 'CANCELLED',
+} as const;
+
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
 export interface User {
 	id: string;
 	telegramId: string;
@@ -127,4 +136,26 @@ export interface PaginatedResponse<T> {
 export interface PaginationParams {
 	page?: number;
 	limit?: number;
+}
+
+export interface OrderItem {
+	id: string;
+	orderId: string;
+	productId: string;
+	quantity: number;
+	price: number;
+	product?: Product;
+}
+
+export interface Order {
+	id: string;
+	barId: string;
+	userId: string;
+	status: OrderStatus;
+	comment?: string | null;
+	createdAt: string;
+	updatedAt: string;
+	bar?: Bar;
+	user?: User;
+	items: OrderItem[];
 }

@@ -1,0 +1,56 @@
+.orders-page {
+	width: 100%;
+	padding: 16px;
+	padding-bottom: 100px;
+}
+
+.orders-mode-selector {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.orders-mode-btn {
+	flex: 1;
+}
+
+.orders-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.orders-action-card {
+	padding: 24px;
+	text-align: center;
+}
+
+.orders-action-card h2 {
+	margin: 0 0 8px 0;
+	color: var(--color-text-primary);
+	font-size: 24px;
+}
+
+.orders-action-card p {
+	margin: 0 0 24px 0;
+	color: var(--color-text-secondary);
+}
+
+.orders-action-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.orders-coming-soon {
+	padding: 40px 24px;
+	text-align: center;
+	color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+	.orders-page {
+		padding: 12px;
+		padding-bottom: 100px;
+	}
+}
