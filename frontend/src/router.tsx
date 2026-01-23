@@ -16,6 +16,10 @@ import { RevenueListPage } from './pages/Revenue/RevenueListPage';
 import { ExpensesListPage } from './pages/Expenses/ExpensesListPage';
 import { PurchasesListPage } from './pages/Purchases/PurchasesListPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
+import { OrdersPage } from './pages/Orders/OrdersPage';
+import { OrderCreatePage } from './pages/Orders/OrderCreatePage';
+import { OrderHistoryPage } from './pages/Orders/OrderHistoryPage';
+import { OrderStatusPage } from './pages/Orders/OrderStatusPage';
 import { RoleType } from './types/common.types';
 
 // Используем HashRouter для совместимости с Telegram Mini App
@@ -104,6 +108,22 @@ export const router = createHashRouter([
 						<ReportsPage />
 					</ProtectedRoute>
 				),
+			},
+			{
+				path: '/orders',
+				element: <OrdersPage />,
+			},
+			{
+				path: '/orders/create',
+				element: <OrderCreatePage />,
+			},
+			{
+				path: '/orders/history',
+				element: <OrderHistoryPage />,
+			},
+			{
+				path: '/orders/:id',
+				element: <OrderStatusPage />,
 			},
 		],
 	},

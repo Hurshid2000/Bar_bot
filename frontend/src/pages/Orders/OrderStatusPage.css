@@ -1,0 +1,110 @@
+.order-status-page {
+	padding: 16px;
+	padding-bottom: 100px;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.order-status-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.order-status-header h1 {
+	margin: 0;
+	font-size: 24px;
+	color: var(--color-text-primary);
+}
+
+.order-status-card,
+.order-status-items {
+	padding: 20px;
+	margin-bottom: 16px;
+}
+
+.order-status-items h2 {
+	margin: 0 0 16px 0;
+	font-size: 18px;
+	color: var(--color-text-primary);
+}
+
+.order-status-info {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.order-status-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.order-status-label {
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.order-status-value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.order-status-comment {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border);
+}
+
+.order-status-comment p {
+	margin: 0;
+	font-size: 14px;
+	color: var(--color-text-primary);
+	line-height: 1.5;
+}
+
+.order-status-items-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.order-status-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+}
+
+.order-status-item-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+}
+
+.order-status-item-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.order-status-item-category {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.order-status-item-quantity {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-primary-500);
+}

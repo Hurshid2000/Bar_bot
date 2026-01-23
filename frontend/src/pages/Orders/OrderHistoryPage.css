@@ -1,0 +1,68 @@
+.order-history-page {
+	padding: 16px;
+	padding-bottom: 100px;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.order-history-page h1 {
+	margin: 0 0 24px 0;
+	color: var(--color-text-primary);
+}
+
+.order-history-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.order-history-card {
+	padding: 16px;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.order-history-card:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-hover);
+}
+
+.order-history-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 12px;
+}
+
+.order-history-card-header h3 {
+	margin: 0 0 4px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.order-history-card-bar {
+	margin: 0;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.order-history-card-status {
+	font-size: 12px;
+	font-weight: 600;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.1);
+}
+
+.order-history-card-info {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.order-history-card-date {
+	margin: 0;
+}
