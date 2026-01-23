@@ -16,6 +16,7 @@
 	--color-highlight: #5b6cff;
 	--color-success: #10b981;
 	--color-danger: #ef4444;
+	--color-error: #ef4444; /* Alias for danger */
 	--color-warning: #f59e0b;
 
 	/* Background Colors */

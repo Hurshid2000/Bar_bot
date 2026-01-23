@@ -111,7 +111,7 @@ export function ArrivalCreatePage() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['arrivals'] });
 			setQuantities({});
-			navigate('/orders');
+			navigate('/orders?mode=arrival');
 		},
 	});
 

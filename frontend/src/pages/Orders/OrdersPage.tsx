@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -15,11 +15,6 @@ type OrderMode = 'order' | 'arrival';
 const arrivalTypeLabels: Record<ArrivalType, string> = {
 	ARRIVAL: 'Приход',
 	WRITE_OFF: 'Списание',
-};
-
-const arrivalTypeColors: Record<ArrivalType, string> = {
-	ARRIVAL: 'var(--color-success)',
-	WRITE_OFF: 'var(--color-error)',
 };
 
 const orderStatusLabels: Record<OrderStatus, string> = {
@@ -38,7 +33,19 @@ const orderStatusColors: Record<OrderStatus, string> = {
 
 export function OrdersPage() {
 	const navigate = useNavigate();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const [mode, setMode] = useState<OrderMode>('order');
+
+	// Проверяем query параметр для автоматического переключения режима
+	useEffect(() => {
+		const modeParam = searchParams.get('mode');
+		if (modeParam === 'arrival' || modeParam === 'order') {
+			setMode(modeParam);
+			// Удаляем параметр из URL после использования
+			searchParams.delete('mode');
+			setSearchParams(searchParams, { replace: true });
+		}
+	}, [searchParams, setSearchParams]);
 
 	const { data: arrivalsData, isLoading: arrivalsLoading } = useQuery({
 		queryKey: ['arrivals', 'history'],
@@ -173,7 +180,7 @@ export function OrdersPage() {
 											</div>
 											<span
 												className="orders-history-card-type"
-												style={{ color: arrivalTypeColors[arrival.type] }}
+												data-type={arrival.type}
 											>
 												{arrivalTypeLabels[arrival.type]}
 											</span>

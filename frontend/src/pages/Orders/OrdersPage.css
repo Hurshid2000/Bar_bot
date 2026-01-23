@@ -105,6 +105,16 @@
 	background: rgba(0, 0, 0, 0.1);
 }
 
+.orders-history-card-type[data-type="WRITE_OFF"] {
+	background: var(--color-error);
+	color: white;
+}
+
+.orders-history-card-type[data-type="ARRIVAL"] {
+	background: var(--color-success);
+	color: white;
+}
+
 .orders-history-card-info {
 	display: flex;
 	justify-content: space-between;
