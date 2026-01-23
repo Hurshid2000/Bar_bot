@@ -297,7 +297,7 @@
 .product-card-price {
 	font-size: 18px;
 	font-weight: 700;
-	color: var(--color-primary-400);
+	color: var(--color-success);
 	white-space: nowrap;
 	margin-top: 4px;
 }
@@ -375,7 +375,7 @@
 .sportpit-card-price {
 	font-size: 20px;
 	font-weight: 600;
-	color: var(--color-primary-400);
+	color: var(--color-success);
 	text-align: right;
 	white-space: nowrap;
 }
@@ -384,7 +384,7 @@
 	display: block;
 	font-size: 12px;
 	font-weight: 400;
-	color: var(--color-primary-400);
+	color: var(--color-success);
 }
 
 .sportpit-card-description {
