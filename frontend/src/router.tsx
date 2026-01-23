@@ -21,6 +21,7 @@ import { OrderCreatePage } from './pages/Orders/OrderCreatePage';
 import { OrderHistoryPage } from './pages/Orders/OrderHistoryPage';
 import { OrderStatusPage } from './pages/Orders/OrderStatusPage';
 import { ArrivalCreatePage } from './pages/Arrivals/ArrivalCreatePage';
+import { InventoryPage } from './pages/Inventories/InventoryPage';
 import { RoleType } from './types/common.types';
 
 // Используем HashRouter для совместимости с Telegram Mini App
@@ -129,6 +130,10 @@ export const router = createHashRouter([
 			{
 				path: '/arrivals/create',
 				element: <ArrivalCreatePage />,
+			},
+			{
+				path: '/bars/:id/inventory',
+				element: <InventoryPage />,
 			},
 		],
 	},

@@ -94,6 +94,17 @@
 	color: var(--color-danger);
 }
 
+.bar-dashboard-inventory-btn {
+	margin-top: 32px;
+	display: flex;
+	justify-content: center;
+}
+
+.bar-dashboard-inventory-button {
+	width: 100%;
+	max-width: 400px;
+}
+
 @media (max-width: 768px) {
 	.bar-dashboard-page {
 		padding: 16px;

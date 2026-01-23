@@ -203,6 +203,18 @@ export function BarDashboardPage() {
 				barId={id!}
 				selectedDate={selectedDate}
 			/>
+
+			{/* Кнопка Инвентаризация */}
+			<div className="bar-dashboard-inventory-btn">
+				<Button
+					variant="primary"
+					size="lg"
+					onClick={() => navigate(`/bars/${id}/inventory`)}
+					className="bar-dashboard-inventory-button"
+				>
+					Инвентаризация
+				</Button>
+			</div>
 		</div>
 	);
 }
