@@ -48,6 +48,74 @@
 	color: var(--color-text-secondary);
 }
 
+.orders-history-section {
+	margin-top: 32px;
+}
+
+.orders-history-title {
+	margin: 0 0 16px 0;
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.orders-history-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.orders-history-card {
+	padding: 16px;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.orders-history-card:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-hover);
+}
+
+.orders-history-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 12px;
+}
+
+.orders-history-card-header h4 {
+	margin: 0 0 4px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.orders-history-card-bar {
+	margin: 0;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.orders-history-card-type {
+	font-size: 12px;
+	font-weight: 600;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.1);
+}
+
+.orders-history-card-info {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.orders-history-card-date {
+	margin: 0;
+}
+
 @media (max-width: 768px) {
 	.orders-page {
 		padding: 12px;

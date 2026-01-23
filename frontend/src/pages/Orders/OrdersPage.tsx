@@ -1,14 +1,35 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { Loading } from '../../components/ui/Loading';
+import { arrivalsApi } from '../../api/arrivals.api';
+import { formatDate } from '../../utils/format';
+import { ArrivalType } from '../../types/common.types';
 import './OrdersPage.css';
 
 type OrderMode = 'order' | 'arrival';
 
+const arrivalTypeLabels: Record<ArrivalType, string> = {
+	ARRIVAL: 'Приход',
+	WRITE_OFF: 'Списание',
+};
+
+const arrivalTypeColors: Record<ArrivalType, string> = {
+	ARRIVAL: 'var(--color-success)',
+	WRITE_OFF: 'var(--color-error)',
+};
+
 export function OrdersPage() {
 	const navigate = useNavigate();
 	const [mode, setMode] = useState<OrderMode>('order');
+
+	const { data: arrivalsData, isLoading: arrivalsLoading } = useQuery({
+		queryKey: ['arrivals', 'history'],
+		queryFn: () => arrivalsApi.getAll({ page: 1, limit: 20 }),
+		enabled: mode === 'arrival',
+	});
 
 	const handleOrderClick = () => {
 		navigate('/orders/create');
@@ -57,17 +78,63 @@ export function OrdersPage() {
 			)}
 
 			{mode === 'arrival' && (
-				<div className="orders-actions">
-					<Card className="orders-action-card">
-						<h2>Приход</h2>
-						<p>Зафиксируйте приход или списание товаров</p>
-						<div className="orders-action-buttons">
-							<Button variant="primary" size="lg" onClick={() => navigate('/arrivals/create')}>
-								Создать приход
-							</Button>
-						</div>
-					</Card>
-				</div>
+				<>
+					<div className="orders-actions">
+						<Card className="orders-action-card">
+							<h2>Приход</h2>
+							<p>Зафиксируйте приход или списание товаров</p>
+							<div className="orders-action-buttons">
+								<Button variant="primary" size="lg" onClick={() => navigate('/arrivals/create')}>
+									Создать приход
+								</Button>
+							</div>
+						</Card>
+					</div>
+
+					{/* История приходов и списаний */}
+					<div className="orders-history-section">
+						<h3 className="orders-history-title">История</h3>
+						{arrivalsLoading ? (
+							<Loading />
+						) : arrivalsData && arrivalsData.data.length > 0 ? (
+							<div className="orders-history-list">
+								{arrivalsData.data.map((arrival) => (
+									<Card
+										key={arrival.id}
+										className="orders-history-card"
+									>
+										<div className="orders-history-card-header">
+											<div>
+												<h4>
+													{arrivalTypeLabels[arrival.type]} #{arrival.id.slice(0, 8)}
+												</h4>
+												<p className="orders-history-card-bar">
+													{arrival.bar?.name || 'Неизвестный бар'}
+												</p>
+											</div>
+											<span
+												className="orders-history-card-type"
+												style={{ color: arrivalTypeColors[arrival.type] }}
+											>
+												{arrivalTypeLabels[arrival.type]}
+											</span>
+										</div>
+										<div className="orders-history-card-info">
+											<p>
+												Товаров: {arrival.items.length} ({arrival.items.reduce((sum, item) => sum + item.quantity, 0)} шт.)
+											</p>
+											<p className="orders-history-card-date">{formatDate(arrival.createdAt)}</p>
+										</div>
+									</Card>
+								))}
+							</div>
+						) : (
+							<Card>
+								<p>Приходы и списания не найдены</p>
+							</Card>
+						)}
+					</div>
+				</>
 			)}
 		</div>
 	);
