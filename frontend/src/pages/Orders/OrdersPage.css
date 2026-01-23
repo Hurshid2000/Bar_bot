@@ -96,7 +96,8 @@
 	color: var(--color-text-secondary);
 }
 
-.orders-history-card-type {
+.orders-history-card-type,
+.orders-history-card-status {
 	font-size: 12px;
 	font-weight: 600;
 	padding: 4px 8px;
