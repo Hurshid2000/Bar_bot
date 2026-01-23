@@ -45,20 +45,21 @@ export function OrderProductCard({ product, quantity, onQuantityChange }: OrderP
 				{getCategoryIcon(product.category?.name)}
 			</div>
 
-			<div className="order-product-card-info">
-				<h3 className="order-product-card-name">{product.name}</h3>
-				<p className="order-product-card-meta">
-					{product.category?.name || 'Без категории'}
-				</p>
-			</div>
+			<div className="order-product-card-content">
+				<div className="order-product-card-info">
+					<h3 className="order-product-card-name">{product.name}</h3>
+					<p className="order-product-card-meta">
+						{product.category?.name || 'Без категории'}
+					</p>
+				</div>
 
-			<div className="order-product-card-quantity">
+				<div className="order-product-card-quantity">
 				<button
 					className="order-quantity-btn order-quantity-btn-minus"
 					onClick={handleDecrement}
 					disabled={quantity === 0}
 				>
-					<Minus size={16} />
+					<Minus size={18} />
 				</button>
 				<input
 					type="number"
@@ -71,8 +72,9 @@ export function OrderProductCard({ product, quantity, onQuantityChange }: OrderP
 					className="order-quantity-btn order-quantity-btn-plus"
 					onClick={handleIncrement}
 				>
-					<Plus size={16} />
+					<Plus size={18} />
 				</button>
+				</div>
 			</div>
 		</div>
 	);

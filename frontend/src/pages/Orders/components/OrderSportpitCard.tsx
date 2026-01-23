@@ -41,31 +41,32 @@ export function OrderSportpitCard({ product, quantity, onQuantityChange }: Order
 
 	return (
 		<div className={`order-sportpit-card ${quantity > 0 ? 'order-sportpit-card-selected' : ''}`}>
-			<div className="order-sportpit-card-header">
-				<div className="order-sportpit-card-image">
-					{product.imageUrl ? (
-						<img src={product.imageUrl} alt={product.name} />
-					) : (
-						getSportpitIcon(product.category?.name)
-					)}
-				</div>
-
-				<div className="order-sportpit-card-info">
-					<h3 className="order-sportpit-card-name">{product.name}</h3>
-					<div className="order-sportpit-card-category">
-						<Tag className="order-sportpit-card-category-icon" />
-						<span>{product.category?.name || 'Без категории'}</span>
-					</div>
-				</div>
+			<div className="order-sportpit-card-image">
+				{product.imageUrl ? (
+					<img src={product.imageUrl} alt={product.name} />
+				) : (
+					getSportpitIcon(product.category?.name)
+				)}
 			</div>
 
-			<div className="order-sportpit-card-quantity">
+			<div className="order-sportpit-card-content">
+				<div className="order-sportpit-card-header">
+					<div className="order-sportpit-card-info">
+						<h3 className="order-sportpit-card-name">{product.name}</h3>
+						<div className="order-sportpit-card-category">
+							<Tag className="order-sportpit-card-category-icon" />
+							<span>{product.category?.name || 'Без категории'}</span>
+						</div>
+					</div>
+				</div>
+
+				<div className="order-sportpit-card-quantity">
 				<button
 					className="order-quantity-btn order-quantity-btn-minus"
 					onClick={handleDecrement}
 					disabled={quantity === 0}
 				>
-					<Minus size={16} />
+					<Minus size={18} />
 				</button>
 				<input
 					type="number"
@@ -78,8 +79,9 @@ export function OrderSportpitCard({ product, quantity, onQuantityChange }: Order
 					className="order-quantity-btn order-quantity-btn-plus"
 					onClick={handleIncrement}
 				>
-					<Plus size={16} />
+					<Plus size={18} />
 				</button>
+				</div>
 			</div>
 		</div>
 	);
