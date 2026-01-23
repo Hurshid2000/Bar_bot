@@ -120,4 +120,126 @@ export class ReportsController {
 			endDate,
 		});
 	}
+
+	@Get('bars/:barId/inventories')
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	@ApiOperation({ summary: 'Получить список инвентаризаций для бара' })
+	@ApiParam({ name: 'barId', description: 'ID бара' })
+	@ApiResponse({ status: 200, description: 'Список инвентаризаций' })
+	getInventories(@Param('barId') barId: string) {
+		return this.reportsService.getInventories(barId);
+	}
+
+	@Get('bars/:barId/cash-audit')
+	@Roles(RoleType.ADMIN, RoleType.MANAGER)
+	@ApiOperation({ summary: 'Отчет проверки кассы (между двумя инвентаризациями)' })
+	@ApiParam({ name: 'barId', description: 'ID бара' })
+	@ApiQuery({ name: 'startInventoryId', description: 'ID начальной инвентаризации' })
+	@ApiQuery({ name: 'endInventoryId', description: 'ID конечной инвентаризации' })
+	@ApiResponse({ status: 200, description: 'Отчет проверки кассы' })
+	getCashAuditReport(
+		@Param('barId') barId: string,
+		@Query('startInventoryId') startInventoryId: string,
+		@Query('endInventoryId') endInventoryId: string,
+	) {
+		if (!startInventoryId || !endInventoryId) {
+			throw new BadRequestException(
+				'startInventoryId and endInventoryId parameters are required',
+			);
+		}
+		return this.reportsService.getCashAuditReport(
+			barId,
+			startInventoryId,
+			endInventoryId,
+		);
+	}
+
+	@Get('bars/:barId/profit')
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({ summary: 'Отчет прибыли (между двумя инвентаризациями, только для ADMIN)' })
+	@ApiParam({ name: 'barId', description: 'ID бара' })
+	@ApiQuery({ name: 'startInventoryId', description: 'ID начальной инвентаризации' })
+	@ApiQuery({ name: 'endInventoryId', description: 'ID конечной инвентаризации' })
+	@ApiResponse({ status: 200, description: 'Отчет прибыли' })
+	getProfitReport(
+		@Param('barId') barId: string,
+		@Query('startInventoryId') startInventoryId: string,
+		@Query('endInventoryId') endInventoryId: string,
+	) {
+		if (!startInventoryId || !endInventoryId) {
+			throw new BadRequestException(
+				'startInventoryId and endInventoryId parameters are required',
+			);
+		}
+		return this.reportsService.getProfitReport(
+			barId,
+			startInventoryId,
+			endInventoryId,
+		);
+	}
+
+	@Get('bars/:barId/profit/compare-periods')
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({
+		summary:
+			'Сравнение прибыли между двумя периодами для одного бара (только для ADMIN)',
+	})
+	@ApiParam({ name: 'barId', description: 'ID бара' })
+	@ApiQuery({ name: 'firstStartInventoryId', description: 'ID начальной инвентаризации первого периода' })
+	@ApiQuery({ name: 'firstEndInventoryId', description: 'ID конечной инвентаризации первого периода' })
+	@ApiQuery({ name: 'secondStartInventoryId', description: 'ID начальной инвентаризации второго периода' })
+	@ApiQuery({ name: 'secondEndInventoryId', description: 'ID конечной инвентаризации второго периода' })
+	@ApiResponse({ status: 200, description: 'Сравнение прибыли между периодами' })
+	compareProfitPeriods(
+		@Param('barId') barId: string,
+		@Query('firstStartInventoryId') firstStartInventoryId: string,
+		@Query('firstEndInventoryId') firstEndInventoryId: string,
+		@Query('secondStartInventoryId') secondStartInventoryId: string,
+		@Query('secondEndInventoryId') secondEndInventoryId: string,
+	) {
+		if (
+			!firstStartInventoryId ||
+			!firstEndInventoryId ||
+			!secondStartInventoryId ||
+			!secondEndInventoryId
+		) {
+			throw new BadRequestException(
+				'All inventory ID parameters are required',
+			);
+		}
+		return this.reportsService.compareProfitPeriods(
+			barId,
+			firstStartInventoryId,
+			firstEndInventoryId,
+			secondStartInventoryId,
+			secondEndInventoryId,
+		);
+	}
+
+	@Get('profit/compare-bars')
+	@Roles(RoleType.ADMIN)
+	@ApiOperation({
+		summary: 'Сравнение прибыли между барами за один период (только для ADMIN)',
+	})
+	@ApiQuery({ name: 'barIds', description: 'Список ID баров через запятую', example: 'id1,id2,id3' })
+	@ApiQuery({ name: 'startInventoryId', description: 'ID начальной инвентаризации' })
+	@ApiQuery({ name: 'endInventoryId', description: 'ID конечной инвентаризации' })
+	@ApiResponse({ status: 200, description: 'Сравнение прибыли между барами' })
+	compareProfitBars(
+		@Query('barIds') barIds: string,
+		@Query('startInventoryId') startInventoryId: string,
+		@Query('endInventoryId') endInventoryId: string,
+	) {
+		if (!barIds || !startInventoryId || !endInventoryId) {
+			throw new BadRequestException(
+				'barIds, startInventoryId and endInventoryId parameters are required',
+			);
+		}
+		const barIdsArray = barIds.split(',').map((id) => id.trim());
+		return this.reportsService.compareProfitBars(
+			barIdsArray,
+			startInventoryId,
+			endInventoryId,
+		);
+	}
 }

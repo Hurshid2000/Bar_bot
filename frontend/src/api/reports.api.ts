@@ -73,6 +73,98 @@ export interface CompareBarsReport {
 	}>;
 }
 
+export interface Inventory {
+	id: string;
+	createdAt: string;
+	totalAmount: number;
+	comment: string | null;
+}
+
+export interface CashAuditReport {
+	barId: string;
+	barName: string;
+	startInventoryId: string;
+	startInventoryDate: string;
+	startInventoryAmount: number;
+	endInventoryId: string;
+	endInventoryDate: string;
+	endInventoryAmount: number;
+	period: {
+		startDate: string;
+		endDate: string;
+	};
+	incomes: {
+		revenueCash: number;
+		revenueCard: number;
+		writeOffs: number;
+		clientDebts: number;
+	};
+	expenses: {
+		purchasesAtSalePrice: number;
+		clientDeposits: number;
+	};
+	result: number;
+	status: 'ok' | 'surplus' | 'shortage';
+}
+
+export interface ProfitReport {
+	barId: string;
+	barName: string;
+	startInventoryId: string;
+	startInventoryDate: string;
+	startInventoryAmount: number;
+	endInventoryId: string;
+	endInventoryDate: string;
+	endInventoryAmount: number;
+	period: {
+		startDate: string;
+		endDate: string;
+	};
+	incomes: {
+		revenueCash: number;
+		revenueCard: number;
+		clientDebts: number;
+	};
+	expenses: {
+		purchasesAtCostPrice: number;
+		expenses: number;
+		clientDeposits: number;
+	};
+	profit: number;
+}
+
+export interface ProfitComparisonPeriods {
+	barId: string;
+	barName: string;
+	firstPeriod: ProfitReport;
+	secondPeriod: ProfitReport;
+	comparison: {
+		profitDifference: number;
+		profitChangePercent: number;
+	};
+}
+
+export interface ProfitComparisonBars {
+	period: {
+		startDate: string;
+		endDate: string;
+	};
+	bars: ProfitReport[];
+	comparison: {
+		bestBar: {
+			barId: string;
+			barName: string;
+			profit: number;
+		};
+		worstBar: {
+			barId: string;
+			barName: string;
+			profit: number;
+		};
+		averageProfit: number;
+	};
+}
+
 export const reportsApi = {
 	getDailyReport: (barId: string, date: string): Promise<DailyReport> =>
 		apiGet<DailyReport>(`/reports/bars/${barId}/daily?date=${date}`),
@@ -130,5 +222,70 @@ export const reportsApi = {
 		queryParams.append('endDate', endDate);
 
 		return apiGet<CompareBarsReport>(`/reports/compare?${queryParams.toString()}`);
+	},
+
+	// Новые методы для отчетов между инвентаризациями
+	getInventories: (barId: string): Promise<Inventory[]> =>
+		apiGet<Inventory[]>(`/reports/bars/${barId}/inventories`),
+
+	getCashAuditReport: (
+		barId: string,
+		startInventoryId: string,
+		endInventoryId: string,
+	): Promise<CashAuditReport> => {
+		const queryParams = new URLSearchParams();
+		queryParams.append('startInventoryId', startInventoryId);
+		queryParams.append('endInventoryId', endInventoryId);
+
+		return apiGet<CashAuditReport>(
+			`/reports/bars/${barId}/cash-audit?${queryParams.toString()}`,
+		);
+	},
+
+	getProfitReport: (
+		barId: string,
+		startInventoryId: string,
+		endInventoryId: string,
+	): Promise<ProfitReport> => {
+		const queryParams = new URLSearchParams();
+		queryParams.append('startInventoryId', startInventoryId);
+		queryParams.append('endInventoryId', endInventoryId);
+
+		return apiGet<ProfitReport>(
+			`/reports/bars/${barId}/profit?${queryParams.toString()}`,
+		);
+	},
+
+	compareProfitPeriods: (
+		barId: string,
+		firstStartInventoryId: string,
+		firstEndInventoryId: string,
+		secondStartInventoryId: string,
+		secondEndInventoryId: string,
+	): Promise<ProfitComparisonPeriods> => {
+		const queryParams = new URLSearchParams();
+		queryParams.append('firstStartInventoryId', firstStartInventoryId);
+		queryParams.append('firstEndInventoryId', firstEndInventoryId);
+		queryParams.append('secondStartInventoryId', secondStartInventoryId);
+		queryParams.append('secondEndInventoryId', secondEndInventoryId);
+
+		return apiGet<ProfitComparisonPeriods>(
+			`/reports/bars/${barId}/profit/compare-periods?${queryParams.toString()}`,
+		);
+	},
+
+	compareProfitBars: (
+		barIds: string[],
+		startInventoryId: string,
+		endInventoryId: string,
+	): Promise<ProfitComparisonBars> => {
+		const queryParams = new URLSearchParams();
+		queryParams.append('barIds', barIds.join(','));
+		queryParams.append('startInventoryId', startInventoryId);
+		queryParams.append('endInventoryId', endInventoryId);
+
+		return apiGet<ProfitComparisonBars>(
+			`/reports/profit/compare-bars?${queryParams.toString()}`,
+		);
 	},
 };

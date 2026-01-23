@@ -16,6 +16,8 @@ import { RevenueListPage } from './pages/Revenue/RevenueListPage';
 import { ExpensesListPage } from './pages/Expenses/ExpensesListPage';
 import { PurchasesListPage } from './pages/Purchases/PurchasesListPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
+import { CashAuditReportPage } from './pages/Reports/CashAuditReportPage';
+import { ProfitReportPage } from './pages/Reports/ProfitReportPage';
 import { OrdersPage } from './pages/Orders/OrdersPage';
 import { OrderCreatePage } from './pages/Orders/OrderCreatePage';
 import { OrderHistoryPage } from './pages/Orders/OrderHistoryPage';
@@ -111,6 +113,22 @@ export const router = createHashRouter([
 				element: (
 					<ProtectedRoute requiredRoles={[RoleType.ADMIN, RoleType.MANAGER]}>
 						<ReportsPage />
+					</ProtectedRoute>
+				),
+			},
+			{
+				path: '/reports/cash-audit',
+				element: (
+					<ProtectedRoute requiredRoles={[RoleType.ADMIN, RoleType.MANAGER]}>
+						<CashAuditReportPage />
+					</ProtectedRoute>
+				),
+			},
+			{
+				path: '/reports/profit',
+				element: (
+					<ProtectedRoute requiredRoles={[RoleType.ADMIN]}>
+						<ProfitReportPage />
 					</ProtectedRoute>
 				),
 			},
