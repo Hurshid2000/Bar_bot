@@ -1,0 +1,103 @@
+.inventory-confirm-form {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.inventory-confirm-items {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.inventory-confirm-items-title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-confirm-items-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 300px;
+	overflow-y: auto;
+	padding: 8px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+}
+
+.inventory-confirm-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background: var(--color-background-card);
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--color-border);
+}
+
+.inventory-confirm-item-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+}
+
+.inventory-confirm-item-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-confirm-item-category {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.inventory-confirm-item-details {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+}
+
+.inventory-confirm-item-quantity {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-primary-500);
+}
+
+.inventory-confirm-item-total {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-confirm-total {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	margin-top: 8px;
+}
+
+.inventory-confirm-total-label {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-confirm-total-value {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--color-success);
+}
+
+.inventory-confirm-form textarea {
+	resize: vertical;
+	min-height: 80px;
+}
