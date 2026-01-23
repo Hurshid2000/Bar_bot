@@ -89,6 +89,9 @@ export function DashboardPage() {
 								<Link to="/products">
 									<Button variant="outline">Управление продуктами</Button>
 								</Link>
+								<Link to="/categories">
+									<Button variant="outline">Категории</Button>
+								</Link>
 								<Link to="/reports">
 									<Button variant="outline">Отчеты</Button>
 								</Link>

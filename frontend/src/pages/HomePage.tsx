@@ -120,6 +120,14 @@ export function HomePage() {
 						>
 							Пользователи
 						</Button>
+						<Button
+							variant="outline"
+							size="lg"
+							className="home-management-button"
+							onClick={() => navigate('/categories')}
+						>
+							Категории
+						</Button>
 					</div>
 				</section>
 			)}
