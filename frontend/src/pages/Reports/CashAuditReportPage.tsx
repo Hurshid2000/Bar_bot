@@ -51,9 +51,6 @@ export function CashAuditReportPage() {
 			label: `${format(new Date(inv.createdAt), 'dd.MM.yyyy')} - ${formatCurrency(inv.totalAmount)}${inv.comment ? ` (${inv.comment})` : ''}`,
 		})) || [];
 
-	const canGenerateReport =
-		barId && startInventoryId && endInventoryId && startInventoryId !== endInventoryId;
-
 	const getStatusIcon = () => {
 		if (!report) return null;
 		switch (report.status) {

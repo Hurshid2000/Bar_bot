@@ -7,8 +7,8 @@ import './ReportsPage.css';
 
 export function ReportsPage() {
 	const { hasRole } = useAuth();
-	const isAdmin = hasRole(RoleType.ADMIN);
-	const isManager = hasRole(RoleType.MANAGER) || isAdmin;
+	const isAdmin = hasRole([RoleType.ADMIN]);
+	const isManager = hasRole([RoleType.MANAGER]) || isAdmin;
 
 	return (
 		<div className="reports-page">
