@@ -5,14 +5,24 @@
 self.addEventListener('push', function (event) {
 	const data = event.data ? event.data.json() : {};
 	const title = data.title || 'Уведомление';
+	
+	// Создаем опции уведомления, иконки опциональны
 	const options = {
 		body: data.body || '',
-		icon: '/icon-192x192.png', // Замените на путь к вашей иконке
-		badge: '/icon-96x96.png',
 		data: data.data || {},
+		requireInteraction: false,
+		silent: false,
 	};
+	
+	// Добавляем иконки только если они есть (опционально)
+	// Можно добавить проверку существования файлов, но для простоты оставляем опциональными
+	// Если иконки не найдены, браузер использует дефолтные
 
-	event.waitUntil(self.registration.showNotification(title, options));
+	event.waitUntil(
+		self.registration.showNotification(title, options).catch((error) => {
+			console.error('Failed to show notification:', error);
+		})
+	);
 });
 
 self.addEventListener('notificationclick', function (event) {

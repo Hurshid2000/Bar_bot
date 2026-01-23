@@ -34,30 +34,43 @@ export function usePushNotifications() {
 				const existingSubscription = await registration.pushManager.getSubscription();
 				if (existingSubscription) {
 					// Если подписка уже есть, регистрируем её на сервере
-					const token = subscriptionToJson(existingSubscription);
-					await notificationsApi.registerToken({
-						token,
-						deviceInfo: navigator.userAgent,
-					});
-					setIsRegistered(true);
-					return;
+					try {
+						const token = subscriptionToJson(existingSubscription);
+						await notificationsApi.registerToken({
+							token,
+							deviceInfo: navigator.userAgent,
+						});
+						setIsRegistered(true);
+					} catch (err) {
+						console.warn('Failed to register existing subscription:', err);
+						// Продолжаем попытку создать новую подписку
+					}
 				}
 
 				// Запрашиваем разрешение и создаем новую подписку
 				const subscription = await requestNotificationPermission();
 				if (!subscription) {
-					setError('Разрешение на уведомления не получено');
+					// Проверяем, не было ли разрешение отклонено
+					if (Notification.permission === 'denied') {
+						setError('Разрешение на уведомления было отклонено. Пожалуйста, включите уведомления в настройках браузера.');
+					} else {
+						setError('Разрешение на уведомления не получено');
+					}
 					return;
 				}
 
 				// Регистрируем токен на сервере
-				const token = subscriptionToJson(subscription);
-				await notificationsApi.registerToken({
-					token,
-					deviceInfo: navigator.userAgent,
-				});
-
-				setIsRegistered(true);
+				try {
+					const token = subscriptionToJson(subscription);
+					await notificationsApi.registerToken({
+						token,
+						deviceInfo: navigator.userAgent,
+					});
+					setIsRegistered(true);
+				} catch (err) {
+					console.error('Failed to register push token:', err);
+					setError('Не удалось зарегистрировать токен уведомлений');
+				}
 			} catch (err) {
 				console.error('Error initializing push notifications:', err);
 				setError(err instanceof Error ? err.message : 'Неизвестная ошибка');

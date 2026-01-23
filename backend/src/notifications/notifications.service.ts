@@ -14,10 +14,16 @@ export class NotificationsService {
 		const subject = process.env.VAPID_SUBJECT || 'mailto:admin@example.com';
 
 		if (publicKey && privateKey) {
-			webpush.setVapidDetails(subject, publicKey, privateKey);
-			this.logger.log('Web Push initialized with VAPID keys');
+			try {
+				webpush.setVapidDetails(subject, publicKey, privateKey);
+				this.logger.log('Web Push initialized with VAPID keys');
+			} catch (error) {
+				this.logger.error('Failed to initialize VAPID keys:', error);
+				this.logger.warn('Push notifications will not work until VAPID keys are properly configured.');
+			}
 		} else {
 			this.logger.warn('VAPID keys not configured. Push notifications will not work.');
+			this.logger.warn('Please set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and optionally VAPID_SUBJECT in your .env file');
 		}
 	}
 
@@ -94,20 +100,51 @@ export class NotificationsService {
 		const results = await Promise.allSettled(
 			tokens.map(async (tokenRecord) => {
 				try {
-					// Парсим токен (должен быть объект subscription)
-					const subscription = JSON.parse(tokenRecord.token);
-					await webpush.sendNotification(subscription, payload);
-					this.logger.log(`Notification sent to user ${userId}`);
-				} catch (error) {
-					this.logger.error(`Failed to send notification to user ${userId}: ${error.message}`);
-					// Если токен невалидный, удаляем его
-					if (error.statusCode === 410 || error.statusCode === 404) {
+					// Валидируем и парсим токен
+					if (!tokenRecord.token || typeof tokenRecord.token !== 'string') {
+						this.logger.warn(`Invalid token format for user ${userId}, token ID: ${tokenRecord.id}`);
 						await this.prisma.pushToken.delete({
 							where: { id: tokenRecord.id },
 						});
-						this.logger.log(`Removed invalid token for user ${userId}`);
+						return;
 					}
-					throw error;
+
+					let subscription;
+					try {
+						subscription = JSON.parse(tokenRecord.token);
+					} catch (parseError) {
+						this.logger.warn(`Failed to parse token for user ${userId}, token ID: ${tokenRecord.id}`);
+						await this.prisma.pushToken.delete({
+							where: { id: tokenRecord.id },
+						});
+						return;
+					}
+
+					// Валидируем структуру subscription
+					if (!subscription.endpoint || !subscription.keys) {
+						this.logger.warn(`Invalid subscription structure for user ${userId}, token ID: ${tokenRecord.id}`);
+						await this.prisma.pushToken.delete({
+							where: { id: tokenRecord.id },
+						});
+						return;
+					}
+
+					await webpush.sendNotification(subscription, payload);
+					this.logger.debug(`Notification sent to user ${userId}, token ID: ${tokenRecord.id}`);
+				} catch (error: any) {
+					this.logger.error(`Failed to send notification to user ${userId}, token ID: ${tokenRecord.id}: ${error?.message || error}`);
+					
+					// Если токен невалидный или истек, удаляем его
+					const statusCode = error?.statusCode || error?.response?.statusCode;
+					if (statusCode === 410 || statusCode === 404 || statusCode === 400) {
+						await this.prisma.pushToken.delete({
+							where: { id: tokenRecord.id },
+						}).catch((deleteError) => {
+							this.logger.error(`Failed to delete invalid token ${tokenRecord.id}:`, deleteError);
+						});
+						this.logger.log(`Removed invalid token for user ${userId}, token ID: ${tokenRecord.id}`);
+					}
+					// Не пробрасываем ошибку дальше, чтобы не прерывать отправку другим токенам
 				}
 			}),
 		);
