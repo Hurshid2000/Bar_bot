@@ -1,0 +1,180 @@
+.client-detail-page {
+	padding: 16px;
+	padding-bottom: 100px;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.client-detail-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.client-detail-header h1 {
+	margin: 0;
+	font-size: 24px;
+	color: var(--color-text-primary);
+}
+
+.client-detail-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.client-detail-card,
+.client-detail-transactions,
+.client-detail-edit-logs {
+	padding: 20px;
+	margin-bottom: 16px;
+}
+
+.client-detail-transactions h2,
+.client-detail-edit-logs h2 {
+	margin: 0 0 16px 0;
+	font-size: 18px;
+	color: var(--color-text-primary);
+}
+
+.client-detail-info {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.client-detail-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.client-detail-label {
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.client-detail-value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.client-detail-balance {
+	font-size: 18px;
+}
+
+.client-balance-debt {
+	color: var(--color-error);
+}
+
+.client-balance-deposit {
+	color: var(--color-success);
+}
+
+.client-detail-transactions-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.client-detail-transaction {
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+}
+
+.client-detail-transaction-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.client-detail-transaction-type {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.client-detail-transaction-amount {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-text-primary);
+}
+
+.client-detail-transaction-comment {
+	margin: 4px 0;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+	font-style: italic;
+}
+
+.client-detail-transaction-date {
+	margin: 0;
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.client-detail-edit-logs-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.client-detail-edit-log {
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+}
+
+.client-detail-edit-log-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.client-detail-edit-log-field {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	text-transform: capitalize;
+}
+
+.client-detail-edit-log-date {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.client-detail-edit-log-changes {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-bottom: 8px;
+	font-size: 13px;
+}
+
+.client-detail-edit-log-old {
+	color: var(--color-text-secondary);
+}
+
+.client-detail-edit-log-new {
+	color: var(--color-text-primary);
+	font-weight: 600;
+}
+
+.client-detail-edit-log-user {
+	margin: 0;
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+	.client-detail-page {
+		padding: 12px;
+		padding-bottom: 100px;
+	}
+}

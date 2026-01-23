@@ -204,6 +204,18 @@ export function BarDashboardPage() {
 				selectedDate={selectedDate}
 			/>
 
+			{/* Кнопка Клиенты */}
+			<div className="bar-dashboard-clients-btn">
+				<Button
+					variant="primary"
+					size="lg"
+					onClick={() => navigate(`/bars/${id}/clients`)}
+					className="bar-dashboard-clients-button"
+				>
+					Должники / Депозитники
+				</Button>
+			</div>
+
 			{/* Кнопка Инвентаризация */}
 			<div className="bar-dashboard-inventory-btn">
 				<Button

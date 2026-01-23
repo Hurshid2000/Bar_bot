@@ -1,0 +1,10 @@
+.client-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.client-modal-form textarea {
+	resize: vertical;
+	min-height: 80px;
+}

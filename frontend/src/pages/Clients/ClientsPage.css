@@ -1,0 +1,187 @@
+.clients-page {
+	width: 100%;
+	padding: 16px;
+	padding-bottom: 100px;
+}
+
+.clients-header {
+	margin-bottom: 16px;
+}
+
+.clients-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.clients-title-section {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.clients-title-section h1 {
+	margin: 0;
+	font-size: 24px;
+	color: var(--color-text-primary);
+}
+
+.clients-statistics {
+	margin-bottom: 24px;
+}
+
+.clients-stat-card {
+	padding: 16px;
+}
+
+.clients-stat-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.clients-stat-item:last-child {
+	margin-bottom: 0;
+}
+
+.clients-stat-label {
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.clients-stat-value {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.clients-stat-debt {
+	color: var(--color-error);
+}
+
+.clients-stat-deposit {
+	color: var(--color-success);
+}
+
+.clients-filters {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.clients-search {
+	position: relative;
+	flex: 1;
+}
+
+.clients-search-icon {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--color-text-secondary);
+}
+
+.clients-search-input {
+	width: 100%;
+	padding: 12px 12px 12px 40px;
+	background: var(--color-background-muted);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	color: var(--color-text-primary);
+	font-size: 16px;
+}
+
+.clients-sort-select {
+	min-width: 150px;
+}
+
+.clients-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.clients-card {
+	padding: 16px;
+}
+
+.clients-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 12px;
+}
+
+.clients-card-info {
+	flex: 1;
+}
+
+.clients-card-name {
+	margin: 0 0 4px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.clients-card-phone {
+	margin: 0;
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.clients-card-balance {
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--color-text-primary);
+}
+
+.clients-balance-debt {
+	color: var(--color-error);
+}
+
+.clients-balance-deposit {
+	color: var(--color-success);
+}
+
+.clients-card-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.clients-empty {
+	padding: 40px 20px;
+	text-align: center;
+	color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+	.clients-page {
+		padding: 12px;
+		padding-bottom: 100px;
+	}
+
+	.clients-title-section {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+	}
+
+	.clients-filters {
+		flex-direction: column;
+	}
+
+	.clients-sort-select {
+		width: 100%;
+	}
+
+	.clients-card-actions {
+		flex-direction: column;
+	}
+
+	.clients-card-actions button {
+		width: 100%;
+	}
+}
