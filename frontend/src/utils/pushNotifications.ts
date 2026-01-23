@@ -44,9 +44,10 @@ export async function requestNotificationPermission(): Promise<PushSubscription 
 		}
 
 		// Подписываемся на push-уведомления
+		const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 		const subscription = await registration.pushManager.subscribe({
 			userVisibleOnly: true,
-			applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+			applicationServerKey: applicationServerKey as BufferSource,
 		});
 
 		return subscription;
