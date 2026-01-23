@@ -108,3 +108,11 @@
 	font-weight: 700;
 	color: var(--color-primary-500);
 }
+
+.order-status-select {
+	min-width: 150px;
+}
+
+.order-status-select select {
+	font-weight: 600;
+}
