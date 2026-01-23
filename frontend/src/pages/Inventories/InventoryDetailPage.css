@@ -1,0 +1,226 @@
+.inventory-detail-page {
+	padding: 16px;
+	padding-bottom: 100px;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.inventory-detail-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.inventory-detail-header h1 {
+	margin: 0;
+	font-size: 24px;
+	color: var(--color-text-primary);
+}
+
+.inventory-detail-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.inventory-detail-card,
+.inventory-detail-comparison,
+.inventory-detail-items,
+.inventory-detail-no-comparison {
+	padding: 20px;
+	margin-bottom: 16px;
+}
+
+.inventory-detail-comparison h2,
+.inventory-detail-items h2 {
+	margin: 0 0 16px 0;
+	font-size: 18px;
+	color: var(--color-text-primary);
+}
+
+.inventory-detail-info {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.inventory-detail-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.inventory-detail-label {
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.inventory-detail-value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-detail-total {
+	font-size: 18px;
+	color: var(--color-success);
+}
+
+.inventory-detail-comment {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border);
+}
+
+.inventory-detail-comment p {
+	margin: 0;
+	font-size: 14px;
+	color: var(--color-text-primary);
+	line-height: 1.5;
+}
+
+.inventory-detail-comparison-summary {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 20px;
+	padding: 16px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+}
+
+.inventory-detail-comparison-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 14px;
+}
+
+.inventory-detail-comparison-item.positive {
+	color: var(--color-success);
+	font-weight: 600;
+}
+
+.inventory-detail-comparison-item.negative {
+	color: var(--color-error);
+	font-weight: 600;
+}
+
+.inventory-detail-comparison-items h3 {
+	margin: 0 0 12px 0;
+	font-size: 16px;
+	color: var(--color-text-primary);
+}
+
+.inventory-detail-comparison-product {
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	margin-bottom: 8px;
+}
+
+.inventory-detail-comparison-product-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	margin-bottom: 8px;
+}
+
+.inventory-detail-comparison-product-details {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.inventory-detail-comparison-detail {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+}
+
+.inventory-detail-comparison-detail span:first-child {
+	color: var(--color-text-secondary);
+}
+
+.inventory-detail-comparison-detail span:last-child {
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-detail-comparison-detail.positive span:last-child {
+	color: var(--color-success);
+}
+
+.inventory-detail-comparison-detail.negative span:last-child {
+	color: var(--color-error);
+}
+
+.inventory-detail-items-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.inventory-detail-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+}
+
+.inventory-detail-item-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+}
+
+.inventory-detail-item-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.inventory-detail-item-category {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.inventory-detail-item-details {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+}
+
+.inventory-detail-item-quantity {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-primary-500);
+}
+
+.inventory-detail-item-price {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.inventory-detail-item-total {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+	.inventory-detail-page {
+		padding: 12px;
+		padding-bottom: 100px;
+	}
+}
