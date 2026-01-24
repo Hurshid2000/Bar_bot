@@ -102,6 +102,13 @@ export class OrdersService {
 		} catch (error) {
 			// Логируем ошибку, но не прерываем создание заказа
 			console.error('Failed to send order notification:', error);
+			console.error('Order data:', JSON.stringify({
+				id: order.id,
+				barId: order.barId,
+				hasBar: !!order.bar,
+				barName: order.bar?.name,
+				itemsCount: order.items?.length,
+			}));
 		}
 
 		return order;

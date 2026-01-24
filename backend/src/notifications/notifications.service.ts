@@ -6,6 +6,7 @@ import { RoleType } from '@prisma/client';
 @Injectable()
 export class NotificationsService {
 	private readonly logger = new Logger(NotificationsService.name);
+	private vapidInitialized = false;
 
 	constructor(private prisma: PrismaService) {
 		// Инициализация web-push с VAPID ключами из переменных окружения
@@ -16,14 +17,17 @@ export class NotificationsService {
 		if (publicKey && privateKey) {
 			try {
 				webpush.setVapidDetails(subject, publicKey, privateKey);
+				this.vapidInitialized = true;
 				this.logger.log('Web Push initialized with VAPID keys');
 			} catch (error) {
 				this.logger.error('Failed to initialize VAPID keys:', error);
 				this.logger.warn('Push notifications will not work until VAPID keys are properly configured.');
+				this.vapidInitialized = false;
 			}
 		} else {
 			this.logger.warn('VAPID keys not configured. Push notifications will not work.');
 			this.logger.warn('Please set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and optionally VAPID_SUBJECT in your .env file');
+			this.vapidInitialized = false;
 		}
 	}
 
@@ -82,14 +86,23 @@ export class NotificationsService {
 	 * Отправка уведомления пользователю
 	 */
 	async sendNotification(userId: string, notification: { title: string; body: string; data?: any }) {
+		if (!this.vapidInitialized) {
+			this.logger.error(`Cannot send notification: VAPID keys not initialized. User: ${userId}, Title: ${notification.title}`);
+			return;
+		}
+
+		this.logger.log(`Sending notification to user ${userId}: ${notification.title}`);
+		
 		const tokens = await this.prisma.pushToken.findMany({
 			where: { userId },
 		});
 
 		if (tokens.length === 0) {
-			this.logger.debug(`No push tokens found for user ${userId}`);
+			this.logger.warn(`No push tokens found for user ${userId}. Notification will not be sent.`);
 			return;
 		}
+
+		this.logger.log(`Found ${tokens.length} push token(s) for user ${userId}`);
 
 		const payload = JSON.stringify({
 			title: notification.title,
@@ -157,19 +170,25 @@ export class NotificationsService {
 	 * Отправка уведомления о создании заказа
 	 */
 	async notifyOrderCreated(order: { id: string; barId?: string; bar?: { id: string; name: string }; items: any[] }) {
+		this.logger.log(`Starting order notification for order ${order.id}`);
+		
 		const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
 		const barName = order.bar?.name || 'Неизвестный бар';
 		const barId = order.barId || order.bar?.id;
 
 		if (!barId) {
-			this.logger.warn('Cannot send order notification: barId is missing');
+			this.logger.error(`Cannot send order notification: barId is missing. Order: ${JSON.stringify({ id: order.id, barId: order.barId, hasBar: !!order.bar })}`);
 			return;
 		}
+
+		this.logger.log(`Order barId: ${barId}, barName: ${barName}`);
 
 		// Получаем всех админов
 		const admins = await this.prisma.user.findMany({
 			where: { role: RoleType.ADMIN },
 		});
+
+		this.logger.log(`Found ${admins.length} admins`);
 
 		// Получаем менеджеров, связанных с этим баром
 		const managers = await this.prisma.user.findMany({
@@ -183,7 +202,16 @@ export class NotificationsService {
 			},
 		});
 
+		this.logger.log(`Found ${managers.length} managers for bar ${barId}`);
+
 		const recipients = [...admins, ...managers];
+
+		if (recipients.length === 0) {
+			this.logger.warn(`No recipients found for order notification. Order ID: ${order.id}, Bar ID: ${barId}`);
+			return;
+		}
+
+		this.logger.log(`Sending notifications to ${recipients.length} recipients`);
 
 		await Promise.all(
 			recipients.map((user) =>
@@ -197,6 +225,8 @@ export class NotificationsService {
 				}),
 			),
 		);
+
+		this.logger.log(`Order notification process completed for order ${order.id}`);
 	}
 
 	/**
