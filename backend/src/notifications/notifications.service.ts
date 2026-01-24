@@ -1,33 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import * as webpush from 'web-push';
+import TelegramBot from 'node-telegram-bot-api';
 import { RoleType } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
 	private readonly logger = new Logger(NotificationsService.name);
-	private vapidInitialized = false;
+	private bot: TelegramBot | null = null;
 
-	constructor(private prisma: PrismaService) {
-		// Инициализация web-push с VAPID ключами из переменных окружения
-		const publicKey = process.env.VAPID_PUBLIC_KEY;
-		const privateKey = process.env.VAPID_PRIVATE_KEY;
-		const subject = process.env.VAPID_SUBJECT || 'mailto:admin@example.com';
-
-		if (publicKey && privateKey) {
+	constructor(
+		private prisma: PrismaService,
+		private configService: ConfigService,
+	) {
+		// Инициализация Telegram Bot
+		const botToken = this.configService.get<string>('BOT_TOKEN');
+		
+		if (botToken) {
 			try {
-				webpush.setVapidDetails(subject, publicKey, privateKey);
-				this.vapidInitialized = true;
-				this.logger.log('Web Push initialized with VAPID keys');
+				this.bot = new TelegramBot(botToken, { polling: false });
+				this.logger.log('Telegram Bot initialized successfully');
 			} catch (error) {
-				this.logger.error('Failed to initialize VAPID keys:', error);
-				this.logger.warn('Push notifications will not work until VAPID keys are properly configured.');
-				this.vapidInitialized = false;
+				this.logger.error('Failed to initialize Telegram Bot:', error);
+				this.logger.warn('Telegram notifications will not work until BOT_TOKEN is properly configured.');
+				this.bot = null;
 			}
 		} else {
-			this.logger.warn('VAPID keys not configured. Push notifications will not work.');
-			this.logger.warn('Please set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and optionally VAPID_SUBJECT in your .env file');
-			this.vapidInitialized = false;
+			this.logger.warn('BOT_TOKEN not configured. Telegram notifications will not work.');
+			this.logger.warn('Please set BOT_TOKEN in your .env file');
+			this.bot = null;
 		}
 	}
 
@@ -83,87 +84,45 @@ export class NotificationsService {
 	}
 
 	/**
-	 * Отправка уведомления пользователю
+	 * Отправка уведомления пользователю через Telegram Bot
 	 */
 	async sendNotification(userId: string, notification: { title: string; body: string; data?: any }) {
-		if (!this.vapidInitialized) {
-			this.logger.error(`Cannot send notification: VAPID keys not initialized. User: ${userId}, Title: ${notification.title}`);
+		if (!this.bot) {
+			this.logger.error(`Cannot send notification: Telegram Bot not initialized. User: ${userId}, Title: ${notification.title}`);
 			return;
 		}
 
-		this.logger.log(`Sending notification to user ${userId}: ${notification.title}`);
+		this.logger.log(`Sending Telegram notification to user ${userId}: ${notification.title}`);
 		
-		const tokens = await this.prisma.pushToken.findMany({
-			where: { userId },
+		// Получаем пользователя с telegramId
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+			select: { telegramId: true, name: true },
 		});
 
-		if (tokens.length === 0) {
-			this.logger.warn(`No push tokens found for user ${userId}. Notification will not be sent.`);
+		if (!user || !user.telegramId) {
+			this.logger.warn(`User ${userId} (${user?.name || 'unknown'}) does not have telegramId. Notification will not be sent.`);
 			return;
 		}
 
-		this.logger.log(`Found ${tokens.length} push token(s) for user ${userId}`);
-
-		const payload = JSON.stringify({
-			title: notification.title,
-			body: notification.body,
-			data: notification.data || {},
-		});
-
-		const results = await Promise.allSettled(
-			tokens.map(async (tokenRecord) => {
-				try {
-					// Валидируем и парсим токен
-					if (!tokenRecord.token || typeof tokenRecord.token !== 'string') {
-						this.logger.warn(`Invalid token format for user ${userId}, token ID: ${tokenRecord.id}`);
-						await this.prisma.pushToken.delete({
-							where: { id: tokenRecord.id },
-						});
-						return;
-					}
-
-					let subscription;
-					try {
-						subscription = JSON.parse(tokenRecord.token);
-					} catch (parseError) {
-						this.logger.warn(`Failed to parse token for user ${userId}, token ID: ${tokenRecord.id}`);
-						await this.prisma.pushToken.delete({
-							where: { id: tokenRecord.id },
-						});
-						return;
-					}
-
-					// Валидируем структуру subscription
-					if (!subscription.endpoint || !subscription.keys) {
-						this.logger.warn(`Invalid subscription structure for user ${userId}, token ID: ${tokenRecord.id}`);
-						await this.prisma.pushToken.delete({
-							where: { id: tokenRecord.id },
-						});
-						return;
-					}
-
-					await webpush.sendNotification(subscription, payload);
-					this.logger.debug(`Notification sent to user ${userId}, token ID: ${tokenRecord.id}`);
-				} catch (error: any) {
-					this.logger.error(`Failed to send notification to user ${userId}, token ID: ${tokenRecord.id}: ${error?.message || error}`);
-					
-					// Если токен невалидный или истек, удаляем его
-					const statusCode = error?.statusCode || error?.response?.statusCode;
-					if (statusCode === 410 || statusCode === 404 || statusCode === 400) {
-						await this.prisma.pushToken.delete({
-							where: { id: tokenRecord.id },
-						}).catch((deleteError) => {
-							this.logger.error(`Failed to delete invalid token ${tokenRecord.id}:`, deleteError);
-						});
-						this.logger.log(`Removed invalid token for user ${userId}, token ID: ${tokenRecord.id}`);
-					}
-					// Не пробрасываем ошибку дальше, чтобы не прерывать отправку другим токенам
-				}
-			}),
-		);
-
-		const successful = results.filter((r) => r.status === 'fulfilled').length;
-		this.logger.log(`Sent ${successful}/${tokens.length} notifications to user ${userId}`);
+		try {
+			// Формируем сообщение
+			const message = `*${notification.title}*\n\n${notification.body}`;
+			
+			// Отправляем сообщение через Telegram Bot
+			await this.bot.sendMessage(user.telegramId, message, {
+				parse_mode: 'Markdown',
+			});
+			
+			this.logger.log(`Telegram notification sent to user ${userId} (telegramId: ${user.telegramId})`);
+		} catch (error: any) {
+			this.logger.error(`Failed to send Telegram notification to user ${userId} (telegramId: ${user.telegramId}): ${error?.message || error}`);
+			
+			// Если пользователь заблокировал бота или чат не найден
+			if (error?.response?.error_code === 403 || error?.response?.error_code === 400) {
+				this.logger.warn(`User ${userId} (telegramId: ${user.telegramId}) may have blocked the bot or chat not found`);
+			}
+		}
 	}
 
 	/**
