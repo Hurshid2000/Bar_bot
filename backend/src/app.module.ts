@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { join } from 'path';
 import { ExpensesModule } from './expenses/expenses.module';
 import { RevenueModule } from './revenue/revenue.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -22,8 +23,9 @@ import { ClientsModule } from './clients/clients.module';
 @Module({
 	imports: [
 		ConfigModule.forRoot({
-			isGlobal: true, // Делает модуль глобально доступным
-			envFilePath: '.env', // Указывает путь к .env файлу
+			isGlobal: true,
+			// Загружаем .env из папки backend (работает при запуске из backend/ и из корня репозитория)
+			envFilePath: [join(process.cwd(), '.env'), join(process.cwd(), 'backend', '.env')],
 		}),
 		PrismaModule,
 		ExpensesModule,

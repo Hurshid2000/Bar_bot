@@ -38,8 +38,15 @@ Platform: Telegram Mini App (future web site).
 - Expenses: simple amount records
 - Purchases: total-based, no stock logic
 
+## Validation
+- See [docs/WHITELIST_RULE.md](docs/WHITELIST_RULE.md) for ValidationPipe configuration
+- Global ValidationPipe: `whitelist: false`, `forbidNonWhitelisted: false`
+- For strict @Body() validation: apply ValidationPipe locally per parameter
+- Query DTO must be created inside modules, not in common/
+
 ## Forbidden
 - No business logic in controllers
 - No role checks inside services
 - No direct DB access outside PrismaService
 - No architecture changes without update of this document
+- No `whitelist: true` in global ValidationPipe (breaks @Query())

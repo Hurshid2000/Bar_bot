@@ -1,11 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import TelegramBot from 'node-telegram-bot-api';
+import * as TelegramBot from 'node-telegram-bot-api';
 import { RoleType } from '@prisma/client';
 
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit {
 	private readonly logger = new Logger(NotificationsService.name);
 	private bot: TelegramBot | null = null;
 
@@ -13,21 +13,26 @@ export class NotificationsService {
 		private prisma: PrismaService,
 		private configService: ConfigService,
 	) {
-		// Инициализация Telegram Bot
+		this.initBot();
+	}
+
+	onModuleInit() {
+		const token = this.configService.get<string>('BOT_TOKEN');
+		this.logger.log(`Telegram notifications: BOT_TOKEN ${token ? 'present (bot ' + (this.bot ? 'OK)' : 'failed to init)') : 'MISSING — set BOT_TOKEN in backend/.env'}`);
+	}
+
+	private initBot() {
 		const botToken = this.configService.get<string>('BOT_TOKEN');
-		
-		if (botToken) {
-			try {
-				this.bot = new TelegramBot(botToken, { polling: false });
-				this.logger.log('Telegram Bot initialized successfully');
-			} catch (error) {
-				this.logger.error('Failed to initialize Telegram Bot:', error);
-				this.logger.warn('Telegram notifications will not work until BOT_TOKEN is properly configured.');
-				this.bot = null;
-			}
-		} else {
+		if (!botToken) {
 			this.logger.warn('BOT_TOKEN not configured. Telegram notifications will not work.');
-			this.logger.warn('Please set BOT_TOKEN in your .env file');
+			this.bot = null;
+			return;
+		}
+		try {
+			this.bot = new TelegramBot(botToken, { polling: false });
+			this.logger.log('Telegram Bot initialized successfully');
+		} catch (error) {
+			this.logger.error('Failed to initialize Telegram Bot:', error);
 			this.bot = null;
 		}
 	}
@@ -84,6 +89,162 @@ export class NotificationsService {
 	}
 
 	/**
+	 * Полная диагностика системы уведомлений — проверяет всё и отправляет тестовое сообщение админу.
+	 */
+	async diagnose(): Promise<any> {
+		const steps: Array<{ step: string; status: string; detail?: any }> = [];
+
+		// 1. Проверка BOT_TOKEN
+		const botToken = this.configService.get<string>('BOT_TOKEN');
+		steps.push({
+			step: '1. BOT_TOKEN в env',
+			status: botToken ? 'OK' : 'FAIL',
+			detail: botToken
+				? `Токен найден (${botToken.slice(0, 6)}...${botToken.slice(-4)})`
+				: 'BOT_TOKEN отсутствует в переменных окружения. Проверьте .env файл.',
+		});
+
+		// 2. Проверка инициализации бота
+		steps.push({
+			step: '2. Инициализация TelegramBot',
+			status: this.bot ? 'OK' : 'FAIL',
+			detail: this.bot ? 'Бот инициализирован' : 'Бот не инициализирован (this.bot = null)',
+		});
+
+		// 3. Проверяем getMe (валидность токена)
+		let getMeResult: any = null;
+		if (this.bot) {
+			try {
+				getMeResult = await this.bot.getMe();
+				steps.push({
+					step: '3. Telegram getMe (валидность токена)',
+					status: 'OK',
+					detail: { username: getMeResult.username, id: getMeResult.id, name: getMeResult.first_name },
+				});
+			} catch (error: any) {
+				steps.push({
+					step: '3. Telegram getMe (валидность токена)',
+					status: 'FAIL',
+					detail: error?.message || String(error),
+				});
+			}
+		} else {
+			steps.push({ step: '3. Telegram getMe', status: 'SKIP', detail: 'Бот не инициализирован' });
+		}
+
+		// 4. Список пользователей в БД
+		const users = await this.prisma.user.findMany({
+			select: { id: true, name: true, telegramId: true, role: true },
+			orderBy: { role: 'asc' },
+		});
+		steps.push({
+			step: '4. Пользователи в БД',
+			status: users.length > 0 ? 'OK' : 'WARN',
+			detail: users.map((u) => ({ id: u.id, name: u.name, telegramId: u.telegramId, role: u.role })),
+		});
+
+		// 5. Есть ли админы (получатели уведомлений о заказах)
+		const admins = users.filter((u) => u.role === 'ADMIN');
+		steps.push({
+			step: '5. Админы (получатели уведомлений)',
+			status: admins.length > 0 ? 'OK' : 'FAIL',
+			detail: admins.length > 0
+				? admins.map((a) => ({ name: a.name, telegramId: a.telegramId }))
+				: 'Нет пользователей с ролью ADMIN. Уведомления о заказах некому отправлять.',
+		});
+
+		// 6. Отправка тестового сообщения первому админу
+		if (this.bot && admins.length > 0) {
+			const admin = admins[0];
+			try {
+				const msg = await this.bot.sendMessage(
+					admin.telegramId,
+					`Диагностика Bar Bot\n\nЭто тестовое сообщение. Если вы его видите — уведомления работают.\n\nВремя: ${new Date().toISOString()}`,
+				);
+				steps.push({
+					step: '6. Отправка тестового сообщения админу',
+					status: 'OK',
+					detail: { sentTo: admin.name, telegramId: admin.telegramId, messageId: msg.message_id },
+				});
+			} catch (error: any) {
+				const code = error?.response?.body?.error_code ?? error?.response?.error_code;
+				const desc = error?.response?.body?.description ?? error?.message ?? String(error);
+				steps.push({
+					step: '6. Отправка тестового сообщения админу',
+					status: 'FAIL',
+					detail: {
+						sentTo: admin.name,
+						telegramId: admin.telegramId,
+						errorCode: code,
+						errorDescription: desc,
+						hint: code === 403
+							? 'Пользователь должен написать боту /start в Telegram'
+							: code === 400
+								? 'Неверный telegramId или чат не найден'
+								: 'Неизвестная ошибка',
+					},
+				});
+			}
+		} else {
+			steps.push({
+				step: '6. Отправка тестового сообщения',
+				status: 'SKIP',
+				detail: !this.bot ? 'Бот не инициализирован' : 'Нет админов для отправки',
+			});
+		}
+
+		const allOk = steps.every((s) => s.status === 'OK' || s.status === 'SKIP');
+
+		return {
+			result: allOk ? 'ALL_OK' : 'HAS_ISSUES',
+			summary: allOk
+				? 'Все проверки пройдены. Если уведомления не приходят, проверьте логи при создании заказа.'
+				: 'Обнаружены проблемы. Смотрите шаги со статусом FAIL.',
+			steps,
+		};
+	}
+
+	/**
+	 * Отправка тестового уведомления (для проверки работы Telegram). Возвращает результат для API.
+	 */
+	async sendTestNotification(userId: string): Promise<{ ok: boolean; error?: string; code?: number; description?: string }> {
+		if (!this.bot) {
+			return { ok: false, error: 'BOT_TOKEN не настроен или бот не инициализирован. Проверьте backend/.env' };
+		}
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+			select: { telegramId: true, name: true },
+		});
+		if (!user || !user.telegramId) {
+			return {
+				ok: false,
+				error: 'У пользователя не указан telegramId. Укажите Telegram ID в профиле/настройках или войдите через Telegram.',
+			};
+		}
+		try {
+			await this.bot.sendMessage(
+				user.telegramId,
+				'Тестовое уведомление от Bar Bot.\n\nЕсли вы видите это сообщение, уведомления работают.',
+			);
+			this.logger.log(`Test notification sent to user ${userId} (telegramId: ${user.telegramId})`);
+			return { ok: true };
+		} catch (error: any) {
+			const code = error?.response?.body?.error_code ?? error?.response?.error_code;
+			const desc = error?.response?.body?.description ?? error?.response?.body ?? error?.message ?? String(error);
+			this.logger.error(`Test notification failed: code=${code}, description=${desc}`);
+			if (code === 403) {
+				return {
+					ok: false,
+					error: 'Пользователь должен написать боту /start в Telegram. Бот не может первым писать в личку.',
+					code,
+					description: String(desc),
+				};
+			}
+			return { ok: false, error: 'Ошибка Telegram API', code, description: String(desc) };
+		}
+	}
+
+	/**
 	 * Отправка уведомления пользователю через Telegram Bot
 	 */
 	async sendNotification(userId: string, notification: { title: string; body: string; data?: any }) {
@@ -106,21 +267,27 @@ export class NotificationsService {
 		}
 
 		try {
-			// Формируем сообщение
-			const message = `*${notification.title}*\n\n${notification.body}`;
-			
-			// Отправляем сообщение через Telegram Bot
-			await this.bot.sendMessage(user.telegramId, message, {
-				parse_mode: 'Markdown',
-			});
-			
+			// Отправляем как обычный текст (без Markdown), чтобы спецсимволы в названии бара и т.д. не вызывали 400
+			const message = `${notification.title}\n\n${notification.body}`;
+
+			await this.bot.sendMessage(user.telegramId, message);
+
 			this.logger.log(`Telegram notification sent to user ${userId} (telegramId: ${user.telegramId})`);
 		} catch (error: any) {
-			this.logger.error(`Failed to send Telegram notification to user ${userId} (telegramId: ${user.telegramId}): ${error?.message || error}`);
-			
-			// Если пользователь заблокировал бота или чат не найден
-			if (error?.response?.error_code === 403 || error?.response?.error_code === 400) {
-				this.logger.warn(`User ${userId} (telegramId: ${user.telegramId}) may have blocked the bot or chat not found`);
+			const code = error?.response?.body?.error_code ?? error?.response?.error_code;
+			const desc = error?.response?.body?.description ?? error?.response?.body ?? error?.message ?? error;
+			this.logger.error(
+				`Failed to send Telegram notification to user ${userId} (telegramId: ${user.telegramId}): code=${code}, description=${JSON.stringify(desc)}`,
+			);
+			// 403 = бот заблокирован или пользователь не начинал диалог с ботом (/start)
+			// 400 = неверный запрос (чат не найден, неверный формат и т.д.)
+			if (code === 403) {
+				this.logger.warn(
+					`Пользователь ${user.telegramId} должен написать боту /start в Telegram, иначе бот не может отправить сообщение`,
+				);
+			}
+			if (code === 400) {
+				this.logger.warn(`Telegram вернул 400 для telegramId=${user.telegramId}. Проверьте, что чат с ботом существует.`);
 			}
 		}
 	}
