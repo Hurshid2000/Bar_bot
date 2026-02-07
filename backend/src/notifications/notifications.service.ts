@@ -298,7 +298,6 @@ export class NotificationsService implements OnModuleInit {
 	async notifyOrderCreated(order: { id: string; barId?: string; bar?: { id: string; name: string }; items: any[] }) {
 		this.logger.log(`Starting order notification for order ${order.id}`);
 		
-		const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
 		const barName = order.bar?.name || 'Неизвестный бар';
 		const barId = order.barId || order.bar?.id;
 
@@ -308,6 +307,11 @@ export class NotificationsService implements OnModuleInit {
 		}
 
 		this.logger.log(`Order barId: ${barId}, barName: ${barName}`);
+
+		// Формируем список товаров
+		const itemsList = order.items
+			.map((item) => `  - ${item.product?.name || 'Товар'}: ${item.quantity} шт.`)
+			.join('\n');
 
 		// Получаем всех админов
 		const admins = await this.prisma.user.findMany({
@@ -342,8 +346,8 @@ export class NotificationsService implements OnModuleInit {
 		await Promise.all(
 			recipients.map((user) =>
 				this.sendNotification(user.id, {
-					title: 'Новый заказ',
-					body: `Заказ #${order.id.slice(0, 8)} из бара "${barName}". Товаров: ${totalItems} шт.`,
+					title: `Новый заказ — ${barName}`,
+					body: `Заказ #${order.id.slice(0, 8)}\n\n${itemsList}`,
 					data: {
 						type: 'order_created',
 						orderId: order.id,
@@ -359,7 +363,6 @@ export class NotificationsService implements OnModuleInit {
 	 * Отправка уведомления о создании прихода
 	 */
 	async notifyArrivalCreated(arrival: { id: string; type: string; barId?: string; bar?: { id: string; name: string }; items: any[] }) {
-		const totalItems = arrival.items.reduce((sum, item) => sum + item.quantity, 0);
 		const barName = arrival.bar?.name || 'Неизвестный бар';
 		const typeLabel = arrival.type === 'ARRIVAL' ? 'Приход' : 'Списание';
 		const barId = arrival.barId || arrival.bar?.id;
@@ -368,6 +371,11 @@ export class NotificationsService implements OnModuleInit {
 			this.logger.warn('Cannot send arrival notification: barId is missing');
 			return;
 		}
+
+		// Формируем список товаров
+		const itemsList = arrival.items
+			.map((item) => `  - ${item.product?.name || 'Товар'}: ${item.quantity} шт.`)
+			.join('\n');
 
 		// Получаем всех админов
 		const admins = await this.prisma.user.findMany({
@@ -391,8 +399,8 @@ export class NotificationsService implements OnModuleInit {
 		await Promise.all(
 			recipients.map((user) =>
 				this.sendNotification(user.id, {
-					title: typeLabel,
-					body: `${typeLabel} #${arrival.id.slice(0, 8)} из бара "${barName}". Товаров: ${totalItems} шт.`,
+					title: `${typeLabel} — ${barName}`,
+					body: `${typeLabel} #${arrival.id.slice(0, 8)}\n\n${itemsList}`,
 					data: {
 						type: 'arrival_created',
 						arrivalId: arrival.id,
