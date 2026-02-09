@@ -183,6 +183,9 @@ export class AuthService {
 		};
 	}
 
+	private readonly MAX_PIN_ATTEMPTS = 5;
+	private readonly PIN_LOCK_MINUTES = 15;
+
 	async authenticateWithPin(pinAuthDto: PinAuthDto): Promise<AuthResponse> {
 		const { telegramId, pin } = pinAuthDto;
 
@@ -196,18 +199,48 @@ export class AuthService {
 			throw new UnauthorizedException('Пользователь не найден. Зарегистрируйтесь через Telegram Mini App.');
 		}
 
-		// Шаг 2: Проверка PIN-кода
+		// Шаг 2: Проверка блокировки
+		if (user.pinLockedUntil && new Date() < user.pinLockedUntil) {
+			const remainingMs = user.pinLockedUntil.getTime() - Date.now();
+			const remainingMin = Math.ceil(remainingMs / 60000);
+			console.log('[AUTH/PIN] Аккаунт заблокирован до:', user.pinLockedUntil);
+			throw new UnauthorizedException(
+				`Слишком много попыток. Попробуйте через ${remainingMin} мин.`,
+			);
+		}
+
+		// Шаг 3: Проверка PIN-кода
 		if (!user.pin) {
 			console.log('[AUTH/PIN] PIN не установлен для пользователя:', user.id);
 			throw new UnauthorizedException('PIN-код не установлен. Установите PIN через Telegram Mini App.');
 		}
 
 		if (user.pin !== pin) {
-			console.log('[AUTH/PIN] Неверный PIN для пользователя:', user.id);
-			throw new UnauthorizedException('Неверный PIN-код');
+			const attempts = user.failedPinAttempts + 1;
+			console.log('[AUTH/PIN] Неверный PIN для пользователя:', user.id, 'Попытка:', attempts);
+
+			if (attempts >= this.MAX_PIN_ATTEMPTS) {
+				// Блокируем на N минут
+				const lockUntil = new Date(Date.now() + this.PIN_LOCK_MINUTES * 60000);
+				await this.usersService.updatePinAttempts(user.id, attempts, lockUntil);
+				throw new UnauthorizedException(
+					`Неверный PIN-код. Аккаунт заблокирован на ${this.PIN_LOCK_MINUTES} минут.`,
+				);
+			}
+
+			await this.usersService.updatePinAttempts(user.id, attempts, null);
+			const remaining = this.MAX_PIN_ATTEMPTS - attempts;
+			throw new UnauthorizedException(
+				`Неверный PIN-код. Осталось попыток: ${remaining}`,
+			);
 		}
 
-		// Шаг 3: Генерация JWT токена
+		// Шаг 4: Успешный вход — сбрасываем счётчик
+		if (user.failedPinAttempts > 0) {
+			await this.usersService.updatePinAttempts(user.id, 0, null);
+		}
+
+		// Шаг 5: Генерация JWT токена
 		const payload = {
 			sub: user.id,
 			role: user.role,
