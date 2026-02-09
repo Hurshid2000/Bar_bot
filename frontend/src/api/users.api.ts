@@ -20,6 +20,9 @@ export const usersApi = {
 
 	getCurrent: (): Promise<User> => apiGet<User>('/users/me'),
 
+	updateMe: (data: { name?: string }): Promise<User> =>
+		apiPatch<User>('/users/me', data),
+
 	getById: (id: string): Promise<User> => apiGet<User>(`/users/${id}`),
 
 	update: (id: string, data: UpdateUserDto): Promise<User> =>

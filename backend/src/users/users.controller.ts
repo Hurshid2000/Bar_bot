@@ -24,6 +24,38 @@ import { RoleType } from '@prisma/client';
 export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
+	@Patch('me')
+	@ApiOperation({ summary: 'Обновить профиль текущего пользователя (имя)' })
+	@ApiResponse({ status: 200, description: 'Профиль обновлен' })
+	@ApiResponse({ status: 401, description: 'Не авторизован' })
+	async updateMe(@Request() req: any, @Body() body: { name?: string }) {
+		if (body.name) {
+			await this.usersService.update(req.user.id, { name: body.name });
+		}
+		const updated = await this.usersService.findOne(req.user.id);
+		return {
+			id: updated.id,
+			telegramId: updated.telegramId,
+			name: updated.name,
+			role: updated.role,
+			createdAt: updated.createdAt.toISOString(),
+			updatedAt: updated.updatedAt.toISOString(),
+			bars: updated.bars?.map((ub: any) => ({
+				id: ub.id,
+				userId: ub.userId,
+				barId: ub.barId,
+				bar: ub.bar
+					? {
+							id: ub.bar.id,
+							name: ub.bar.name,
+							isActive: ub.bar.isActive,
+							createdAt: ub.bar.createdAt.toISOString(),
+						}
+					: undefined,
+			})) || [],
+		};
+	}
+
 	@Get('me')
 	@ApiOperation({ summary: 'Получить данные текущего пользователя' })
 	@ApiResponse({ status: 200, description: 'Данные пользователя' })

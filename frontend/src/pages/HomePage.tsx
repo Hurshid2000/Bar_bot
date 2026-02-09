@@ -137,10 +137,10 @@ export function HomePage() {
 				<Button
 					variant="outline"
 					size="md"
-					onClick={() => navigate('/settings/pin')}
+					onClick={() => navigate('/settings')}
 					className="home-pin-button"
 				>
-					Установить PIN для десктопа
+					Профиль и PIN-код
 				</Button>
 			</section>
 		</div>

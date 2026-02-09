@@ -27,6 +27,7 @@ import { InventoryPage } from './pages/Inventories/InventoryPage';
 import { InventoryDetailPage } from './pages/Inventories/InventoryDetailPage';
 import { ClientsPage } from './pages/Clients/ClientsPage';
 import { ClientDetailPage } from './pages/Clients/ClientDetailPage';
+import { SettingsPage } from './pages/Settings/SettingsPage';
 import { RoleType } from './types/common.types';
 
 // Используем BrowserRouter для десктопной версии
@@ -162,12 +163,16 @@ export const router = createBrowserRouter([
 				path: '/bars/:id/clients',
 				element: <ClientsPage />,
 			},
-			{
-				path: '/clients/:id',
-				element: <ClientDetailPage />,
-			},
-		],
-	},
+		{
+			path: '/clients/:id',
+			element: <ClientDetailPage />,
+		},
+		{
+			path: '/settings',
+			element: <SettingsPage />,
+		},
+	],
+},
 	{
 		path: '*',
 		element: <Navigate to="/" replace />,

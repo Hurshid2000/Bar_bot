@@ -139,10 +139,7 @@ export class AuthService {
 			});
 		} else {
 			console.log('[AUTH] Пользователь найден:', user.id);
-			// Обновляем имя пользователя (если изменилось)
-			if (user.name !== name) {
-				user = await this.usersService.update(user.id, { name });
-			}
+			// Имя НЕ перезаписываем — пользователь может его менять вручную
 		}
 
 		// Шаг 5: Генерация JWT токена

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useBar } from '../../context/BarContext';
 import { Button } from '../ui/Button';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import './Header.css';
 
 export function Header() {
@@ -33,6 +33,9 @@ export function Header() {
 								<span className="header-user-role">{user.role}</span>
 							</div>
 						)}
+						<Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
+							<Settings size={16} />
+						</Button>
 						<Button variant="ghost" size="sm" onClick={handleLogout}>
 							<LogOut size={16} />
 							Выйти
