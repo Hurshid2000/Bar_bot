@@ -1,0 +1,129 @@
+.orders-page {
+	width: 100%;
+	padding: 4px;
+}
+
+.orders-mode-selector {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.orders-mode-btn {
+	flex: 1;
+	max-width: 200px;
+}
+
+.orders-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.orders-action-card {
+	padding: 24px;
+	text-align: center;
+}
+
+.orders-action-card h2 {
+	margin: 0 0 8px 0;
+	color: var(--color-text-primary);
+	font-size: 24px;
+}
+
+.orders-action-card p {
+	margin: 0 0 24px 0;
+	color: var(--color-text-secondary);
+}
+
+.orders-action-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.orders-coming-soon {
+	padding: 40px 24px;
+	text-align: center;
+	color: var(--color-text-secondary);
+}
+
+.orders-history-section {
+	margin-top: 32px;
+}
+
+.orders-history-title {
+	margin: 0 0 16px 0;
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.orders-history-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	gap: 12px;
+}
+
+.orders-history-card {
+	padding: 16px;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.orders-history-card:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-hover);
+}
+
+.orders-history-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 12px;
+}
+
+.orders-history-card-header h4 {
+	margin: 0 0 4px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.orders-history-card-bar {
+	margin: 0;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.orders-history-card-type,
+.orders-history-card-status {
+	font-size: 12px;
+	font-weight: 600;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.1);
+}
+
+.orders-history-card-type[data-type="WRITE_OFF"] {
+	background: var(--color-error);
+	color: white;
+}
+
+.orders-history-card-type[data-type="ARRIVAL"] {
+	background: var(--color-success);
+	color: white;
+}
+
+.orders-history-card-info {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.orders-history-card-date {
+	margin: 0;
+}
+

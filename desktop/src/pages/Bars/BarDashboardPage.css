@@ -1,0 +1,111 @@
+.bar-dashboard-page {
+	padding: 4px;
+}
+
+.bar-dashboard-header-back {
+	margin-bottom: 16px;
+}
+
+.bar-dashboard-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.bar-dashboard-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.bar-dashboard-title {
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	margin: 0;
+}
+
+.bar-dashboard-metrics {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 12px;
+}
+
+.metric-icon-cash {
+	background: rgba(16, 185, 129, 0.1);
+	color: var(--color-success);
+}
+
+.metric-icon-card {
+	background: rgba(74, 144, 226, 0.1);
+	color: var(--color-primary-500);
+}
+
+.metric-icon-expense {
+	background: rgba(239, 68, 68, 0.1);
+	color: var(--color-danger);
+}
+
+.metric-icon-total {
+	background: rgba(91, 108, 255, 0.1);
+	color: var(--color-highlight);
+}
+
+.metric-icon {
+	width: 20px;
+	height: 20px;
+}
+
+.metric-card-total {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.metric-total-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.metric-total-label {
+	font-size: 12px;
+	color: var(--color-text-muted);
+}
+
+.metric-total-value {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.metric-total-value.revenue {
+	color: var(--color-success);
+}
+
+.metric-total-value.profit {
+	color: var(--color-success);
+}
+
+.metric-total-value.loss {
+	color: var(--color-danger);
+}
+
+.bar-dashboard-clients-btn {
+	margin-top: 32px;
+	display: flex;
+	gap: 16px;
+}
+
+.bar-dashboard-clients-button {
+	max-width: 300px;
+}
+
+.bar-dashboard-inventory-btn {
+	margin-top: 16px;
+	display: flex;
+}
+
+.bar-dashboard-inventory-button {
+	max-width: 300px;
+}

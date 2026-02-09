@@ -1,0 +1,15 @@
+.reports-page h1 {
+	margin-bottom: 24px;
+	color: var(--color-text-primary);
+}
+
+.reports-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+.reports-grid p {
+	margin-bottom: 16px;
+	color: var(--color-text-secondary);
+}

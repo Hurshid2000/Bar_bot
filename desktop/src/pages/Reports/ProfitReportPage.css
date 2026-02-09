@@ -1,0 +1,129 @@
+.profit-report-page {
+	padding: 20px;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.page-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.page-header h1 {
+	margin: 0;
+	color: var(--color-text-primary);
+}
+
+.back-button {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.report-filters {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.report-card {
+	margin-top: 20px;
+}
+
+.report-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 16px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.report-profit {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.profit-icon {
+	width: 24px;
+	height: 24px;
+}
+
+.profit-icon.profit-positive {
+	color: var(--color-success);
+}
+
+.profit-icon.profit-negative {
+	color: var(--color-error);
+}
+
+.profit-label {
+	font-weight: 600;
+	color: var(--color-text-secondary);
+}
+
+.profit-value {
+	font-size: 24px;
+	font-weight: 700;
+}
+
+.profit-value.profit-positive {
+	color: var(--color-success);
+}
+
+.profit-value.profit-negative {
+	color: var(--color-error);
+}
+
+.report-period {
+	margin-top: 16px;
+	color: var(--color-text-secondary);
+}
+
+.report-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.report-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.report-item:last-child {
+	border-bottom: none;
+}
+
+.report-item.report-total {
+	border-top: 2px solid var(--color-border);
+	padding-top: 16px;
+	margin-top: 8px;
+}
+
+.item-label {
+	color: var(--color-text-secondary);
+}
+
+.item-value {
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+	.report-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+	}
+
+	.profit-value {
+		font-size: 20px;
+	}
+}

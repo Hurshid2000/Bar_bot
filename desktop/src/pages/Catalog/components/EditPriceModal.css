@@ -1,0 +1,45 @@
+.edit-price-form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.edit-price-product-info {
+	padding: 16px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+}
+
+.edit-price-product-info h4 {
+	margin: 0 0 8px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.edit-price-bar,
+.edit-price-cost,
+.edit-price-default {
+	margin: 4px 0;
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.edit-price-margin {
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	color: var(--color-text-secondary);
+	text-align: center;
+}
+
+.edit-price-margin .positive {
+	color: var(--color-success);
+	font-weight: 600;
+}
+
+.edit-price-margin .negative {
+	color: var(--color-danger);
+	font-weight: 600;
+}

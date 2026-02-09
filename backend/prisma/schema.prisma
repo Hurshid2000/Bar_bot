@@ -10,6 +10,7 @@ model User {
   id         String      @id @default(uuid())
   name       String
   telegramId String      @unique
+  pin        String?     // 4-digit PIN for desktop login
   role       RoleType
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt

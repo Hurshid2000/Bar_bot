@@ -1,0 +1,122 @@
+.arrival-create-page {
+	padding: 4px;
+}
+
+.arrival-create-no-bar {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+}
+
+.arrival-create-header {
+	margin-bottom: 16px;
+}
+
+.arrival-create-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Tabs */
+.arrival-create-tabs {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.arrival-create-tab {
+	flex: 1;
+	padding: 12px 8px;
+	border: 2px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.arrival-create-tab:hover {
+	border-color: var(--color-primary-400);
+}
+
+.arrival-create-tab-active {
+	background: var(--color-primary-500);
+	border-color: var(--color-primary-500);
+	color: white;
+}
+
+/* Search */
+.arrival-create-search {
+	position: relative;
+	margin-bottom: 16px;
+}
+
+.arrival-create-search-icon {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--color-text-muted);
+}
+
+.arrival-create-search-input {
+	width: 100%;
+	padding: 14px 14px 14px 44px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	font-size: 14px;
+	outline: none;
+	transition: all var(--transition-base);
+}
+
+.arrival-create-search-input::placeholder {
+	color: var(--color-text-muted);
+}
+
+.arrival-create-search-input:focus {
+	border-color: var(--color-primary-500);
+}
+
+/* Products List */
+.arrival-create-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.arrival-create-empty {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
+	background: var(--color-background-card);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--color-border);
+}
+
+/* Fixed Arrival Button */
+.arrival-create-fixed-btn {
+	position: fixed;
+	bottom: 24px;
+	right: 32px;
+	padding: 0;
+	background: transparent;
+	border-top: none;
+	z-index: 40;
+}
+
+.arrival-create-btn-full {
+	width: auto;
+	min-width: 200px;
+	box-shadow: 0 4px 20px rgba(74, 144, 226, 0.4);
+}
+
+.arrival-create-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	gap: 12px;
+}

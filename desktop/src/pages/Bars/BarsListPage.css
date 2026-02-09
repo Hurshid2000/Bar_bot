@@ -1,0 +1,46 @@
+.bars-list-page {
+	width: 100%;
+}
+
+.page-header-back {
+	margin-bottom: 16px;
+}
+
+.page-back-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.page-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.page-header h1 {
+	margin: 0;
+	color: var(--color-text-primary);
+}
+
+.bars-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+.bar-info {
+	margin-bottom: 16px;
+}
+
+.bar-info p {
+	margin: 8px 0;
+	color: var(--color-text-secondary);
+}
+
+.bar-actions {
+	display: flex;
+	gap: 8px;
+}
+

@@ -1,0 +1,118 @@
+.login-page {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-background-base);
+	padding: 20px;
+}
+
+.login-container {
+	background: var(--color-background-card);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	padding: 48px;
+	max-width: 440px;
+	width: 100%;
+	text-align: center;
+	box-shadow: var(--shadow-card);
+}
+
+.login-logo {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.login-logo h1 {
+	margin: 0;
+	color: var(--color-text-primary);
+	font-size: 2rem;
+}
+
+.login-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	background: rgba(74, 144, 226, 0.15);
+	color: var(--color-primary-500);
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.login-container > p {
+	color: var(--color-text-secondary);
+	margin-bottom: 32px;
+}
+
+.login-form {
+	margin-bottom: 24px;
+	text-align: left;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.pin-section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.pin-label {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--color-text-primary);
+}
+
+.pin-inputs {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+}
+
+.pin-input {
+	width: 56px;
+	height: 64px;
+	text-align: center;
+	font-size: 28px;
+	font-weight: 700;
+	border: 2px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-background-muted);
+	color: var(--color-text-primary);
+	outline: none;
+	transition: all var(--transition-base);
+	caret-color: var(--color-primary-500);
+}
+
+.pin-input:focus {
+	border-color: var(--color-primary-500);
+	box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+}
+
+.login-error {
+	background: rgba(239, 68, 68, 0.1);
+	color: var(--color-danger);
+	padding: 12px;
+	border-radius: var(--radius-md);
+	margin-bottom: 20px;
+	border-left: 4px solid var(--color-danger);
+	text-align: left;
+	font-size: 14px;
+}
+
+.login-button {
+	width: 100%;
+	margin-bottom: 16px;
+}
+
+.login-note {
+	font-size: 12px;
+	color: var(--color-text-muted);
+	margin: 0;
+}

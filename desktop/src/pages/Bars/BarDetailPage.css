@@ -1,0 +1,9 @@
+.bar-detail-page h1 {
+	margin-bottom: 24px;
+	color: var(--color-text-primary);
+}
+
+.bar-detail-info p {
+	margin: 12px 0;
+	color: var(--color-text-secondary);
+}

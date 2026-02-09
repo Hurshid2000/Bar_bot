@@ -130,4 +130,17 @@ export class UsersService {
 
 		return userBars.map((ub) => ub.bar);
 	}
+
+	async setPin(userId: string, pin: string): Promise<void> {
+		if (!/^\d{4}$/.test(pin)) {
+			throw new Error('PIN должен содержать ровно 4 цифры');
+		}
+
+		await this.findOne(userId); // Проверяем существование
+
+		await this.prisma.user.update({
+			where: { id: userId },
+			data: { pin },
+		});
+	}
 }

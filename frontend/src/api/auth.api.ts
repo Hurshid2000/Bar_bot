@@ -27,3 +27,8 @@ export function getToken(): string | null {
 export function removeToken(): void {
 	localStorage.removeItem(TOKEN_KEY);
 }
+
+export async function setPin(pin: string): Promise<{ message: string }> {
+	const { apiPatch } = await import('./client');
+	return apiPatch<{ message: string }>('/auth/pin', { pin });
+}

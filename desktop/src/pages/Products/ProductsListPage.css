@@ -1,0 +1,31 @@
+.products-list-page {
+	width: 100%;
+}
+
+.products-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+.product-info h3 {
+	margin: 0 0 12px 0;
+	color: var(--color-text-primary);
+}
+
+.product-info p {
+	margin: 8px 0;
+	color: var(--color-text-secondary);
+}
+
+.product-actions {
+	margin-top: 16px;
+	display: flex;
+	gap: 8px;
+}
+
+@media (max-width: 768px) {
+	.products-list {
+		grid-template-columns: 1fr;
+	}
+}

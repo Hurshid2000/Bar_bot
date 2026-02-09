@@ -1,0 +1,20 @@
+.expenses-list-page {
+	width: 100%;
+}
+
+.expenses-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+.expense-info p {
+	margin: 8px 0;
+	color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+	.expenses-list {
+		grid-template-columns: 1fr;
+	}
+}

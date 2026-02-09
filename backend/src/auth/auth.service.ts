@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { TelegramAuthDto } from './dto/telegram-auth.dto';
+import { PinAuthDto } from './dto/pin-auth.dto';
 import {
 	parseInitData,
 	verifyTelegramSignature,
@@ -157,6 +158,71 @@ export class AuthService {
 		console.log('[AUTH] Авторизация успешна для пользователя:', user.id);
 
 		// Получаем полные данные пользователя с барами для фронтенда
+		const userWithBars = await this.usersService.findOne(user.id);
+
+		return {
+			accessToken,
+			user: {
+				id: userWithBars.id,
+				telegramId: userWithBars.telegramId,
+				name: userWithBars.name,
+				role: userWithBars.role,
+				createdAt: userWithBars.createdAt.toISOString(),
+				updatedAt: userWithBars.updatedAt.toISOString(),
+				bars: userWithBars.bars.map((ub) => ({
+					id: ub.id,
+					userId: ub.userId,
+					barId: ub.barId,
+					bar: ub.bar
+						? {
+								id: ub.bar.id,
+								name: ub.bar.name,
+								isActive: ub.bar.isActive,
+								createdAt: ub.bar.createdAt.toISOString(),
+							}
+						: undefined,
+				})),
+			},
+		};
+	}
+
+	async authenticateWithPin(pinAuthDto: PinAuthDto): Promise<AuthResponse> {
+		const { telegramId, pin } = pinAuthDto;
+
+		console.log('[AUTH/PIN] Авторизация по PIN для telegramId:', telegramId);
+
+		// Шаг 1: Поиск пользователя
+		const user = await this.usersService.findByTelegramId(telegramId);
+
+		if (!user) {
+			console.log('[AUTH/PIN] Пользователь не найден:', telegramId);
+			throw new UnauthorizedException('Пользователь не найден. Зарегистрируйтесь через Telegram Mini App.');
+		}
+
+		// Шаг 2: Проверка PIN-кода
+		if (!user.pin) {
+			console.log('[AUTH/PIN] PIN не установлен для пользователя:', user.id);
+			throw new UnauthorizedException('PIN-код не установлен. Установите PIN через Telegram Mini App.');
+		}
+
+		if (user.pin !== pin) {
+			console.log('[AUTH/PIN] Неверный PIN для пользователя:', user.id);
+			throw new UnauthorizedException('Неверный PIN-код');
+		}
+
+		// Шаг 3: Генерация JWT токена
+		const payload = {
+			sub: user.id,
+			role: user.role,
+		};
+
+		const accessToken = this.jwtService.sign(payload, {
+			expiresIn: '7d',
+		});
+
+		console.log('[AUTH/PIN] Авторизация успешна для пользователя:', user.id);
+
+		// Получаем полные данные пользователя с барами
 		const userWithBars = await this.usersService.findOne(user.id);
 
 		return {

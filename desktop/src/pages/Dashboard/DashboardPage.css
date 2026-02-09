@@ -1,0 +1,47 @@
+.dashboard h1 {
+	margin-bottom: 24px;
+	color: var(--color-text-primary);
+}
+
+.dashboard-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 20px;
+	margin-bottom: 32px;
+}
+
+.dashboard-stat-card {
+	text-align: center;
+}
+
+.dashboard-stat-value {
+	font-size: 32px;
+	font-weight: 600;
+	margin-top: 12px;
+}
+
+.dashboard-stat-value.revenue {
+	color: var(--color-success);
+}
+
+.dashboard-stat-value.expense {
+	color: var(--color-danger);
+}
+
+.dashboard-stat-value.profit {
+	color: var(--color-primary-500);
+}
+
+.dashboard-actions {
+	margin-top: 32px;
+}
+
+.dashboard-actions-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 12px;
+}
+
+.dashboard-actions-grid a {
+	text-decoration: none;
+}

@@ -131,6 +131,18 @@ export function HomePage() {
 					</div>
 				</section>
 			)}
+
+			<section className="home-section">
+				<h2 className="home-section-title">Настройки</h2>
+				<Button
+					variant="outline"
+					size="md"
+					onClick={() => navigate('/settings/pin')}
+					className="home-pin-button"
+				>
+					Установить PIN для десктопа
+				</Button>
+			</section>
 		</div>
 	);
 }
