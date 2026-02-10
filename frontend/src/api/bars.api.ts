@@ -11,10 +11,22 @@ export interface UpdateBarDto {
 	isActive?: boolean;
 }
 
+export interface BarMonthlyStats {
+	barId: string;
+	barName: string;
+	totalCash: number;
+	totalCard: number;
+	totalRevenue: number;
+	totalExpenses: number;
+}
+
 export const barsApi = {
 	getAll: (): Promise<Bar[]> => apiGet<Bar[]>('/bars'),
 
 	getById: (id: string): Promise<Bar> => apiGet<Bar>(`/bars/${id}`),
+
+	getMonthlyStats: (startDate: string, endDate: string): Promise<BarMonthlyStats[]> =>
+		apiGet<BarMonthlyStats[]>(`/bars/monthly-stats?startDate=${startDate}&endDate=${endDate}`),
 
 	create: (data: CreateBarDto): Promise<Bar> =>
 		apiPost<Bar>('/bars', data),

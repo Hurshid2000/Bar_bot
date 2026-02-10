@@ -6,9 +6,10 @@ import {
 	Patch,
 	Param,
 	Delete,
+	Query,
 	UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { BarsService } from './bars.service';
 import { CreateBarDto } from './dto/create-bar.dto';
 import { UpdateBarDto } from './dto/update-bar.dto';
@@ -29,6 +30,17 @@ export class BarsController {
 	@Roles(RoleType.ADMIN, RoleType.MANAGER)
 	create(@Body() createBarDto: CreateBarDto) {
 		return this.barsService.create(createBarDto);
+	}
+
+	@Get('monthly-stats')
+	@ApiOperation({ summary: 'Получить месячную статистику всех баров (касса, расходы)' })
+	@ApiQuery({ name: 'startDate', required: true, description: 'Начало периода (yyyy-MM-dd)' })
+	@ApiQuery({ name: 'endDate', required: true, description: 'Конец периода (yyyy-MM-dd)' })
+	getMonthlyStats(
+		@Query('startDate') startDate: string,
+		@Query('endDate') endDate: string,
+	) {
+		return this.barsService.getMonthlyStats(startDate, endDate);
 	}
 
 	@Get()

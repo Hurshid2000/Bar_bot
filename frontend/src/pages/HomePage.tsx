@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBar } from '../context/BarContext';
 import { barsApi } from '../api/bars.api';
-import { revenueApi } from '../api/revenue.api';
+import type { BarMonthlyStats } from '../api/bars.api';
 import { BarCard } from '../components/BarCard';
 import { Loading } from '../components/ui/Loading';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { RoleType, type Bar } from '../types/common.types';
-import { format, startOfToday } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 import './HomePage.css';
 
 export function HomePage() {
@@ -50,25 +50,21 @@ export function HomePage() {
 		return <Loading />;
 	}
 
-	// Получаем выручку за сегодня для всех баров
-	const today = format(startOfToday(), 'yyyy-MM-dd');
-	const { data: todayRevenue } = useQuery({
-		queryKey: ['revenue', 'today', today],
-		queryFn: () => revenueApi.getAll({ startDate: today, endDate: today }),
+	// Даты текущего месяца
+	const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+	const today = format(new Date(), 'yyyy-MM-dd');
+
+	// Получаем месячную статистику баров (агрегация на бекенде)
+	const { data: monthlyStats } = useQuery({
+		queryKey: ['bars', 'monthly-stats', monthStart, today],
+		queryFn: () => barsApi.getMonthlyStats(monthStart, today),
 		enabled: barsToShow.length > 0,
 	});
 
-	// Функция для получения выручки бара за сегодня
-	const getBarRevenue = (barId: string): number => {
-		if (!todayRevenue?.data) return 0;
-		const barRevenue = todayRevenue.data.find((r) => r.barId === barId);
-		return barRevenue ? barRevenue.cash + barRevenue.card : 0;
-	};
-
-	// Функция для получения количества заказов (пока мок, потом будет API)
-	const getBarOrders = (_barId: string): number => {
-		// TODO: Заменить на реальный API когда будет готов
-		return 0;
+	// Получаем статистику для конкретного бара
+	const getBarStats = (barId: string): BarMonthlyStats => {
+		const stats = monthlyStats?.find((s) => s.barId === barId);
+		return stats || { barId, barName: '', totalCash: 0, totalCard: 0, totalRevenue: 0, totalExpenses: 0 };
 	};
 
 	const handleBarClick = (barId: string) => {
@@ -89,16 +85,20 @@ export function HomePage() {
 				<h2 className="home-section-title">My Bars</h2>
 				{barsToShow.length > 0 ? (
 					<div className="home-bars-list">
-						{barsToShow.map((bar) => (
-							<BarCard
-								key={bar.id}
-								id={bar.id}
-								name={bar.name}
-								todayRevenue={getBarRevenue(bar.id)}
-								todayOrders={getBarOrders(bar.id)}
-								onClick={handleBarClick}
-							/>
-						))}
+						{barsToShow.map((bar) => {
+							const stats = getBarStats(bar.id);
+							return (
+								<BarCard
+									key={bar.id}
+									id={bar.id}
+									name={bar.name}
+									monthlyCash={stats.totalCash}
+									monthlyCard={stats.totalCard}
+									monthlyExpenses={stats.totalExpenses}
+									onClick={handleBarClick}
+								/>
+							);
+						})}
 					</div>
 				) : (
 					<Card>

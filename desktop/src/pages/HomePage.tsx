@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBar } from '../context/BarContext';
 import { barsApi } from '../api/bars.api';
-import { revenueApi } from '../api/revenue.api';
-import { expensesApi } from '../api/expenses.api';
+import type { BarMonthlyStats } from '../api/bars.api';
 import { BarCard } from '../components/BarCard';
 import { Loading } from '../components/ui/Loading';
 import { Card } from '../components/ui/Card';
@@ -55,46 +54,20 @@ export function HomePage() {
 	const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
 	const today = format(new Date(), 'yyyy-MM-dd');
 
-	// Получаем выручку за текущий месяц для всех баров
-	const { data: monthlyRevenue } = useQuery({
-		queryKey: ['revenue', 'month', monthStart, today],
-		queryFn: () => revenueApi.getAll({ startDate: monthStart, endDate: today, limit: 1000 }),
+	// Получаем месячную статистику баров (агрегация на бекенде)
+	const { data: monthlyStats } = useQuery({
+		queryKey: ['bars', 'monthly-stats', monthStart, today],
+		queryFn: () => barsApi.getMonthlyStats(monthStart, today),
 		enabled: barsToShow.length > 0,
 	});
 
-	// Получаем расходы за текущий месяц для всех баров
-	const { data: monthlyExpenses } = useQuery({
-		queryKey: ['expenses', 'month', monthStart, today],
-		queryFn: () => expensesApi.getAll({ startDate: monthStart, endDate: today, limit: 1000 }),
-		enabled: barsToShow.length > 0,
-	});
-
-	// Суммируем наличку за месяц для бара
-	const getBarMonthlyCash = (barId: string): number => {
-		if (!monthlyRevenue?.data) return 0;
-		return monthlyRevenue.data
-			.filter((r) => r.barId === barId)
-			.reduce((sum, r) => sum + (r.cash || 0), 0);
-	};
-
-	// Суммируем карту за месяц для бара
-	const getBarMonthlyCard = (barId: string): number => {
-		if (!monthlyRevenue?.data) return 0;
-		return monthlyRevenue.data
-			.filter((r) => r.barId === barId)
-			.reduce((sum, r) => sum + (r.card || 0), 0);
-	};
-
-	// Суммируем расходы за месяц для бара
-	const getBarMonthlyExpenses = (barId: string): number => {
-		if (!monthlyExpenses?.data) return 0;
-		return monthlyExpenses.data
-			.filter((e) => e.barId === barId)
-			.reduce((sum, e) => sum + (e.amount || 0), 0);
+	// Получаем статистику для конкретного бара
+	const getBarStats = (barId: string): BarMonthlyStats => {
+		const stats = monthlyStats?.find((s) => s.barId === barId);
+		return stats || { barId, barName: '', totalCash: 0, totalCard: 0, totalRevenue: 0, totalExpenses: 0 };
 	};
 
 	const handleBarClick = (barId: string) => {
-		// Запоминаем выбранный бар в контексте
 		const bar = barsToShow.find((b) => b.id === barId);
 		if (bar) {
 			setSelectedBar(bar);
@@ -112,17 +85,20 @@ export function HomePage() {
 				<h2 className="home-section-title">My Bars</h2>
 				{barsToShow.length > 0 ? (
 					<div className="home-bars-list">
-						{barsToShow.map((bar) => (
-							<BarCard
-								key={bar.id}
-								id={bar.id}
-								name={bar.name}
-								monthlyCash={getBarMonthlyCash(bar.id)}
-								monthlyCard={getBarMonthlyCard(bar.id)}
-								monthlyExpenses={getBarMonthlyExpenses(bar.id)}
-								onClick={handleBarClick}
-							/>
-						))}
+						{barsToShow.map((bar) => {
+							const stats = getBarStats(bar.id);
+							return (
+								<BarCard
+									key={bar.id}
+									id={bar.id}
+									name={bar.name}
+									monthlyCash={stats.totalCash}
+									monthlyCard={stats.totalCard}
+									monthlyExpenses={stats.totalExpenses}
+									onClick={handleBarClick}
+								/>
+							);
+						})}
 					</div>
 				) : (
 					<Card>
