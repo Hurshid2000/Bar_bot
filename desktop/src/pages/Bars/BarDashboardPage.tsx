@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, DollarSign, CreditCard, TrendingDown, Calculator } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useBar } from '../../context/BarContext';
 import { barsApi } from '../../api/bars.api';
 import { revenueApi } from '../../api/revenue.api';
 import { expensesApi } from '../../api/expenses.api';
@@ -22,6 +23,7 @@ export function BarDashboardPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const { hasRole, isAuthenticated, isLoading: isLoadingAuth } = useAuth();
+	const { setSelectedBar } = useBar();
 	const [selectedDate, setSelectedDate] = useState(startOfToday());
 	const [cashModalOpen, setCashModalOpen] = useState(false);
 	const [cardModalOpen, setCardModalOpen] = useState(false);
@@ -34,6 +36,13 @@ export function BarDashboardPage() {
 		enabled: !!id && !isLoadingAuth && isAuthenticated,
 		retry: false,
 	});
+
+	// Устанавливаем выбранный бар в контексте
+	useEffect(() => {
+		if (bar) {
+			setSelectedBar(bar);
+		}
+	}, [bar, setSelectedBar]);
 
 	// Загружаем выручку за выбранную дату
 	const dateStr = format(selectedDate, 'yyyy-MM-dd');

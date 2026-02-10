@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBar } from '../context/BarContext';
 import { barsApi } from '../api/bars.api';
 import { revenueApi } from '../api/revenue.api';
 import { BarCard } from '../components/BarCard';
@@ -14,6 +15,7 @@ import './HomePage.css';
 
 export function HomePage() {
 	const { user, hasRole } = useAuth();
+	const { setSelectedBar } = useBar();
 	const navigate = useNavigate();
 
 	// Редирект для WORKER на страницу его бара
@@ -70,6 +72,10 @@ export function HomePage() {
 	};
 
 	const handleBarClick = (barId: string) => {
+		const bar = barsToShow.find((b) => b.id === barId);
+		if (bar) {
+			setSelectedBar(bar);
+		}
 		navigate(`/bars/${barId}`);
 	};
 
