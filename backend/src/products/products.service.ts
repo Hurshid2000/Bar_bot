@@ -43,23 +43,22 @@ export class ProductsService {
 			},
 		});
 
-		// Если указана defaultPrice, создаем BarProduct для всех активных баров
-		if (createProductDto.defaultPrice != null) {
-			const bars = await this.prisma.bar.findMany({
-				where: { isActive: true },
-			});
+		// Добавляем продукт во все активные бары
+		const bars = await this.prisma.bar.findMany({
+			where: { isActive: true },
+		});
 
-			if (bars.length > 0) {
-				await this.prisma.barProduct.createMany({
-					data: bars.map((bar) => ({
-						barId: bar.id,
-						productId: product.id,
-						price: createProductDto.defaultPrice!,
-						isActive: true,
-					})),
-					skipDuplicates: true,
-				});
-			}
+		if (bars.length > 0) {
+			const hasPrice = createProductDto.defaultPrice != null;
+			await this.prisma.barProduct.createMany({
+				data: bars.map((bar) => ({
+					barId: bar.id,
+					productId: product.id,
+					price: hasPrice ? createProductDto.defaultPrice! : 0,
+					isActive: hasPrice, // Без цены — неактивный
+				})),
+				skipDuplicates: true,
+			});
 		}
 
 		return product;

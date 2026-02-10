@@ -139,7 +139,17 @@ export class BarProductsService {
 	}
 
 	async update(id: string, updateBarProductDto: UpdateBarProductDto) {
-		await this.findOne(id);
+		const barProduct = await this.findOne(id);
+
+		// Нельзя активировать без указания цены (price > 0)
+		if (updateBarProductDto.isActive === true) {
+			const newPrice = updateBarProductDto.price ?? barProduct.price;
+			if (!newPrice || newPrice <= 0) {
+				throw new BadRequestException(
+					'Для активации продукта необходимо указать цену больше 0',
+				);
+			}
+		}
 
 		return this.prisma.barProduct.update({
 			where: { id },
@@ -156,7 +166,17 @@ export class BarProductsService {
 		productId: string,
 		updateBarProductDto: UpdateBarProductDto,
 	) {
-		await this.findByBarAndProduct(barId, productId);
+		const barProduct = await this.findByBarAndProduct(barId, productId);
+
+		// Нельзя активировать без указания цены (price > 0)
+		if (updateBarProductDto.isActive === true) {
+			const newPrice = updateBarProductDto.price ?? barProduct.price;
+			if (!newPrice || newPrice <= 0) {
+				throw new BadRequestException(
+					'Для активации продукта необходимо указать цену больше 0',
+				);
+			}
+		}
 
 		return this.prisma.barProduct.update({
 			where: {

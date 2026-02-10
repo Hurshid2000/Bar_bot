@@ -54,6 +54,8 @@ export function CatalogPage() {
 	const [showAssignModal, setShowAssignModal] = useState(false);
 	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 	const [editingPriceProduct, setEditingPriceProduct] = useState<Product | null>(null);
+	const [activatingProduct, setActivatingProduct] = useState<Product | null>(null);
+	const [activatingPrice, setActivatingPrice] = useState('');
 	const [viewMode, setViewMode] = useState<ViewMode>(selectedBar ? 'bar' : 'global');
 
 	const isAdmin = hasRole([RoleType.ADMIN]);
@@ -150,6 +152,18 @@ export function CatalogPage() {
 		},
 	});
 
+	// Мутация для активации с ценой
+	const activateWithPriceMutation = useMutation({
+		mutationFn: ({ productId, price }: { productId: string; price: number }) =>
+			barProductsApi.updateByBarAndProduct(selectedBar!.id, productId, { isActive: true, price }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['products'] });
+			queryClient.invalidateQueries({ queryKey: ['bar-products'] });
+			setActivatingProduct(null);
+			setActivatingPrice('');
+		},
+	});
+
 	// Мутация для переключения isActive ГЛОБАЛЬНО (Product)
 	const toggleGlobalActiveMutation = useMutation({
 		mutationFn: ({ productId, isActive }: { productId: string; isActive: boolean }) =>
@@ -194,12 +208,29 @@ export function CatalogPage() {
 		setEditingPriceProduct(product);
 	};
 
+	const handleActivateWithPrice = () => {
+		if (!activatingProduct || !selectedBar) return;
+		const price = parseFloat(activatingPrice);
+		if (isNaN(price) || price <= 0) return;
+		activateWithPriceMutation.mutate({ productId: activatingProduct.id, price });
+	};
+
 	// Переключение isActive в зависимости от режима
 	const handleToggleActive = (product: Product, isActive: boolean) => {
 		if (isGlobalMode) {
 			toggleGlobalActiveMutation.mutate({ productId: product.id, isActive });
 		} else {
 			if (!selectedBar) return;
+			// Если активируем — проверяем наличие цены
+			if (isActive) {
+				const bp = product.barProducts?.find((bp) => bp.barId === selectedBar.id);
+				const price = bp?.price ?? product.price ?? 0;
+				if (!price || price <= 0) {
+					// Открываем модалку установки цены вместо активации
+					setActivatingProduct(product);
+					return;
+				}
+			}
 			toggleBarActiveMutation.mutate({ productId: product.id, isActive });
 		}
 	};
@@ -429,6 +460,44 @@ export function CatalogPage() {
 				onClose={() => setEditingPriceProduct(null)}
 				product={editingPriceProduct}
 			/>
+
+			{/* Модалка активации с ценой */}
+			{activatingProduct && (
+				<div className="modal-overlay" onClick={() => { setActivatingProduct(null); setActivatingPrice(''); }}>
+					<div className="modal-content activate-price-modal" onClick={(e) => e.stopPropagation()}>
+						<h3>Установите цену для активации</h3>
+						<p className="activate-price-product-name">{activatingProduct.name}</p>
+						<p className="activate-price-hint">
+							Чтобы активировать товар в баре, необходимо указать цену продажи
+						</p>
+						<input
+							type="number"
+							className="activate-price-input"
+							placeholder="Цена продажи"
+							value={activatingPrice}
+							onChange={(e) => setActivatingPrice(e.target.value)}
+							min="1"
+							step="any"
+							autoFocus
+						/>
+						<div className="activate-price-actions">
+							<button
+								className="activate-price-cancel"
+								onClick={() => { setActivatingProduct(null); setActivatingPrice(''); }}
+							>
+								Отмена
+							</button>
+							<button
+								className="activate-price-confirm"
+								onClick={handleActivateWithPrice}
+								disabled={!activatingPrice || parseFloat(activatingPrice) <= 0 || activateWithPriceMutation.isPending}
+							>
+								{activateWithPriceMutation.isPending ? 'Сохранение...' : 'Активировать'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

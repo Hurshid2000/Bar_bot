@@ -693,3 +693,88 @@
 .product-card-inactive .food-card-name {
 	text-decoration: line-through;
 }
+
+/* Activate with Price Modal */
+.activate-price-modal {
+	max-width: 400px;
+	text-align: center;
+}
+
+.activate-price-modal h3 {
+	margin: 0 0 8px 0;
+	font-size: 18px;
+	color: var(--color-text-primary);
+}
+
+.activate-price-product-name {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-primary-500);
+	margin: 0 0 8px 0;
+}
+
+.activate-price-hint {
+	font-size: 13px;
+	color: var(--color-text-secondary);
+	margin: 0 0 16px 0;
+	line-height: 1.4;
+}
+
+.activate-price-input {
+	width: 100%;
+	padding: 12px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text-primary);
+	font-size: 16px;
+	text-align: center;
+	outline: none;
+	box-sizing: border-box;
+	transition: border-color var(--transition-base);
+}
+
+.activate-price-input:focus {
+	border-color: var(--color-primary-500);
+}
+
+.activate-price-actions {
+	display: flex;
+	gap: 12px;
+	margin-top: 16px;
+}
+
+.activate-price-cancel,
+.activate-price-confirm {
+	flex: 1;
+	padding: 12px 16px;
+	border: none;
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.activate-price-cancel {
+	background: var(--color-surface-hover);
+	color: var(--color-text-secondary);
+}
+
+.activate-price-cancel:hover {
+	background: var(--color-border);
+}
+
+.activate-price-confirm {
+	background: var(--color-primary-500);
+	color: white;
+}
+
+.activate-price-confirm:hover:not(:disabled) {
+	background: var(--color-primary-600);
+}
+
+.activate-price-confirm:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
