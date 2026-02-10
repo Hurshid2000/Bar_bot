@@ -31,21 +31,32 @@ export class ExpensesService {
 	async findAll(
 		filter: ExpenseFilterDto,
 	): Promise<PaginatedResponse<any>> {
-		const { barId, date, page = 1, limit = 20 } = filter;
+		const { barId, date, startDate, endDate, page = 1, limit = 20 } = filter;
 
 		const where: any = {};
 		if (barId) where.barId = barId;
 		
-		// Если передан date, используем его для точного дня (startOfDay <= createdAt < nextDay)
+		// Если передан date, используем его для точного дня
 		if (date) {
-			// Создаем дату с началом дня в UTC
 			const dateObj = new Date(date + 'T00:00:00.000Z');
 			const nextDay = new Date(dateObj);
 			nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 			where.createdAt = {
 				gte: dateObj,
-				lt: nextDay, // Меньше следующего дня = точный день
+				lt: nextDay,
 			};
+		} else if (startDate || endDate) {
+			where.createdAt = {};
+			if (startDate) {
+				const startDateObj = new Date(startDate + 'T00:00:00.000Z');
+				where.createdAt.gte = startDateObj;
+			}
+			if (endDate) {
+				const endDateObj = new Date(endDate + 'T00:00:00.000Z');
+				const nextDay = new Date(endDateObj);
+				nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+				where.createdAt.lt = nextDay;
+			}
 		}
 
 		const [expenses, total] = await Promise.all([

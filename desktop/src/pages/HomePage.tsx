@@ -5,12 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import { useBar } from '../context/BarContext';
 import { barsApi } from '../api/bars.api';
 import { revenueApi } from '../api/revenue.api';
+import { expensesApi } from '../api/expenses.api';
 import { BarCard } from '../components/BarCard';
 import { Loading } from '../components/ui/Loading';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { RoleType, type Bar } from '../types/common.types';
-import { format, startOfToday } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 import './HomePage.css';
 
 export function HomePage() {
@@ -50,25 +51,46 @@ export function HomePage() {
 		return <Loading />;
 	}
 
-	// Получаем выручку за сегодня для всех баров
-	const today = format(startOfToday(), 'yyyy-MM-dd');
-	const { data: todayRevenue } = useQuery({
-		queryKey: ['revenue', 'today', today],
-		queryFn: () => revenueApi.getAll({ startDate: today, endDate: today }),
+	// Даты текущего месяца
+	const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+	const today = format(new Date(), 'yyyy-MM-dd');
+
+	// Получаем выручку за текущий месяц для всех баров
+	const { data: monthlyRevenue } = useQuery({
+		queryKey: ['revenue', 'month', monthStart, today],
+		queryFn: () => revenueApi.getAll({ startDate: monthStart, endDate: today, limit: 1000 }),
 		enabled: barsToShow.length > 0,
 	});
 
-	// Функция для получения выручки бара за сегодня
-	const getBarRevenue = (barId: string): number => {
-		if (!todayRevenue?.data) return 0;
-		const barRevenue = todayRevenue.data.find((r) => r.barId === barId);
-		return barRevenue ? barRevenue.cash + barRevenue.card : 0;
+	// Получаем расходы за текущий месяц для всех баров
+	const { data: monthlyExpenses } = useQuery({
+		queryKey: ['expenses', 'month', monthStart, today],
+		queryFn: () => expensesApi.getAll({ startDate: monthStart, endDate: today, limit: 1000 }),
+		enabled: barsToShow.length > 0,
+	});
+
+	// Суммируем наличку за месяц для бара
+	const getBarMonthlyCash = (barId: string): number => {
+		if (!monthlyRevenue?.data) return 0;
+		return monthlyRevenue.data
+			.filter((r) => r.barId === barId)
+			.reduce((sum, r) => sum + (r.cash || 0), 0);
 	};
 
-	// Функция для получения количества заказов (пока мок, потом будет API)
-	const getBarOrders = (_barId: string): number => {
-		// TODO: Заменить на реальный API когда будет готов
-		return 0;
+	// Суммируем карту за месяц для бара
+	const getBarMonthlyCard = (barId: string): number => {
+		if (!monthlyRevenue?.data) return 0;
+		return monthlyRevenue.data
+			.filter((r) => r.barId === barId)
+			.reduce((sum, r) => sum + (r.card || 0), 0);
+	};
+
+	// Суммируем расходы за месяц для бара
+	const getBarMonthlyExpenses = (barId: string): number => {
+		if (!monthlyExpenses?.data) return 0;
+		return monthlyExpenses.data
+			.filter((e) => e.barId === barId)
+			.reduce((sum, e) => sum + (e.amount || 0), 0);
 	};
 
 	const handleBarClick = (barId: string) => {
@@ -95,8 +117,9 @@ export function HomePage() {
 								key={bar.id}
 								id={bar.id}
 								name={bar.name}
-								todayRevenue={getBarRevenue(bar.id)}
-								todayOrders={getBarOrders(bar.id)}
+								monthlyCash={getBarMonthlyCash(bar.id)}
+								monthlyCard={getBarMonthlyCard(bar.id)}
+								monthlyExpenses={getBarMonthlyExpenses(bar.id)}
 								onClick={handleBarClick}
 							/>
 						))}
