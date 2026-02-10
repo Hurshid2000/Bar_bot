@@ -7,7 +7,7 @@ import { categoriesApi } from '../../api/categories.api';
 import { useBar } from '../../context/BarContext';
 import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
-import { ProductType, RoleType, type Product } from '../../types/common.types';
+import { ProductType, RoleType, type Product, type BarProduct } from '../../types/common.types';
 import { ProductCard } from './components/ProductCard';
 import { SportpitCard } from './components/SportpitCard';
 import { FoodCard } from './components/FoodCard';
@@ -18,9 +18,9 @@ import { EditProductModal } from './components/EditProductModal';
 import { EditPriceModal } from './components/EditPriceModal';
 import './CatalogPage.css';
 
-type TabType = 'products' | 'sportpit' | 'food';
+type TabType = 'products' | 'sportpit' | 'food' | 'inactive';
 
-const TAB_CONFIG: Record<TabType, { type: ProductType; label: string; emptyText: string }> = {
+const TAB_CONFIG: Record<string, { type?: ProductType; label: string; emptyText: string }> = {
 	products: {
 		type: ProductType.PRODUCT,
 		label: 'Products',
@@ -35,6 +35,10 @@ const TAB_CONFIG: Record<TabType, { type: ProductType; label: string; emptyText:
 		type: ProductType.FOOD,
 		label: 'Food',
 		emptyText: 'Еда не найдена',
+	},
+	inactive: {
+		label: 'Неактивные',
+		emptyText: 'Нет неактивных товаров',
 	},
 };
 
@@ -53,27 +57,49 @@ export function CatalogPage() {
 	const isAdmin = hasRole([RoleType.ADMIN]);
 	const canManage = hasRole([RoleType.ADMIN, RoleType.MANAGER]);
 	const tabConfig = TAB_CONFIG[activeTab];
+	const isInactiveTab = activeTab === 'inactive';
 
 	// Админ видит глобальный каталог даже без выбранного бара
 	const showGlobalCatalog = isAdmin && !selectedBar;
 
+	// Запрос активных товаров (обычные табы)
 	const { data: productsData, isLoading: productsLoading } = useQuery({
 		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery, canManage],
 		queryFn: () =>
 			productsApi.getAll({
 				barId: selectedBar?.id,
-				type: tabConfig.type,
+				type: tabConfig.type as ProductType,
 				categoryId: selectedCategoryId || undefined,
 				search: searchQuery || undefined,
 				page: 1,
 				limit: 50,
 			}),
-		enabled: !!selectedBar || isAdmin,
+		enabled: !isInactiveTab && (!!selectedBar || isAdmin),
 	});
+
+	// Запрос ВСЕХ товаров бара (включая неактивные) — для таба "Неактивные" и бейджа
+	const { data: allBarProducts, isLoading: inactiveLoading } = useQuery({
+		queryKey: ['bar-products', selectedBar?.id, 'includeInactive'],
+		queryFn: () => barProductsApi.getByBar(selectedBar!.id, true),
+		enabled: canManage && !!selectedBar,
+	});
+
+	// Фильтруем неактивные
+	const inactiveProducts: BarProduct[] = (allBarProducts || []).filter(
+		(bp) => !bp.isActive,
+	);
+
+	// Фильтрация неактивных по поиску
+	const filteredInactive = searchQuery
+		? inactiveProducts.filter((bp) =>
+				bp.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+			)
+		: inactiveProducts;
 
 	const { data: categories } = useQuery({
 		queryKey: ['categories', tabConfig.type],
-		queryFn: () => categoriesApi.getAll({ type: tabConfig.type }),
+		queryFn: () => categoriesApi.getAll({ type: tabConfig.type as ProductType }),
+		enabled: !isInactiveTab,
 	});
 
 	// Мутация для переключения isActive
@@ -107,6 +133,7 @@ export function CatalogPage() {
 	};
 
 	const getSearchPlaceholder = () => {
+		if (isInactiveTab) return 'Поиск среди неактивных';
 		if (activeTab === 'products') return 'Поиск по названию или штрих-коду';
 		return 'Поиск по названию';
 	};
@@ -140,15 +167,30 @@ export function CatalogPage() {
 			isActive: productIsActive,
 		};
 
-		switch (activeTab) {
-			case 'products':
-				return <ProductCard key={product.id} product={product} {...editProps} />;
-			case 'sportpit':
+		switch (product.type) {
+			case ProductType.SPORT_PIT:
 				return <SportpitCard key={product.id} product={product} {...editProps} />;
-			case 'food':
+			case ProductType.FOOD:
 				return <FoodCard key={product.id} product={product} {...editProps} />;
+			default:
+				return <ProductCard key={product.id} product={product} {...editProps} />;
 		}
 	};
+
+	const renderInactiveCard = (bp: BarProduct) => {
+		if (!bp.product) return null;
+		const product: Product = {
+			...bp.product,
+			price: bp.price,
+			barProducts: [bp],
+		};
+		return renderProductCard(product);
+	};
+
+	// Табы для отображения
+	const visibleTabs: TabType[] = canManage && selectedBar
+		? ['products', 'sportpit', 'food', 'inactive']
+		: ['products', 'sportpit', 'food'];
 
 	// Не-админы должны выбрать бар
 	if (!selectedBar && !isAdmin) {
@@ -169,14 +211,17 @@ export function CatalogPage() {
 			)}
 
 			{/* Tabs */}
-			<div className="catalog-tabs catalog-tabs-3">
-				{(Object.keys(TAB_CONFIG) as TabType[]).map((tab) => (
+			<div className={`catalog-tabs catalog-tabs-${visibleTabs.length}`}>
+				{visibleTabs.map((tab) => (
 					<button
 						key={tab}
-						className={`catalog-tab ${activeTab === tab ? 'catalog-tab-active' : ''}`}
+						className={`catalog-tab ${activeTab === tab ? 'catalog-tab-active' : ''} ${tab === 'inactive' ? 'catalog-tab-inactive' : ''}`}
 						onClick={() => handleTabChange(tab)}
 					>
 						{TAB_CONFIG[tab].label}
+						{tab === 'inactive' && inactiveProducts.length > 0 && activeTab !== 'inactive' && (
+							<span className="catalog-tab-badge">{inactiveProducts.length}</span>
+						)}
 					</button>
 				))}
 			</div>
@@ -193,7 +238,7 @@ export function CatalogPage() {
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
 				</div>
-				{canManage && (
+				{canManage && !isInactiveTab && (
 					<div className="catalog-action-buttons">
 						{isAdmin && selectedBar && (
 							<button
@@ -217,15 +262,29 @@ export function CatalogPage() {
 				)}
 			</div>
 
-			{/* Category Filter */}
-			<CategoryFilter
-				categories={filteredCategories}
-				selectedCategoryId={selectedCategoryId}
-				onSelect={handleCategorySelect}
-			/>
+			{/* Category Filter (не для неактивных) */}
+			{!isInactiveTab && (
+				<CategoryFilter
+					categories={filteredCategories}
+					selectedCategoryId={selectedCategoryId}
+					onSelect={handleCategorySelect}
+				/>
+			)}
 
 			{/* Products List */}
-			{productsLoading ? (
+			{isInactiveTab ? (
+				inactiveLoading ? (
+					<Loading />
+				) : filteredInactive.length > 0 ? (
+					<div className="catalog-list">
+						{filteredInactive.map(renderInactiveCard)}
+					</div>
+				) : (
+					<div className="catalog-empty">
+						<p>{tabConfig.emptyText}</p>
+					</div>
+				)
+			) : productsLoading ? (
 				<Loading />
 			) : productsData && productsData.data.length > 0 ? (
 				<div className="catalog-list">
@@ -249,13 +308,13 @@ export function CatalogPage() {
 			<AddProductModal
 				isOpen={showAddModal}
 				onClose={() => setShowAddModal(false)}
-				defaultType={tabConfig.type}
+				defaultType={tabConfig.type as ProductType}
 			/>
 
 			<AssignProductModal
 				isOpen={showAssignModal}
 				onClose={() => setShowAssignModal(false)}
-				productType={tabConfig.type}
+				productType={tabConfig.type as ProductType}
 			/>
 
 			<EditProductModal
