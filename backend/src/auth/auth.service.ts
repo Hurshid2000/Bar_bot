@@ -247,7 +247,7 @@ export class AuthService {
 		};
 
 		const accessToken = this.jwtService.sign(payload, {
-			expiresIn: '7d',
+			expiresIn: '8h',
 		});
 
 		console.log('[AUTH/PIN] Авторизация успешна для пользователя:', user.id);

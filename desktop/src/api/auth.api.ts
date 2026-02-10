@@ -2,6 +2,7 @@ import { apiPost, apiPatch } from './client';
 import type { AuthResponse, HealthResponse } from '../types/api.types';
 
 const TOKEN_KEY = 'accessToken';
+const SESSION_START_KEY = 'sessionStart';
 
 export async function authenticateWithPin(
 	telegramId: string,
@@ -23,12 +24,19 @@ export async function checkHealth(): Promise<HealthResponse> {
 
 export function saveToken(token: string): void {
 	localStorage.setItem(TOKEN_KEY, token);
+	localStorage.setItem(SESSION_START_KEY, Date.now().toString());
 }
 
 export function getToken(): string | null {
 	return localStorage.getItem(TOKEN_KEY);
 }
 
+export function getSessionStart(): number | null {
+	const val = localStorage.getItem(SESSION_START_KEY);
+	return val ? parseInt(val, 10) : null;
+}
+
 export function removeToken(): void {
 	localStorage.removeItem(TOKEN_KEY);
+	localStorage.removeItem(SESSION_START_KEY);
 }
