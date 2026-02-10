@@ -112,11 +112,11 @@ export class BarsService {
 			},
 		});
 
-		// Агрегируем expenses по барам
+		// Агрегируем expenses по барам (по полю date)
 		const expenseAgg = await this.prisma.expense.groupBy({
 			by: ['barId'],
 			where: {
-				createdAt: { gte: start, lt: endNext },
+				date: { gte: start, lt: endNext },
 			},
 			_sum: {
 				amount: true,

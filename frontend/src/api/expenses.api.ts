@@ -1,10 +1,17 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 import type { Expense, PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface CreateExpenseDto {
 	barId: string;
 	amount: number;
 	description: string;
+	date?: string; // yyyy-MM-dd, по умолчанию сегодня
+}
+
+export interface UpdateExpenseDto {
+	amount?: number;
+	description?: string;
+	date?: string;
 }
 
 export interface ExpenseFilterParams extends PaginationParams {
@@ -32,6 +39,15 @@ export const expensesApi = {
 		);
 	},
 
+	getById: (id: string): Promise<Expense> =>
+		apiGet<Expense>(`/expenses/${id}`),
+
 	create: (data: CreateExpenseDto): Promise<Expense> =>
 		apiPost<Expense>('/expenses', data),
+
+	update: (id: string, data: UpdateExpenseDto): Promise<Expense> =>
+		apiPatch<Expense>(`/expenses/${id}`, data),
+
+	delete: (id: string): Promise<void> =>
+		apiDelete<void>(`/expenses/${id}`),
 };

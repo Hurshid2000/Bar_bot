@@ -105,6 +105,7 @@ export interface Expense {
 	barId: string;
 	amount: number;
 	description: string;
+	date: string;
 	createdAt: string;
 	bar?: Bar;
 }
