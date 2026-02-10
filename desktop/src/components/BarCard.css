@@ -16,13 +16,9 @@
 
 .bar-card-header {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 12px;
-}
-
-.bar-card-title-section {
-	flex: 1;
+	margin-bottom: 14px;
 }
 
 .bar-card-title {
@@ -44,68 +40,88 @@
 	color: var(--color-primary-500);
 }
 
-.bar-card-metrics {
+/* Body: left column (cash/card/total) | divider | right column (expenses) */
+.bar-card-body {
+	display: flex;
+	align-items: stretch;
+	gap: 16px;
+}
+
+.bar-card-left {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.bar-card-row {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 6px;
 }
 
-.bar-card-metric {
-	flex: 1;
+.bar-card-row-label {
+	font-size: 12px;
+	color: var(--color-text-muted);
+	min-width: 55px;
 }
 
-.bar-card-metric-value {
-	font-size: 16px;
+.bar-card-row-value {
+	font-size: 14px;
 	font-weight: 600;
-	color: var(--color-text-primary);
-	margin-bottom: 4px;
+	margin-left: auto;
 	white-space: nowrap;
 }
 
-.bar-card-metric-value.revenue {
+.bar-card-row-value.revenue {
 	color: var(--color-success);
 }
 
-.bar-card-metric-value.expense {
-	color: #ef4444;
+.bar-card-row-value.total {
+	color: var(--color-primary-400);
 }
 
-.bar-card-metric-label {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	font-size: 11px;
-	color: var(--color-text-muted);
-}
-
-.bar-card-icon {
-	width: 12px;
-	height: 12px;
+.bar-card-row-total {
+	margin-top: 4px;
+	padding-top: 6px;
+	border-top: 1px solid var(--color-border);
 }
 
 .bar-card-divider {
 	width: 1px;
-	height: 36px;
 	background: var(--color-border);
 	flex-shrink: 0;
+	align-self: stretch;
 }
 
-.bar-card-total {
+.bar-card-right {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-width: 100px;
+	padding: 0 4px;
+}
+
+.bar-card-expense-value {
+	font-size: 18px;
+	font-weight: 700;
+	color: #ef4444;
+	white-space: nowrap;
+	margin-bottom: 4px;
+}
+
+.bar-card-expense-label {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	margin-top: 10px;
-	padding-top: 10px;
-	border-top: 1px solid var(--color-border);
-}
-
-.bar-card-total-label {
+	gap: 4px;
 	font-size: 12px;
 	color: var(--color-text-muted);
 }
 
-.bar-card-total-value {
-	font-size: 16px;
-	font-weight: 700;
-	color: var(--color-primary-400);
+.bar-card-icon {
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+	color: var(--color-text-muted);
 }
