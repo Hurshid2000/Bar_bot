@@ -27,12 +27,14 @@ function getCategoryIcon(categoryName?: string): string {
 interface ProductCardProps {
 	product: Product;
 	selected?: boolean;
+	isActive?: boolean;
 	onClick?: () => void;
 	onEditProduct?: (product: Product) => void;
 	onEditPrice?: (product: Product) => void;
+	onToggleActive?: (product: Product, isActive: boolean) => void;
 }
 
-export function ProductCard({ product, selected, onClick, onEditProduct, onEditPrice }: ProductCardProps) {
+export function ProductCard({ product, selected, isActive, onClick, onEditProduct, onEditPrice, onToggleActive }: ProductCardProps) {
 	const handleEditProduct = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onEditProduct?.(product);
@@ -43,9 +45,14 @@ export function ProductCard({ product, selected, onClick, onEditProduct, onEditP
 		onEditPrice?.(product);
 	};
 
+	const handleToggleActive = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onToggleActive?.(product, !isActive);
+	};
+
 	return (
 		<div
-			className={`product-card ${selected ? 'product-card-selected' : ''}`}
+			className={`product-card ${selected ? 'product-card-selected' : ''} ${isActive === false ? 'product-card-inactive' : ''}`}
 			onClick={onClick}
 		>
 			<div className="product-card-icon">
@@ -62,8 +69,19 @@ export function ProductCard({ product, selected, onClick, onEditProduct, onEditP
 				</div>
 			</div>
 
-			{(onEditProduct || onEditPrice) && (
+			{(onEditProduct || onEditPrice || onToggleActive) && (
 				<div className="card-actions">
+					{onToggleActive && (
+						<button
+							className={`card-action-btn card-action-btn-toggle ${isActive ? 'active' : 'inactive'}`}
+							onClick={handleToggleActive}
+							title={isActive ? 'Скрыть из ассортимента' : 'Вернуть в ассортимент'}
+						>
+							<div className={`toggle-switch ${isActive ? 'toggle-on' : 'toggle-off'}`}>
+								<div className="toggle-knob" />
+							</div>
+						</button>
+					)}
 					{onEditProduct && (
 						<button className="card-action-btn" onClick={handleEditProduct} title="Редактировать">
 							<Edit2 size={16} />

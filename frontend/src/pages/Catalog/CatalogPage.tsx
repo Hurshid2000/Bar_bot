@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, PackagePlus } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
+import { barProductsApi } from '../../api/barProducts.api';
 import { categoriesApi } from '../../api/categories.api';
 import { useBar } from '../../context/BarContext';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +41,7 @@ const TAB_CONFIG: Record<TabType, { type: ProductType; label: string; emptyText:
 export function CatalogPage() {
 	const { selectedBar } = useBar();
 	const { hasRole } = useAuth();
+	const queryClient = useQueryClient();
 	const [activeTab, setActiveTab] = useState<TabType>('products');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -56,17 +58,17 @@ export function CatalogPage() {
 	const showGlobalCatalog = isAdmin && !selectedBar;
 
 	const { data: productsData, isLoading: productsLoading } = useQuery({
-		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery],
+		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery, canManage],
 		queryFn: () =>
 			productsApi.getAll({
-				barId: selectedBar?.id, // undefined для глобального каталога
+				barId: selectedBar?.id,
 				type: tabConfig.type,
 				categoryId: selectedCategoryId || undefined,
 				search: searchQuery || undefined,
 				page: 1,
 				limit: 50,
 			}),
-		enabled: !!selectedBar || isAdmin, // Админ может видеть без бара
+		enabled: !!selectedBar || isAdmin,
 	});
 
 	const { data: categories } = useQuery({
@@ -74,7 +76,16 @@ export function CatalogPage() {
 		queryFn: () => categoriesApi.getAll({ type: tabConfig.type }),
 	});
 
-	// Categories already filtered by API
+	// Мутация для переключения isActive
+	const toggleActiveMutation = useMutation({
+		mutationFn: ({ productId, isActive }: { productId: string; isActive: boolean }) =>
+			barProductsApi.updateByBarAndProduct(selectedBar!.id, productId, { isActive }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['products'] });
+			queryClient.invalidateQueries({ queryKey: ['bar-products'] });
+		},
+	});
+
 	const filteredCategories = categories || [];
 
 	const handleTabChange = (tab: TabType) => {
@@ -89,10 +100,8 @@ export function CatalogPage() {
 
 	const handleAddProduct = () => {
 		if (isAdmin) {
-			// Admin can create new global products
 			setShowAddModal(true);
 		} else if (canManage) {
-			// Manager can assign existing products to bar
 			setShowAssignModal(true);
 		}
 	};
@@ -110,10 +119,25 @@ export function CatalogPage() {
 		setEditingPriceProduct(product);
 	};
 
+	const handleToggleActive = (product: Product, isActive: boolean) => {
+		if (!selectedBar) return;
+		toggleActiveMutation.mutate({ productId: product.id, isActive });
+	};
+
+	// Получаем isActive из barProducts для продукта
+	const getProductIsActive = (product: Product): boolean | undefined => {
+		if (!selectedBar) return undefined;
+		const bp = product.barProducts?.find((bp) => bp.barId === selectedBar.id);
+		return bp?.isActive;
+	};
+
 	const renderProductCard = (product: Product) => {
+		const productIsActive = getProductIsActive(product);
 		const editProps = {
 			onEditProduct: isAdmin ? handleEditProduct : undefined,
 			onEditPrice: canManage && selectedBar ? handleEditPrice : undefined,
+			onToggleActive: canManage && selectedBar ? handleToggleActive : undefined,
+			isActive: productIsActive,
 		};
 
 		switch (activeTab) {

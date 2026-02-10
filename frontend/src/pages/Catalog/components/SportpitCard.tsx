@@ -1,7 +1,6 @@
 import { Tag, Edit2, DollarSign } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 
-// Default sportpit icons for categories
 const sportpitIcons: Record<string, string> = {
 	'Протеины': '💪',
 	'Proteins': '💪',
@@ -29,12 +28,14 @@ function formatPrice(price: number): string {
 
 interface SportpitCardProps {
 	product: Product;
+	isActive?: boolean;
 	onClick?: () => void;
 	onEditProduct?: (product: Product) => void;
 	onEditPrice?: (product: Product) => void;
+	onToggleActive?: (product: Product, isActive: boolean) => void;
 }
 
-export function SportpitCard({ product, onClick, onEditProduct, onEditPrice }: SportpitCardProps) {
+export function SportpitCard({ product, isActive, onClick, onEditProduct, onEditPrice, onToggleActive }: SportpitCardProps) {
 	const handleEditProduct = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onEditProduct?.(product);
@@ -45,8 +46,13 @@ export function SportpitCard({ product, onClick, onEditProduct, onEditPrice }: S
 		onEditPrice?.(product);
 	};
 
+	const handleToggleActive = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onToggleActive?.(product, !isActive);
+	};
+
 	return (
-		<div className="sportpit-card" onClick={onClick}>
+		<div className={`sportpit-card ${isActive === false ? 'product-card-inactive' : ''}`} onClick={onClick}>
 			<div className="sportpit-card-header">
 				<div className="sportpit-card-image">
 					{product.imageUrl ? (
@@ -80,8 +86,19 @@ export function SportpitCard({ product, onClick, onEditProduct, onEditPrice }: S
 				</div>
 			)}
 
-			{(onEditProduct || onEditPrice) && (
+			{(onEditProduct || onEditPrice || onToggleActive) && (
 				<div className="card-actions">
+					{onToggleActive && (
+						<button
+							className={`card-action-btn card-action-btn-toggle ${isActive ? 'active' : 'inactive'}`}
+							onClick={handleToggleActive}
+							title={isActive ? 'Скрыть из ассортимента' : 'Вернуть в ассортимент'}
+						>
+							<div className={`toggle-switch ${isActive ? 'toggle-on' : 'toggle-off'}`}>
+								<div className="toggle-knob" />
+							</div>
+						</button>
+					)}
 					{onEditProduct && (
 						<button className="card-action-btn" onClick={handleEditProduct} title="Редактировать">
 							<Edit2 size={16} />

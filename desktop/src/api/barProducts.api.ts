@@ -27,9 +27,9 @@ export const barProductsApi = {
 	bulkAssign: (barId: string, products: BulkAssignProduct[]): Promise<BarProduct[]> =>
 		apiPost<BarProduct[]>(`/bar-products/bar/${barId}/bulk`, products),
 
-	// Получить все продукты бара
-	getByBar: (barId: string): Promise<BarProduct[]> =>
-		apiGet<BarProduct[]>(`/bar-products/bar/${barId}`),
+	// Получить все продукты бара (по умолчанию только активные)
+	getByBar: (barId: string, includeInactive = false): Promise<BarProduct[]> =>
+		apiGet<BarProduct[]>(`/bar-products/bar/${barId}${includeInactive ? '?includeInactive=true' : ''}`),
 
 	// Получить связь по ID
 	getById: (id: string): Promise<BarProduct> =>

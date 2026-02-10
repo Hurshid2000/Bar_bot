@@ -37,7 +37,7 @@ export class InventoriesService {
 			where: { id: { in: productIds } },
 			include: {
 				barProducts: {
-					where: { barId },
+					where: { barId, isActive: true },
 					select: { price: true },
 				},
 			},

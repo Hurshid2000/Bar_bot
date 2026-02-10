@@ -2,7 +2,6 @@ import { UtensilsCrossed, Edit2, DollarSign } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 import { formatCurrency } from '../../../utils/format';
 
-// Category icons mapping for food
 const foodIcons: Record<string, string> = {
 	'Завтраки': '🍳',
 	'Breakfast': '🍳',
@@ -30,12 +29,14 @@ function getFoodIcon(categoryName?: string): string {
 
 interface FoodCardProps {
 	product: Product;
+	isActive?: boolean;
 	onClick?: () => void;
 	onEditProduct?: (product: Product) => void;
 	onEditPrice?: (product: Product) => void;
+	onToggleActive?: (product: Product, isActive: boolean) => void;
 }
 
-export function FoodCard({ product, onClick, onEditProduct, onEditPrice }: FoodCardProps) {
+export function FoodCard({ product, isActive, onClick, onEditProduct, onEditPrice, onToggleActive }: FoodCardProps) {
 	const hasImage = !!product.imageUrl;
 
 	const handleEditProduct = (e: React.MouseEvent) => {
@@ -48,8 +49,13 @@ export function FoodCard({ product, onClick, onEditProduct, onEditPrice }: FoodC
 		onEditPrice?.(product);
 	};
 
+	const handleToggleActive = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onToggleActive?.(product, !isActive);
+	};
+
 	return (
-		<div className="food-card" onClick={onClick}>
+		<div className={`food-card ${isActive === false ? 'product-card-inactive' : ''}`} onClick={onClick}>
 			<div className="food-card-image">
 				{hasImage ? (
 					<img src={product.imageUrl} alt={product.name} />
@@ -79,8 +85,19 @@ export function FoodCard({ product, onClick, onEditProduct, onEditPrice }: FoodC
 					<p className="food-card-description">{product.description}</p>
 				)}
 
-				{(onEditProduct || onEditPrice) && (
+				{(onEditProduct || onEditPrice || onToggleActive) && (
 					<div className="card-actions">
+						{onToggleActive && (
+							<button
+								className={`card-action-btn card-action-btn-toggle ${isActive ? 'active' : 'inactive'}`}
+								onClick={handleToggleActive}
+								title={isActive ? 'Скрыть из ассортимента' : 'Вернуть в ассортимент'}
+							>
+								<div className={`toggle-switch ${isActive ? 'toggle-on' : 'toggle-off'}`}>
+									<div className="toggle-knob" />
+								</div>
+							</button>
+						)}
 						{onEditProduct && (
 							<button className="card-action-btn" onClick={handleEditProduct} title="Редактировать">
 								<Edit2 size={16} />
