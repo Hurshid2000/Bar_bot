@@ -3,6 +3,7 @@ import {
 	IsOptional,
 	IsNotEmpty,
 	IsNumber,
+	IsBoolean,
 	Min,
 	IsEnum,
 } from 'class-validator';
@@ -39,4 +40,8 @@ export class UpdateProductDto {
 	@IsOptional()
 	@IsString()
 	description?: string;
+
+	@IsOptional()
+	@IsBoolean()
+	isActive?: boolean;
 }

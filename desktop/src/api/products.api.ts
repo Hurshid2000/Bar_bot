@@ -26,6 +26,7 @@ export interface UpdateProductDto {
 	categoryId?: string;
 	imageUrl?: string;
 	description?: string;
+	isActive?: boolean;
 }
 
 export interface ProductFilterParams extends PaginationParams {
@@ -33,6 +34,7 @@ export interface ProductFilterParams extends PaginationParams {
 	categoryId?: string;
 	type?: ProductType;
 	search?: string;
+	includeInactive?: boolean;
 }
 
 export const productsApi = {
@@ -42,6 +44,7 @@ export const productsApi = {
 		if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
 		if (params?.type) queryParams.append('type', params.type);
 		if (params?.search) queryParams.append('search', params.search);
+		if (params?.includeInactive) queryParams.append('includeInactive', 'true');
 		if (params?.page) queryParams.append('page', params.page.toString());
 		if (params?.limit) queryParams.append('limit', params.limit.toString());
 

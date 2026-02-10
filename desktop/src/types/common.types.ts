@@ -73,6 +73,7 @@ export interface Product {
 	category?: Category;
 	imageUrl?: string;
 	description?: string;
+	isActive?: boolean; // Глобальный статус продукта
 	// Цена из BarProduct (если запрашивали с barId)
 	price?: number | null;
 	barProduct?: BarProduct | null;

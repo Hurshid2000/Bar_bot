@@ -19,6 +19,50 @@
 	text-align: center;
 }
 
+/* View Mode Toggle */
+.catalog-view-toggle {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+	background: var(--color-surface);
+	border-radius: var(--radius-lg);
+	padding: 4px;
+	border: 1px solid var(--color-border);
+}
+
+.catalog-view-btn {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 10px 16px;
+	border: none;
+	border-radius: var(--radius-md);
+	background: transparent;
+	color: var(--color-text-secondary);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.catalog-view-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.catalog-view-btn-active {
+	background: var(--color-primary-500);
+	color: white;
+	box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.catalog-view-btn:not(.catalog-view-btn-active):not(:disabled):hover {
+	background: var(--color-surface-hover);
+	color: var(--color-text-primary);
+}
+
 /* Tabs */
 .catalog-tabs {
 	display: flex;

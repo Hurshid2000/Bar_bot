@@ -70,6 +70,7 @@ export class ProductsService {
 		pagination: PaginationDto,
 		userRole?: RoleType,
 		search?: SearchDto,
+		includeInactive = false,
 	): Promise<PaginatedResponse<any>> {
 		const { barId, categoryId, type } = filter;
 		const { page = 1, limit = 20 } = pagination;
@@ -79,6 +80,11 @@ export class ProductsService {
 		if (categoryId) where.categoryId = categoryId;
 		if (type) where.type = type;
 
+		// Глобальный каталог: фильтруем по isActive
+		if (!barId && !includeInactive) {
+			where.isActive = true;
+		}
+
 		// Если указан barId, фильтруем по продуктам, которые есть в этом баре
 		if (barId) {
 			where.barProducts = {
@@ -87,6 +93,8 @@ export class ProductsService {
 					isActive: true,
 				},
 			};
+			// Также показываем только глобально активные продукты
+			where.isActive = true;
 		}
 
 		// Поиск по имени и barcode
@@ -201,13 +209,23 @@ export class ProductsService {
 			}
 		}
 
-		return this.prisma.product.update({
+		const updatedProduct = await this.prisma.product.update({
 			where: { id },
 			data: updateProductDto,
 			include: {
 				category: true,
 			},
 		});
+
+		// Если продукт деактивирован глобально — деактивировать во всех барах
+		if (updateProductDto.isActive === false) {
+			await this.prisma.barProduct.updateMany({
+				where: { productId: id, isActive: true },
+				data: { isActive: false },
+			});
+		}
+
+		return updatedProduct;
 	}
 
 	async remove(id: string) {

@@ -68,6 +68,7 @@ model Product {
   categoryId   String
   imageUrl     String?
   description  String?
+  isActive     Boolean      @default(true)
   createdAt    DateTime     @default(now())
   category     Category     @relation(fields: [categoryId], references: [id])
   barProducts  BarProduct[]

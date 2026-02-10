@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, PackagePlus } from 'lucide-react';
+import { Search, Plus, PackagePlus, Globe, Store } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
 import { barProductsApi } from '../../api/barProducts.api';
 import { categoriesApi } from '../../api/categories.api';
@@ -19,6 +19,7 @@ import { EditPriceModal } from './components/EditPriceModal';
 import './CatalogPage.css';
 
 type TabType = 'products' | 'sportpit' | 'food' | 'inactive';
+type ViewMode = 'bar' | 'global';
 
 const TAB_CONFIG: Record<string, { type?: ProductType; label: string; emptyText: string }> = {
 	products: {
@@ -53,18 +54,19 @@ export function CatalogPage() {
 	const [showAssignModal, setShowAssignModal] = useState(false);
 	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 	const [editingPriceProduct, setEditingPriceProduct] = useState<Product | null>(null);
+	const [viewMode, setViewMode] = useState<ViewMode>(selectedBar ? 'bar' : 'global');
 
 	const isAdmin = hasRole([RoleType.ADMIN]);
 	const canManage = hasRole([RoleType.ADMIN, RoleType.MANAGER]);
 	const tabConfig = TAB_CONFIG[activeTab];
 	const isInactiveTab = activeTab === 'inactive';
+	const isGlobalMode = viewMode === 'global';
 
-	// Админ видит глобальный каталог даже без выбранного бара
-	const showGlobalCatalog = isAdmin && !selectedBar;
+	// ===== ЗАПРОСЫ ДЛЯ РЕЖИМА "БАР" =====
 
-	// Запрос активных товаров (обычные табы)
-	const { data: productsData, isLoading: productsLoading } = useQuery({
-		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery, canManage],
+	// Активные товары бара
+	const { data: barProductsData, isLoading: barProductsLoading } = useQuery({
+		queryKey: ['products', selectedBar?.id, tabConfig.type, selectedCategoryId, searchQuery, canManage, 'bar-view'],
 		queryFn: () =>
 			productsApi.getAll({
 				barId: selectedBar?.id,
@@ -74,27 +76,61 @@ export function CatalogPage() {
 				page: 1,
 				limit: 50,
 			}),
-		enabled: !isInactiveTab && (!!selectedBar || isAdmin),
+		enabled: !isGlobalMode && !isInactiveTab && !!selectedBar,
 	});
 
-	// Запрос ВСЕХ товаров бара (включая неактивные) — для таба "Неактивные" и бейджа
-	const { data: allBarProducts, isLoading: inactiveLoading } = useQuery({
+	// Все BarProducts (включая неактивные) — для таба "Неактивные" бара и бейджа
+	const { data: allBarProducts, isLoading: barInactiveLoading } = useQuery({
 		queryKey: ['bar-products', selectedBar?.id, 'includeInactive'],
 		queryFn: () => barProductsApi.getByBar(selectedBar!.id, true),
-		enabled: canManage && !!selectedBar,
+		enabled: !isGlobalMode && canManage && !!selectedBar,
 	});
 
-	// Фильтруем неактивные
-	const inactiveProducts: BarProduct[] = (allBarProducts || []).filter(
+	// Неактивные BarProducts
+	const inactiveBarProducts: BarProduct[] = (allBarProducts || []).filter(
 		(bp) => !bp.isActive,
 	);
 
-	// Фильтрация неактивных по поиску
-	const filteredInactive = searchQuery
-		? inactiveProducts.filter((bp) =>
+	const filteredInactiveBar = searchQuery
+		? inactiveBarProducts.filter((bp) =>
 				bp.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
 			)
-		: inactiveProducts;
+		: inactiveBarProducts;
+
+	// ===== ЗАПРОСЫ ДЛЯ ГЛОБАЛЬНОГО КАТАЛОГА =====
+
+	// Глобальные активные товары
+	const { data: globalProductsData, isLoading: globalProductsLoading } = useQuery({
+		queryKey: ['products', 'global', tabConfig.type, selectedCategoryId, searchQuery, isInactiveTab],
+		queryFn: () =>
+			productsApi.getAll({
+				type: tabConfig.type as ProductType,
+				categoryId: selectedCategoryId || undefined,
+				search: searchQuery || undefined,
+				includeInactive: isInactiveTab,
+				page: 1,
+				limit: 100,
+			}),
+		enabled: isGlobalMode && isAdmin,
+	});
+
+	// Для бейджа: подсчёт неактивных глобально
+	const { data: globalAllData } = useQuery({
+		queryKey: ['products', 'global-all-for-badge'],
+		queryFn: () =>
+			productsApi.getAll({
+				includeInactive: true,
+				page: 1,
+				limit: 1000,
+			}),
+		enabled: isGlobalMode && isAdmin,
+	});
+	const globalInactiveCount = (globalAllData?.data || []).filter((p) => p.isActive === false).length;
+
+	// Если в режиме глобального каталога + таб неактивные — фильтруем только неактивные
+	const globalInactiveProducts = isInactiveTab
+		? (globalProductsData?.data || []).filter((p) => p.isActive === false)
+		: globalProductsData?.data || [];
 
 	const { data: categories } = useQuery({
 		queryKey: ['categories', tabConfig.type],
@@ -102,10 +138,22 @@ export function CatalogPage() {
 		enabled: !isInactiveTab,
 	});
 
-	// Мутация для переключения isActive
-	const toggleActiveMutation = useMutation({
+	// ===== МУТАЦИИ =====
+
+	// Мутация для переключения isActive в БАРЕ (BarProduct)
+	const toggleBarActiveMutation = useMutation({
 		mutationFn: ({ productId, isActive }: { productId: string; isActive: boolean }) =>
 			barProductsApi.updateByBarAndProduct(selectedBar!.id, productId, { isActive }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['products'] });
+			queryClient.invalidateQueries({ queryKey: ['bar-products'] });
+		},
+	});
+
+	// Мутация для переключения isActive ГЛОБАЛЬНО (Product)
+	const toggleGlobalActiveMutation = useMutation({
+		mutationFn: ({ productId, isActive }: { productId: string; isActive: boolean }) =>
+			productsApi.update(productId, { isActive }),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['products'] });
 			queryClient.invalidateQueries({ queryKey: ['bar-products'] });
@@ -146,24 +194,30 @@ export function CatalogPage() {
 		setEditingPriceProduct(product);
 	};
 
+	// Переключение isActive в зависимости от режима
 	const handleToggleActive = (product: Product, isActive: boolean) => {
-		if (!selectedBar) return;
-		toggleActiveMutation.mutate({ productId: product.id, isActive });
+		if (isGlobalMode) {
+			toggleGlobalActiveMutation.mutate({ productId: product.id, isActive });
+		} else {
+			if (!selectedBar) return;
+			toggleBarActiveMutation.mutate({ productId: product.id, isActive });
+		}
 	};
 
-	// Получаем isActive из barProducts для продукта
-	const getProductIsActive = (product: Product): boolean | undefined => {
+	// Получаем isActive из barProducts для продукта (режим бара)
+	const getBarProductIsActive = (product: Product): boolean | undefined => {
 		if (!selectedBar) return undefined;
 		const bp = product.barProducts?.find((bp) => bp.barId === selectedBar.id);
 		return bp?.isActive;
 	};
 
-	const renderProductCard = (product: Product) => {
-		const productIsActive = getProductIsActive(product);
+	const renderProductCard = (product: Product, useGlobalActive = false) => {
+		const productIsActive = useGlobalActive ? product.isActive : getBarProductIsActive(product);
+		const showToggle = useGlobalActive ? isAdmin : (canManage && !!selectedBar);
 		const editProps = {
 			onEditProduct: isAdmin ? handleEditProduct : undefined,
-			onEditPrice: canManage && selectedBar ? handleEditPrice : undefined,
-			onToggleActive: canManage && selectedBar ? handleToggleActive : undefined,
+			onEditPrice: !useGlobalActive && canManage && selectedBar ? handleEditPrice : undefined,
+			onToggleActive: showToggle ? handleToggleActive : undefined,
 			isActive: productIsActive,
 		};
 
@@ -177,20 +231,29 @@ export function CatalogPage() {
 		}
 	};
 
-	const renderInactiveCard = (bp: BarProduct) => {
+	const renderBarInactiveCard = (bp: BarProduct) => {
 		if (!bp.product) return null;
 		const product: Product = {
 			...bp.product,
 			price: bp.price,
 			barProducts: [bp],
 		};
-		return renderProductCard(product);
+		return renderProductCard(product, false);
 	};
 
 	// Табы для отображения
-	const visibleTabs: TabType[] = canManage && selectedBar
+	const visibleTabs: TabType[] = canManage
 		? ['products', 'sportpit', 'food', 'inactive']
 		: ['products', 'sportpit', 'food'];
+
+	// Переключение режима
+	const handleViewModeToggle = () => {
+		const newMode = isGlobalMode ? 'bar' : 'global';
+		setViewMode(newMode);
+		setActiveTab('products');
+		setSelectedCategoryId(null);
+		setSearchQuery('');
+	};
 
 	// Не-админы должны выбрать бар
 	if (!selectedBar && !isAdmin) {
@@ -201,12 +264,33 @@ export function CatalogPage() {
 		);
 	}
 
+	// Определяем данные и состояние загрузки для текущего режима
+	const isLoading = isGlobalMode ? globalProductsLoading : barProductsLoading;
+	const currentProducts = isGlobalMode
+		? (isInactiveTab ? globalInactiveProducts : globalProductsData?.data || [])
+		: barProductsData?.data || [];
+	const inactiveBadgeCount = isGlobalMode ? globalInactiveCount : inactiveBarProducts.length;
+
 	return (
 		<div className="catalog-page">
-			{/* Global Catalog Banner */}
-			{showGlobalCatalog && (
-				<div className="catalog-global-banner">
-					Глобальный каталог — продукты будут добавлены во все бары
+			{/* Переключатель режима для админов */}
+			{isAdmin && (
+				<div className="catalog-view-toggle">
+					<button
+						className={`catalog-view-btn ${!isGlobalMode ? 'catalog-view-btn-active' : ''}`}
+						onClick={() => { if (isGlobalMode) handleViewModeToggle(); }}
+						disabled={!selectedBar}
+					>
+						<Store size={16} />
+						<span>{selectedBar ? selectedBar.name : 'Бар не выбран'}</span>
+					</button>
+					<button
+						className={`catalog-view-btn ${isGlobalMode ? 'catalog-view-btn-active' : ''}`}
+						onClick={() => { if (!isGlobalMode) handleViewModeToggle(); }}
+					>
+						<Globe size={16} />
+						<span>Общий каталог</span>
+					</button>
 				</div>
 			)}
 
@@ -219,8 +303,8 @@ export function CatalogPage() {
 						onClick={() => handleTabChange(tab)}
 					>
 						{TAB_CONFIG[tab].label}
-						{tab === 'inactive' && inactiveProducts.length > 0 && activeTab !== 'inactive' && (
-							<span className="catalog-tab-badge">{inactiveProducts.length}</span>
+						{tab === 'inactive' && inactiveBadgeCount > 0 && activeTab !== 'inactive' && (
+							<span className="catalog-tab-badge">{inactiveBadgeCount}</span>
 						)}
 					</button>
 				))}
@@ -240,7 +324,7 @@ export function CatalogPage() {
 				</div>
 				{canManage && !isInactiveTab && (
 					<div className="catalog-action-buttons">
-						{isAdmin && selectedBar && (
+						{isAdmin && !isGlobalMode && selectedBar && (
 							<button
 								className="catalog-add-btn catalog-add-btn-secondary"
 								onClick={() => setShowAssignModal(true)}
@@ -272,36 +356,53 @@ export function CatalogPage() {
 			)}
 
 			{/* Products List */}
-			{isInactiveTab ? (
-				inactiveLoading ? (
+			{isGlobalMode ? (
+				// === ГЛОБАЛЬНЫЙ КАТАЛОГ ===
+				isLoading ? (
 					<Loading />
-				) : filteredInactive.length > 0 ? (
+				) : currentProducts.length > 0 ? (
 					<div className="catalog-list">
-						{filteredInactive.map(renderInactiveCard)}
+						{currentProducts.map((p) => renderProductCard(p, true))}
 					</div>
 				) : (
 					<div className="catalog-empty">
 						<p>{tabConfig.emptyText}</p>
 					</div>
 				)
-			) : productsLoading ? (
-				<Loading />
-			) : productsData && productsData.data.length > 0 ? (
-				<div className="catalog-list">
-					{productsData.data.map(renderProductCard)}
-				</div>
+			) : isInactiveTab ? (
+				// === БАР: НЕАКТИВНЫЕ ===
+				barInactiveLoading ? (
+					<Loading />
+				) : filteredInactiveBar.length > 0 ? (
+					<div className="catalog-list">
+						{filteredInactiveBar.map(renderBarInactiveCard)}
+					</div>
+				) : (
+					<div className="catalog-empty">
+						<p>{tabConfig.emptyText}</p>
+					</div>
+				)
 			) : (
-				<div className="catalog-empty">
-					<p>{tabConfig.emptyText}</p>
-					{canManage && (
-						<button
-							className="catalog-empty-btn"
-							onClick={() => setShowAssignModal(true)}
-						>
-							Добавить из каталога
-						</button>
-					)}
-				</div>
+				// === БАР: ОБЫЧНЫЕ ТАБЫ ===
+				barProductsLoading ? (
+					<Loading />
+				) : barProductsData && barProductsData.data.length > 0 ? (
+					<div className="catalog-list">
+						{barProductsData.data.map((p) => renderProductCard(p, false))}
+					</div>
+				) : (
+					<div className="catalog-empty">
+						<p>{tabConfig.emptyText}</p>
+						{canManage && (
+							<button
+								className="catalog-empty-btn"
+								onClick={() => setShowAssignModal(true)}
+							>
+								Добавить из каталога
+							</button>
+						)}
+					</div>
+				)
 			)}
 
 			{/* Modals */}

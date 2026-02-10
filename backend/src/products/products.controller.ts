@@ -44,6 +44,7 @@ export class ProductsController {
 	@ApiQuery({ name: 'categoryId', required: false, description: 'Фильтр по ID категории' })
 	@ApiQuery({ name: 'type', required: false, description: 'Фильтр по типу продукта (PRODUCT, SPORT_PIT, FOOD)' })
 	@ApiQuery({ name: 'search', required: false, description: 'Поиск по названию или штрих-коду' })
+	@ApiQuery({ name: 'includeInactive', required: false, description: 'Включить неактивные продукты (только для глобального каталога)' })
 	@ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
 	@ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
 	@ApiResponse({ status: 200, description: 'Список продуктов' })
@@ -51,9 +52,11 @@ export class ProductsController {
 		@Query() filter: ProductFilterDto,
 		@Query() pagination: PaginationDto,
 		@Query() search: SearchDto,
+		@Query('includeInactive') includeInactive?: string,
 		@CurrentUser() user?: any,
 	) {
-		return this.productsService.findAll(filter, pagination, user?.role, search);
+		const includeInactiveFlag = includeInactive === 'true';
+		return this.productsService.findAll(filter, pagination, user?.role, search, includeInactiveFlag);
 	}
 
 	@Get('bar/:barId')
@@ -79,7 +82,7 @@ export class ProductsController {
 
 	@Patch(':id')
 	@Roles(RoleType.ADMIN)
-	@ApiOperation({ summary: 'Обновить продукт' })
+	@ApiOperation({ summary: 'Обновить продукт (включая глобальное включение/отключение)' })
 	update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
 		return this.productsService.update(id, updateProductDto);
 	}
