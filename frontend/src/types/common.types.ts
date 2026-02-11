@@ -66,7 +66,7 @@ export interface Product {
 	name: string;
 	barcode?: string;
 	type: ProductType;
-	costPrice: number;
+	costPrice?: number | null;
 	defaultPrice?: number | null; // Цена по умолчанию для всех баров
 	categoryId: string;
 	createdAt: string;

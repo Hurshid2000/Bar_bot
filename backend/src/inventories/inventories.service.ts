@@ -53,7 +53,7 @@ export class InventoriesService {
 			const product = products.find((p) => p.id === item.productId);
 			// Используем цену из BarProduct, если есть, иначе defaultPrice или costPrice
 			const barProduct = product.barProducts[0];
-			const price = barProduct?.price || product.defaultPrice || product.costPrice;
+			const price = barProduct?.price || product.defaultPrice || (product.costPrice ?? 0);
 			const itemTotal = item.quantity * price;
 			totalAmount += itemTotal;
 

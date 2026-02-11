@@ -85,7 +85,7 @@ export function AssignProductModal({ isOpen, onClose, productType }: AssignProdu
 			} else {
 				newMap.set(product.id, {
 					product,
-					price: product.costPrice * 1.5, // Default markup 50%
+					price: (product.costPrice ?? 0) * 1.5, // Default markup 50%
 					selected: true,
 				});
 			}
@@ -163,7 +163,7 @@ export function AssignProductModal({ isOpen, onClose, productType }: AssignProdu
 										<div className="assign-product-details">
 											<span className="assign-product-name">{product.name}</span>
 											<span className="assign-product-meta">
-												{product.category?.name} • Себест.: {formatCurrency(product.costPrice)}
+												{product.category?.name} • Себест.: {formatCurrency(product.costPrice ?? 0)}
 											</span>
 										</div>
 									</div>

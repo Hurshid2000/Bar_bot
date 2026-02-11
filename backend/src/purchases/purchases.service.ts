@@ -66,7 +66,7 @@ export class PurchasesService {
 				const price = barProduct?.price ?? 0;
 
 				const itemPriceAmount = price * item.quantity;
-				const itemCostAmount = product.costPrice * item.quantity;
+				const itemCostAmount = (product.costPrice ?? 0) * item.quantity;
 
 				totalPriceAmount += itemPriceAmount;
 				totalCostAmount += itemCostAmount;
@@ -78,7 +78,7 @@ export class PurchasesService {
 						productName: product.name,
 						productType: product.type,
 						price: price,
-						costPrice: product.costPrice,
+						costPrice: product.costPrice ?? 0,
 						quantity: item.quantity,
 					}),
 					amount: item.quantity,

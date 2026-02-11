@@ -43,7 +43,7 @@ export function ProductDetailPage() {
 						</p>
 					)}
 					<p>
-						<strong>Себестоимость:</strong> {formatCurrency(product.costPrice)}
+						<strong>Себестоимость:</strong> {formatCurrency(product.costPrice ?? 0)}
 					</p>
 					<p>
 						<strong>Тип:</strong> {product.type}

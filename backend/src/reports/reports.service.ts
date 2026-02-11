@@ -227,7 +227,8 @@ export class ReportsService {
 			for (const item of purchase.items) {
 				try {
 					const itemData = JSON.parse(item.name);
-					const { productName, productType, price, costPrice, quantity } = itemData;
+					const { productName, productType, price, quantity } = itemData;
+					const costPrice = itemData.costPrice ?? 0;
 					
 					// Прибыль с единицы
 					const profitPerUnit = price - costPrice;
@@ -291,7 +292,8 @@ export class ReportsService {
 			for (const item of purchase.items) {
 				try {
 					const itemData = JSON.parse(item.name);
-					const { productType, price, costPrice, quantity } = itemData;
+					const { productType, price, quantity } = itemData;
+					const costPrice = itemData.costPrice ?? 0;
 					
 					const profitPerUnit = price - costPrice;
 					const totalProfit = profitPerUnit * quantity;
@@ -691,7 +693,8 @@ export class ReportsService {
 			for (const item of purchase.items) {
 				try {
 					const itemData = JSON.parse(item.name);
-					const { costPrice, quantity } = itemData;
+					const costPrice = itemData.costPrice ?? 0;
+					const quantity = itemData.quantity ?? item.amount ?? 0;
 					purchasesAtCostPrice += costPrice * quantity;
 				} catch (error) {
 					console.error('Error parsing purchase item:', error);

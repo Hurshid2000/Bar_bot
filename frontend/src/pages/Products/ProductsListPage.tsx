@@ -37,7 +37,7 @@ export function ProductsListPage() {
 								)}
 								<p>
 									<strong>Себестоимость:</strong>{' '}
-									{formatCurrency(product.costPrice)}
+									{formatCurrency(product.costPrice ?? 0)}
 								</p>
 								{product.barcode && (
 									<p>

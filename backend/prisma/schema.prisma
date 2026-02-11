@@ -68,7 +68,7 @@ model Product {
   name         String
   barcode      String?      @unique
   type         ProductType  @default(PRODUCT)
-  costPrice    Float
+  costPrice    Float?      // Необязательно; при отсутствии прибыль = выручка
   defaultPrice Float?       // Цена по умолчанию для всех баров
   categoryId   String
   imageUrl     String?

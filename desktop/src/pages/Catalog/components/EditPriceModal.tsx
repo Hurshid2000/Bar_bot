@@ -59,9 +59,8 @@ export function EditPriceModal({ isOpen, onClose, product }: EditPriceModalProps
 
 	if (!product || !selectedBar) return null;
 
-	const margin = product.costPrice > 0 
-		? ((price - product.costPrice) / product.costPrice * 100).toFixed(0)
-		: 0;
+	const cost = product.costPrice ?? 0;
+	const margin = cost > 0 ? ((price - cost) / cost * 100).toFixed(0) : 0;
 
 	return (
 		<Modal isOpen={isOpen} onClose={handleClose} title="Изменить цену">
@@ -69,7 +68,7 @@ export function EditPriceModal({ isOpen, onClose, product }: EditPriceModalProps
 				<div className="edit-price-product-info">
 					<h4>{product.name}</h4>
 					<p className="edit-price-bar">Бар: {selectedBar.name}</p>
-					<p className="edit-price-cost">Себестоимость: {formatCurrency(product.costPrice)}</p>
+					<p className="edit-price-cost">Себестоимость: {formatCurrency(product.costPrice ?? 0)}</p>
 					{product.defaultPrice && (
 						<p className="edit-price-default">Цена по умолчанию: {formatCurrency(product.defaultPrice)}</p>
 					)}

@@ -30,10 +30,11 @@ export class CreateProductDto {
 	@IsEnum(ProductType)
 	type?: ProductType;
 
-	@ApiProperty({ description: 'Себестоимость', example: 50.0, minimum: 0 })
+	@ApiPropertyOptional({ description: 'Себестоимость (необязательно)', example: 50.0, minimum: 0 })
+	@IsOptional()
 	@IsNumber()
 	@Min(0)
-	costPrice: number;
+	costPrice?: number;
 
 	@ApiPropertyOptional({ description: 'Цена по умолчанию для всех баров', example: 100.0, minimum: 0 })
 	@IsOptional()

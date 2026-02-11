@@ -21,7 +21,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 		name: '',
 		barcode: '',
 		type: defaultType,
-		costPrice: 0,
+		costPrice: undefined,
 		defaultPrice: undefined,
 		categoryId: '',
 		imageUrl: '',
@@ -50,7 +50,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 			name: '',
 			barcode: '',
 			type: defaultType,
-			costPrice: 0,
+			costPrice: undefined,
 			defaultPrice: undefined,
 			categoryId: '',
 			imageUrl: '',
@@ -74,7 +74,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 		if (!formData.categoryId) {
 			newErrors.categoryId = 'Выберите категорию';
 		}
-		if (formData.costPrice < 0) {
+		if (formData.costPrice != null && formData.costPrice < 0) {
 			newErrors.costPrice = 'Себестоимость не может быть отрицательной';
 		}
 
@@ -89,6 +89,7 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 		const data: CreateProductDto = {
 			...formData,
 			barcode: formData.barcode || undefined,
+			costPrice: formData.costPrice != null && formData.costPrice >= 0 ? formData.costPrice : undefined,
 			defaultPrice: formData.defaultPrice || undefined,
 			imageUrl: formData.imageUrl || undefined,
 			description: formData.description || undefined,
@@ -142,11 +143,15 @@ export function AddProductModal({ isOpen, onClose, defaultType = ProductType.PRO
 				/>
 
 			<Input
-				label="Себестоимость *"
+				label="Себестоимость"
 				type="number"
-				value={formData.costPrice}
-				onChange={(e) => handleChange('costPrice', parseFloat(e.target.value) || 0)}
+				value={formData.costPrice ?? ''}
+				onChange={(e) => {
+					const v = e.target.value;
+					handleChange('costPrice', v === '' ? undefined : parseFloat(v));
+				}}
 				error={errors.costPrice}
+				placeholder="Необязательно"
 				min={0}
 			/>
 

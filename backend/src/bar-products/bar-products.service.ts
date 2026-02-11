@@ -56,9 +56,9 @@ export class BarProductsService {
 		}
 
 		// Определяем цену: dto.price → defaultPrice → costPrice
-		const price = createBarProductDto.price ?? product.defaultPrice ?? product.costPrice;
-		if (price == null) {
-			throw new BadRequestException('Необходимо указать цену или продукт должен иметь defaultPrice');
+		const price = createBarProductDto.price ?? product.defaultPrice ?? product.costPrice ?? 0;
+		if (price == null || price <= 0) {
+			throw new BadRequestException('Необходимо указать цену или продукт должен иметь defaultPrice/costPrice');
 		}
 
 		return this.prisma.barProduct.create({

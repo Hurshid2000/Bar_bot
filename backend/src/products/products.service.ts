@@ -32,7 +32,7 @@ export class ProductsService {
 				name: createProductDto.name,
 				barcode: createProductDto.barcode,
 				type: createProductDto.type || 'PRODUCT',
-				costPrice: createProductDto.costPrice,
+				costPrice: createProductDto.costPrice ?? null,
 				defaultPrice: createProductDto.defaultPrice,
 				categoryId: createProductDto.categoryId,
 				imageUrl: createProductDto.imageUrl,
