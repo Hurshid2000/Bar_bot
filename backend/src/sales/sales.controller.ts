@@ -54,4 +54,14 @@ export class SalesController {
 	) {
 		return this.salesService.getDailySales(barId, startDate, endDate);
 	}
+
+	@Get('sportpit-report')
+	@ApiOperation({ summary: 'Отчет по спортпиту: выручка, прибыль, количество по продуктам' })
+	getSportpitReport(
+		@Query('barId') barId: string,
+		@Query('startDate') startDate: string,
+		@Query('endDate') endDate: string,
+	) {
+		return this.salesService.getSportpitReport(barId, startDate, endDate);
+	}
 }

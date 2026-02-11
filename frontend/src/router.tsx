@@ -18,6 +18,7 @@ import { PurchasesListPage } from './pages/Purchases/PurchasesListPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { CashAuditReportPage } from './pages/Reports/CashAuditReportPage';
 import { ProfitReportPage } from './pages/Reports/ProfitReportPage';
+import { SportpitReportPage } from './pages/Reports/SportpitReportPage';
 import { OrdersPage } from './pages/Orders/OrdersPage';
 import { OrderCreatePage } from './pages/Orders/OrderCreatePage';
 import { OrderHistoryPage } from './pages/Orders/OrderHistoryPage';
@@ -130,6 +131,14 @@ export const router = createHashRouter([
 				element: (
 					<ProtectedRoute requiredRoles={[RoleType.ADMIN]}>
 						<ProfitReportPage />
+					</ProtectedRoute>
+				),
+			},
+			{
+				path: '/reports/sportpit',
+				element: (
+					<ProtectedRoute requiredRoles={[RoleType.ADMIN, RoleType.MANAGER]}>
+						<SportpitReportPage />
 					</ProtectedRoute>
 				),
 			},

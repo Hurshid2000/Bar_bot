@@ -63,4 +63,30 @@ export const salesApi = {
 
 	getDaily: (barId: string, startDate: string, endDate: string): Promise<Sale[]> =>
 		apiGet<Sale[]>(`/sales/daily?barId=${barId}&startDate=${startDate}&endDate=${endDate}`),
+
+	getSportpitReport: (
+		barId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<SportpitReport> =>
+		apiGet<SportpitReport>(
+			`/sales/sportpit-report?barId=${barId}&startDate=${startDate}&endDate=${endDate}`,
+		),
 };
+
+export interface SportpitReportItem {
+	productId: string;
+	productName: string;
+	categoryName: string;
+	quantity: number;
+	revenue: number;
+	cost: number;
+	profit: number;
+}
+
+export interface SportpitReport {
+	items: SportpitReportItem[];
+	totalRevenue: number;
+	totalCost: number;
+	totalProfit: number;
+}

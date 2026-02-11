@@ -1,0 +1,177 @@
+.sportpit-report-page {
+	padding: 20px;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.sportpit-report-page .page-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.sportpit-report-page .page-header h1 {
+	margin: 0;
+	color: var(--color-text-primary);
+}
+
+.sportpit-report-page .back-button {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sportpit-report-page .report-filters {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.report-date-row {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.report-date-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.report-date-field label {
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+.report-date-field input {
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	font-size: 14px;
+	background: var(--color-surface);
+	color: var(--color-text);
+}
+
+.sportpit-report-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sportpit-report-title svg {
+	color: #7c3aed;
+}
+
+.report-summary-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+	margin-bottom: 12px;
+}
+
+.report-summary-item {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.report-summary-item .summary-label {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.report-summary-item .summary-value {
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.summary-revenue {
+	color: var(--color-primary);
+}
+
+.summary-cost {
+	color: var(--color-text-secondary);
+}
+
+.summary-profit.profit-positive {
+	color: var(--color-success);
+}
+
+.summary-profit.profit-negative {
+	color: var(--color-error);
+}
+
+.sportpit-report-page .report-profit {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sportpit-report-page .profit-icon {
+	width: 20px;
+	height: 20px;
+}
+
+.sportpit-report-page .profit-icon.profit-positive {
+	color: var(--color-success);
+}
+
+.sportpit-report-page .profit-icon.profit-negative {
+	color: var(--color-error);
+}
+
+.report-period {
+	font-size: 13px;
+	color: var(--color-text-secondary);
+	margin: 0;
+}
+
+.report-table-card {
+	margin-top: 20px;
+}
+
+.sportpit-report-table-wrap {
+	overflow-x: auto;
+}
+
+.sportpit-report-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.sportpit-report-table th,
+.sportpit-report-table td {
+	padding: 10px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.sportpit-report-table th {
+	font-weight: 600;
+	color: var(--color-text-secondary);
+	background: var(--color-surface-secondary, rgba(0, 0, 0, 0.03));
+}
+
+.sportpit-report-table th.num,
+.sportpit-report-table td.num {
+	text-align: right;
+}
+
+.sportpit-report-table tfoot tr {
+	background: var(--color-surface-secondary, rgba(0, 0, 0, 0.03));
+	font-weight: 600;
+}
+
+.sportpit-report-table tfoot .footer-label {
+	font-weight: 600;
+}
+
+.report-empty {
+	margin: 0;
+	color: var(--color-text-secondary);
+	text-align: center;
+	padding: 24px;
+}

@@ -3,6 +3,7 @@ import {
 	NotFoundException,
 	BadRequestException,
 } from '@nestjs/common';
+import { ProductType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockService } from '../stock/stock.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
@@ -169,5 +170,97 @@ export class SalesService {
 		});
 
 		return sales;
+	}
+
+	/**
+	 * Отчет по спортпиту: выручка, себестоимость, прибыль по каждому продукту за период
+	 */
+	async getSportpitReport(
+		barId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<{
+		items: Array<{
+			productId: string;
+			productName: string;
+			categoryName: string;
+			quantity: number;
+			revenue: number;
+			cost: number;
+			profit: number;
+		}>;
+		totalRevenue: number;
+		totalCost: number;
+		totalProfit: number;
+	}> {
+		const start = new Date(startDate + 'T00:00:00.000Z');
+		const endObj = new Date(endDate + 'T00:00:00.000Z');
+		const nextDay = new Date(endObj);
+		nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+
+		const sales = await this.prisma.sale.findMany({
+			where: {
+				barId,
+				date: { gte: start, lt: nextDay },
+				product: { type: ProductType.SPORT_PIT },
+			},
+			include: {
+				product: {
+					select: {
+						id: true,
+						name: true,
+						costPrice: true,
+						category: { select: { name: true } },
+					},
+				},
+			},
+		});
+
+		// Группировка по productId
+		const map = new Map<
+			string,
+			{ quantity: number; revenue: number; cost: number; productName: string; categoryName: string }
+		>();
+
+		for (const s of sales) {
+			const cost = (s.product.costPrice ?? 0) * s.quantity;
+			const existing = map.get(s.productId);
+			if (existing) {
+				existing.quantity += s.quantity;
+				existing.revenue += s.total;
+				existing.cost += cost;
+			} else {
+				map.set(s.productId, {
+					quantity: s.quantity,
+					revenue: s.total,
+					cost,
+					productName: s.product.name,
+					categoryName: s.product.category?.name ?? '',
+				});
+			}
+		}
+
+		const items = Array.from(map.entries()).map(
+			([productId, data]) => ({
+				productId,
+				productName: data.productName,
+				categoryName: data.categoryName,
+				quantity: data.quantity,
+				revenue: data.revenue,
+				cost: data.cost,
+				profit: data.revenue - data.cost,
+			}),
+		);
+
+		const totalRevenue = items.reduce((a, i) => a + i.revenue, 0);
+		const totalCost = items.reduce((a, i) => a + i.cost, 0);
+		const totalProfit = totalRevenue - totalCost;
+
+		return {
+			items: items.sort((a, b) => b.revenue - a.revenue),
+			totalRevenue,
+			totalCost,
+			totalProfit,
+		};
 	}
 }

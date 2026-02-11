@@ -24,6 +24,15 @@ export function ReportsPage() {
 					</Card>
 				)}
 
+				{isManager && (
+					<Card title="Отчет по спортпиту">
+						<p>Выручка, прибыль и количество проданного спортпита за период</p>
+						<Link to="/reports/sportpit">
+							<Button variant="primary">Открыть</Button>
+						</Link>
+					</Card>
+				)}
+
 				{isAdmin && (
 					<>
 						<Card title="Расчет прибыли">
