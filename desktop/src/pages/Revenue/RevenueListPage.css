@@ -92,6 +92,11 @@
 	font-size: 20px;
 }
 
+.revenue-summary-sportpit .revenue-summary-value {
+	color: #8b5cf6;
+	font-size: 18px;
+}
+
 .revenue-summary-expenses .revenue-summary-value {
 	color: var(--color-danger);
 	font-size: 18px;
@@ -192,6 +197,24 @@
 
 .revenue-day-row-total span:last-child {
 	color: var(--color-success);
+	font-weight: 700;
+}
+
+.revenue-day-row-sportpit {
+	margin-top: 3px;
+	padding-top: 4px;
+	border-top: 1px dashed var(--color-border);
+}
+
+.revenue-day-row-sportpit span:first-child {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	color: #8b5cf6;
+}
+
+.revenue-day-row-sportpit span:last-child {
+	color: #8b5cf6;
 	font-weight: 700;
 }
 
@@ -433,6 +456,82 @@
 	font-size: 13px;
 	color: var(--color-danger);
 	margin-top: 8px;
+}
+
+/* Sportpit in modal */
+.revenue-modal-sportpit-section .revenue-modal-section-title {
+	color: #8b5cf6;
+}
+
+.revenue-modal-sportpit-count {
+	background: #8b5cf6;
+	color: white;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 2px 7px;
+	border-radius: 10px;
+	margin-left: auto;
+}
+
+.revenue-modal-sales-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.revenue-modal-sale-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 14px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border-left: 3px solid #8b5cf6;
+}
+
+.revenue-modal-sale-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.revenue-modal-sale-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.revenue-modal-sale-qty {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.revenue-modal-sale-total {
+	font-size: 15px;
+	font-weight: 700;
+	color: #8b5cf6;
+	white-space: nowrap;
+	margin-left: 12px;
+}
+
+.revenue-modal-sales-total {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 10px;
+	padding: 10px 14px;
+	font-size: 15px;
+	font-weight: 700;
+	color: #8b5cf6;
+	background: rgba(139, 92, 246, 0.08);
+	border-radius: var(--radius-md);
+}
+
+.revenue-modal-no-sales {
+	text-align: center;
+	font-size: 13px;
+	color: var(--color-text-muted);
+	margin: 4px 0 0 0;
+	font-style: italic;
 }
 
 /* Expenses in modal */

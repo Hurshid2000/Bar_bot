@@ -1,4 +1,4 @@
-import { Tag, Edit2, DollarSign, Pin } from 'lucide-react';
+import { Tag, Edit2, DollarSign, Pin, ShoppingCart } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 
 const sportpitIcons: Record<string, string> = {
@@ -30,14 +30,16 @@ interface SportpitCardProps {
 	product: Product;
 	isActive?: boolean;
 	isPinned?: boolean;
+	stockQuantity?: number;
 	onClick?: () => void;
 	onEditProduct?: (product: Product) => void;
 	onEditPrice?: (product: Product) => void;
 	onToggleActive?: (product: Product, isActive: boolean) => void;
 	onTogglePin?: (product: Product, isPinned: boolean) => void;
+	onSell?: (product: Product) => void;
 }
 
-export function SportpitCard({ product, isActive, isPinned, onClick, onEditProduct, onEditPrice, onToggleActive, onTogglePin }: SportpitCardProps) {
+export function SportpitCard({ product, isActive, isPinned, stockQuantity, onClick, onEditProduct, onEditPrice, onToggleActive, onTogglePin, onSell }: SportpitCardProps) {
 	const handleEditProduct = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onEditProduct?.(product);
@@ -58,9 +60,24 @@ export function SportpitCard({ product, isActive, isPinned, onClick, onEditProdu
 		onTogglePin?.(product, !isPinned);
 	};
 
+	const handleSell = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onSell?.(product);
+	};
+
+	const hasStock = stockQuantity !== undefined && stockQuantity > 0;
+	const showStock = stockQuantity !== undefined;
+
 	return (
 		<div className={`sportpit-card ${isActive === false ? 'product-card-inactive' : ''} ${isPinned ? 'product-card-pinned' : ''}`} onClick={onClick}>
 			{isPinned && <div className="product-card-pin-badge"><Pin size={12} /></div>}
+
+			{/* Бейдж остатка */}
+			{showStock && (
+				<div className={`sportpit-stock-badge ${hasStock ? 'in-stock' : 'out-of-stock'}`}>
+					{hasStock ? `${stockQuantity} шт` : 'Нет в наличии'}
+				</div>
+			)}
 
 			<div className="sportpit-card-header">
 				<div className="sportpit-card-image">
@@ -95,40 +112,49 @@ export function SportpitCard({ product, isActive, isPinned, onClick, onEditProdu
 				</div>
 			)}
 
-			{(onEditProduct || onEditPrice || onToggleActive || onTogglePin) && (
-				<div className="card-actions">
-					{onTogglePin && (
-						<button
-							className={`card-action-btn card-action-btn-pin ${isPinned ? 'pinned' : ''}`}
-							onClick={handleTogglePin}
-							title={isPinned ? 'Открепить' : 'Закрепить'}
-						>
-							<Pin size={16} />
-						</button>
-					)}
-					{onToggleActive && (
-						<button
-							className={`card-action-btn card-action-btn-toggle ${isActive ? 'active' : 'inactive'}`}
-							onClick={handleToggleActive}
-							title={isActive ? 'Скрыть из ассортимента' : 'Вернуть в ассортимент'}
-						>
-							<div className={`toggle-switch ${isActive ? 'toggle-on' : 'toggle-off'}`}>
-								<div className="toggle-knob" />
-							</div>
-						</button>
-					)}
-					{onEditProduct && (
-						<button className="card-action-btn" onClick={handleEditProduct} title="Редактировать">
-							<Edit2 size={16} />
-						</button>
-					)}
-					{onEditPrice && (
-						<button className="card-action-btn card-action-btn-price" onClick={handleEditPrice} title="Изменить цену">
-							<DollarSign size={16} />
-						</button>
-					)}
-				</div>
-			)}
+			<div className="card-actions">
+				{onSell && (
+					<button
+						className={`card-action-btn card-action-btn-sell ${!hasStock ? 'disabled' : ''}`}
+						onClick={handleSell}
+						disabled={!hasStock}
+						title={hasStock ? 'Продано' : 'Нет в наличии'}
+					>
+						<ShoppingCart size={16} />
+						<span>Продано</span>
+					</button>
+				)}
+				{onTogglePin && (
+					<button
+						className={`card-action-btn card-action-btn-pin ${isPinned ? 'pinned' : ''}`}
+						onClick={handleTogglePin}
+						title={isPinned ? 'Открепить' : 'Закрепить'}
+					>
+						<Pin size={16} />
+					</button>
+				)}
+				{onToggleActive && (
+					<button
+						className={`card-action-btn card-action-btn-toggle ${isActive ? 'active' : 'inactive'}`}
+						onClick={handleToggleActive}
+						title={isActive ? 'Скрыть из ассортимента' : 'Вернуть в ассортимент'}
+					>
+						<div className={`toggle-switch ${isActive ? 'toggle-on' : 'toggle-off'}`}>
+							<div className="toggle-knob" />
+						</div>
+					</button>
+				)}
+				{onEditProduct && (
+					<button className="card-action-btn" onClick={handleEditProduct} title="Редактировать">
+						<Edit2 size={16} />
+					</button>
+				)}
+				{onEditPrice && (
+					<button className="card-action-btn card-action-btn-price" onClick={handleEditPrice} title="Изменить цену">
+						<DollarSign size={16} />
+					</button>
+				)}
+			</div>
 		</div>
 	);
 }

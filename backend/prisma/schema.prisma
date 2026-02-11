@@ -25,6 +25,7 @@ model User {
   clientEditLogs ClientEditLog[]
   revenuesCreated Revenue[] @relation("RevenueCreatedBy")
   revenuesUpdated Revenue[] @relation("RevenueUpdatedBy")
+  sales          Sale[]
 }
 
 model Bar {
@@ -41,6 +42,8 @@ model Bar {
   arrivals    Arrival[]
   inventories Inventory[]
   clients     Client[]
+  stocks      Stock[]
+  sales       Sale[]
 }
 
 model UserBar {
@@ -77,6 +80,8 @@ model Product {
   orderItems   OrderItem[]
   arrivalItems ArrivalItem[]
   inventoryItems InventoryItem[]
+  stocks       Stock[]
+  sales        Sale[]
 }
 
 model BarProduct {
@@ -279,6 +284,33 @@ model ClientEditLog {
   createdAt   DateTime @default(now())
   client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model Stock {
+  id        String   @id @default(uuid())
+  barId     String
+  productId String
+  quantity  Int      @default(0)
+  updatedAt DateTime @updatedAt
+  bar       Bar      @relation(fields: [barId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([barId, productId])
+}
+
+model Sale {
+  id        String   @id @default(uuid())
+  barId     String
+  productId String
+  userId    String
+  quantity  Int
+  price     Float    // Цена продажи (указывается вручную)
+  total     Float    // quantity * price
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  bar       Bar      @relation(fields: [barId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Inventory {

@@ -13,12 +13,14 @@ import {
 	getSkip,
 } from '../common/utils/pagination.util';
 import { ArrivalType } from '@prisma/client';
+import { StockService } from '../stock/stock.service';
 
 @Injectable()
 export class ArrivalsService {
 	constructor(
 		private prisma: PrismaService,
 		private notificationsService: NotificationsService,
+		private stockService: StockService,
 	) {}
 
 	async create(userId: string, createArrivalDto: CreateArrivalDto) {
@@ -95,11 +97,23 @@ export class ArrivalsService {
 			},
 		});
 
+		// Обновляем остатки на складе
+		try {
+			for (const item of arrival.items) {
+				if (type === ArrivalType.ARRIVAL) {
+					await this.stockService.increase(barId, item.productId, item.quantity);
+				} else if (type === ArrivalType.WRITE_OFF) {
+					await this.stockService.decrease(barId, item.productId, item.quantity);
+				}
+			}
+		} catch (error) {
+			console.error('Failed to update stock:', error);
+		}
+
 		// Отправляем уведомление о создании прихода/списания
 		try {
 			await this.notificationsService.notifyArrivalCreated(arrival);
 		} catch (error) {
-			// Логируем ошибку, но не прерываем создание прихода
 			console.error('Failed to send arrival notification:', error);
 		}
 

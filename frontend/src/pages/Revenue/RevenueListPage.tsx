@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Edit2, User as UserIcon, TrendingDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit2, User as UserIcon, TrendingDown, Dumbbell } from 'lucide-react';
 import { revenueApi } from '../../api/revenue.api';
 import { expensesApi } from '../../api/expenses.api';
+import { salesApi, type Sale } from '../../api/sales.api';
 import { useBar } from '../../context/BarContext';
 import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
@@ -81,6 +82,13 @@ export function RevenueListPage() {
 		enabled: !!selectedBar,
 	});
 
+	// Запрос продаж спортпита
+	const { data: salesData } = useQuery({
+		queryKey: ['sales-daily', selectedBar?.id, startDate, endDate],
+		queryFn: () => salesApi.getDaily(selectedBar!.id, startDate, endDate),
+		enabled: !!selectedBar,
+	});
+
 	const revenueMap = useMemo(() => {
 		const map = new Map<string, Revenue>();
 		if (data?.data) {
@@ -106,12 +114,26 @@ export function RevenueListPage() {
 		return map;
 	}, [expensesData]);
 
+	const salesMap = useMemo(() => {
+		const map = new Map<string, Sale[]>();
+		if (salesData) {
+			for (const sale of salesData) {
+				const dateKey = sale.date.slice(0, 10);
+				const list = map.get(dateKey) || [];
+				list.push(sale);
+				map.set(dateKey, list);
+			}
+		}
+		return map;
+	}, [salesData]);
+
 	const days = useMemo(() => getMonthDays(year, month), [year, month]);
 
 	const monthTotal = useMemo(() => {
 		let cash = 0;
 		let card = 0;
 		let expenses = 0;
+		let sportpit = 0;
 		if (data?.data) {
 			for (const rev of data.data) {
 				cash += rev.cash;
@@ -123,8 +145,13 @@ export function RevenueListPage() {
 				expenses += exp.amount;
 			}
 		}
-		return { cash, card, total: cash + card, expenses };
-	}, [data, expensesData]);
+		if (salesData) {
+			for (const sale of salesData) {
+				sportpit += sale.total;
+			}
+		}
+		return { cash, card, total: cash + card, expenses, sportpit };
+	}, [data, expensesData, salesData]);
 
 	const goToPrevMonth = () => {
 		if (month === 0) { setMonth(11); setYear(year - 1); }
@@ -205,6 +232,9 @@ export function RevenueListPage() {
 
 	const selectedDayExpenseTotal = selectedDayExpenses.reduce((s, e) => s + e.amount, 0);
 
+	const selectedDaySales = selectedDay ? salesMap.get(formatDateKey(selectedDay)) || [] : [];
+	const selectedDaySalesTotal = selectedDaySales.reduce((s, sale) => s + sale.total, 0);
+
 	if (!selectedBar) {
 		return (
 			<div className="revenue-list-page">
@@ -244,6 +274,10 @@ export function RevenueListPage() {
 					<span className="revenue-summary-label">Итого</span>
 					<span className="revenue-summary-value">{formatCurrency(monthTotal.total)}</span>
 				</div>
+				<div className="revenue-summary-item revenue-summary-sportpit">
+					<span className="revenue-summary-label">Спортпит</span>
+					<span className="revenue-summary-value">{formatCurrency(monthTotal.sportpit)}</span>
+				</div>
 				<div className="revenue-summary-item revenue-summary-expenses">
 					<span className="revenue-summary-label">Расход</span>
 					<span className="revenue-summary-value">{formatCurrency(monthTotal.expenses)}</span>
@@ -259,7 +293,9 @@ export function RevenueListPage() {
 						const rev = revenueMap.get(dateKey);
 						const dayExpenses = expensesMap.get(dateKey) || [];
 						const dayExpenseTotal = dayExpenses.reduce((s, e) => s + e.amount, 0);
-						const hasData = !!rev || dayExpenses.length > 0;
+						const daySales = salesMap.get(dateKey) || [];
+						const daySalesTotal = daySales.reduce((s, sale) => s + sale.total, 0);
+						const hasData = !!rev || dayExpenses.length > 0 || daySales.length > 0;
 						const dayIsToday = isToday(day);
 
 						return (
@@ -290,6 +326,12 @@ export function RevenueListPage() {
 													<span>{formatCurrency(rev.cash + rev.card)}</span>
 												</div>
 											</>
+										)}
+										{daySalesTotal > 0 && (
+											<div className="revenue-day-row revenue-day-row-sportpit">
+												<span><Dumbbell size={10} /> Спортпит:</span>
+												<span>{formatCurrency(daySalesTotal)}</span>
+											</div>
 										)}
 										{dayExpenseTotal > 0 && (
 											<div className="revenue-day-row revenue-day-row-expense">
@@ -408,6 +450,37 @@ export function RevenueListPage() {
 										Редактировать может только автор записи или администратор
 									</p>
 								</>
+							)}
+						</div>
+
+						<div className="revenue-modal-section revenue-modal-sportpit-section">
+							<h4 className="revenue-modal-section-title">
+								<Dumbbell size={16} />
+								Продажи спортпита
+								{selectedDaySales.length > 0 && (
+									<span className="revenue-modal-sportpit-count">{selectedDaySales.length}</span>
+								)}
+							</h4>
+							{selectedDaySales.length > 0 ? (
+								<>
+									<div className="revenue-modal-sales-list">
+										{selectedDaySales.map((sale) => (
+											<div key={sale.id} className="revenue-modal-sale-item">
+												<div className="revenue-modal-sale-info">
+													<span className="revenue-modal-sale-name">{sale.product?.name}</span>
+													<span className="revenue-modal-sale-qty">{sale.quantity} шт × {formatCurrency(sale.price)}</span>
+												</div>
+												<span className="revenue-modal-sale-total">{formatCurrency(sale.total)}</span>
+											</div>
+										))}
+									</div>
+									<div className="revenue-modal-sales-total">
+										<span>Итого спортпит:</span>
+										<span>{formatCurrency(selectedDaySalesTotal)}</span>
+									</div>
+								</>
+							) : (
+								<p className="revenue-modal-no-sales">Нет продаж спортпита за этот день</p>
 							)}
 						</div>
 
