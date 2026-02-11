@@ -1,5 +1,5 @@
-import { IsUUID, IsNumber, IsPositive, IsInt, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID, IsNumber, IsPositive, IsInt, Min, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSaleDto {
 	@ApiProperty({ description: 'ID бара' })
@@ -19,4 +19,9 @@ export class CreateSaleDto {
 	@IsNumber()
 	@IsPositive()
 	price: number;
+
+	@ApiPropertyOptional({ description: 'Кому продал (имя покупателя)' })
+	@IsOptional()
+	@IsString()
+	buyerName?: string;
 }

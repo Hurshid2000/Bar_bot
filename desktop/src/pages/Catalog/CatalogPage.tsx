@@ -63,6 +63,7 @@ export function CatalogPage() {
 	const [sellingProduct, setSellingProduct] = useState<Product | null>(null);
 	const [sellPrice, setSellPrice] = useState('');
 	const [sellQuantity, setSellQuantity] = useState('1');
+	const [sellBuyerName, setSellBuyerName] = useState('');
 	const [sellError, setSellError] = useState('');
 
 	const isAdmin = hasRole([RoleType.ADMIN]);
@@ -205,9 +206,11 @@ export function CatalogPage() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['stock-map'] });
 			queryClient.invalidateQueries({ queryKey: ['sales'] });
+			queryClient.invalidateQueries({ queryKey: ['sales-daily'] });
 			setSellingProduct(null);
 			setSellPrice('');
 			setSellQuantity('1');
+			setSellBuyerName('');
 			setSellError('');
 		},
 		onError: (error: any) => {
@@ -301,6 +304,7 @@ export function CatalogPage() {
 		setSellingProduct(product);
 		setSellPrice(String(product.price || product.defaultPrice || ''));
 		setSellQuantity('1');
+		setSellBuyerName('');
 		setSellError('');
 	};
 
@@ -317,6 +321,7 @@ export function CatalogPage() {
 			productId: sellingProduct.id,
 			quantity,
 			price,
+			buyerName: sellBuyerName.trim() || undefined,
 		});
 	};
 
@@ -324,6 +329,7 @@ export function CatalogPage() {
 		setSellingProduct(null);
 		setSellPrice('');
 		setSellQuantity('1');
+		setSellBuyerName('');
 		setSellError('');
 	};
 
@@ -590,6 +596,15 @@ export function CatalogPage() {
 									max={String(stockMap?.[sellingProduct.id] ?? 0)}
 								/>
 							</div>
+						</div>
+						<div className="sell-modal-field sell-modal-buyer">
+							<label>Кому продал</label>
+							<input
+								type="text"
+								value={sellBuyerName}
+								onChange={(e) => setSellBuyerName(e.target.value)}
+								placeholder="Имя покупателя (необязательно)"
+							/>
 						</div>
 						{sellPrice && sellQuantity && (
 							<div className="sell-modal-total">

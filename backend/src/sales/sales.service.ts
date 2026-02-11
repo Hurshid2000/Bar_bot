@@ -29,7 +29,7 @@ export class SalesService {
 	 * Создать продажу — в транзакции: проверка остатка, списание со склада, запись продажи
 	 */
 	async create(userId: string, dto: CreateSaleDto) {
-		const { barId, productId, quantity, price } = dto;
+		const { barId, productId, quantity, price, buyerName } = dto;
 
 		// Проверяем продукт
 		const product = await this.prisma.product.findUnique({
@@ -75,6 +75,7 @@ export class SalesService {
 					quantity,
 					price,
 					total,
+					buyerName: buyerName || null,
 				},
 				include: SALE_INCLUDE,
 			});

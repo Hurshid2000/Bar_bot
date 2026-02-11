@@ -488,6 +488,9 @@ export function RevenueListPage() {
 												<div className="revenue-modal-sale-info">
 													<span className="revenue-modal-sale-name">{sale.product?.name}</span>
 													<span className="revenue-modal-sale-qty">{sale.quantity} шт × {formatCurrency(sale.price)}</span>
+													{sale.buyerName && (
+														<span className="revenue-modal-sale-buyer">Покупатель: {sale.buyerName}</span>
+													)}
 												</div>
 												<span className="revenue-modal-sale-total">{formatCurrency(sale.total)}</span>
 											</div>

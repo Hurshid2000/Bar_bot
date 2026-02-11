@@ -6,6 +6,7 @@ export interface CreateSaleDto {
 	productId: string;
 	quantity: number;
 	price: number;
+	buyerName?: string;
 }
 
 export interface Sale {
@@ -16,6 +17,7 @@ export interface Sale {
 	quantity: number;
 	price: number;
 	total: number;
+	buyerName?: string | null;
 	date: string;
 	createdAt: string;
 	product?: {

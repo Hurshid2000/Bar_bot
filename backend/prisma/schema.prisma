@@ -306,6 +306,7 @@ model Sale {
   quantity  Int
   price     Float    // Цена продажи (указывается вручную)
   total     Float    // quantity * price
+  buyerName String?  // Кому продал
   date      DateTime @default(now())
   createdAt DateTime @default(now())
   bar       Bar      @relation(fields: [barId], references: [id])

@@ -324,6 +324,13 @@
 	font-size: 11px;
 	color: var(--color-text-secondary);
 }
+
+.revenue-modal-sale-buyer {
+	font-size: 11px;
+	color: #7c3aed;
+	font-style: italic;
+}
+
 .revenue-modal-sale-total {
 	font-size: 14px;
 	font-weight: 700;

@@ -811,6 +811,20 @@
 	border-color: var(--color-primary-500);
 }
 
+.sell-modal-buyer {
+	margin-top: 6px;
+}
+
+.sell-modal-buyer input {
+	width: 100%;
+	padding: 7px 10px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	font-size: 13px;
+	background: var(--color-surface);
+	color: var(--color-text);
+}
+
 .sell-modal-total {
 	text-align: center;
 	font-size: 15px;
