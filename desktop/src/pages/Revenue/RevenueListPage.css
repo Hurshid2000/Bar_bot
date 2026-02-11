@@ -92,6 +92,11 @@
 	font-size: 20px;
 }
 
+.revenue-summary-expenses .revenue-summary-value {
+	color: var(--color-danger);
+	font-size: 18px;
+}
+
 /* Days Grid */
 .revenue-days-grid {
 	display: grid;
@@ -190,6 +195,24 @@
 	font-weight: 700;
 }
 
+.revenue-day-row-expense {
+	margin-top: 3px;
+	padding-top: 4px;
+	border-top: 1px dashed var(--color-border);
+}
+
+.revenue-day-row-expense span:first-child {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	color: var(--color-danger);
+}
+
+.revenue-day-row-expense span:last-child {
+	color: var(--color-danger);
+	font-weight: 700;
+}
+
 .revenue-day-author {
 	display: flex;
 	align-items: center;
@@ -211,15 +234,37 @@
 
 /* Modal */
 .revenue-day-modal {
-	max-width: 440px;
+	max-width: 520px;
 	width: 100%;
+	padding: 28px 32px !important;
 }
 
 .revenue-day-modal h3 {
-	margin: 0 0 16px 0;
-	font-size: 18px;
+	margin: 0 0 20px 0;
+	font-size: 20px;
 	color: var(--color-text-primary);
 	text-align: center;
+}
+
+/* Modal Sections */
+.revenue-modal-section {
+	margin-bottom: 20px;
+}
+
+.revenue-modal-section-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--color-text-primary);
+	margin: 0 0 12px 0;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.revenue-modal-expenses-section .revenue-modal-section-title {
+	color: var(--color-danger);
 }
 
 /* Modal Meta */
@@ -247,6 +292,18 @@
 
 .revenue-modal-meta-updated {
 	color: var(--color-warning);
+}
+
+/* Modal Fields Row (side-by-side) */
+.revenue-modal-fields-row {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.revenue-modal-fields-row .revenue-modal-field {
+	flex: 1;
+	margin-bottom: 0;
 }
 
 /* Modal Fields */
@@ -284,7 +341,7 @@
 	font-size: 16px;
 	font-weight: 700;
 	color: var(--color-success);
-	margin-bottom: 16px;
+	margin-bottom: 12px;
 	padding: 10px;
 	background: rgba(34, 197, 94, 0.08);
 	border-radius: var(--radius-md);
@@ -294,7 +351,7 @@
 .revenue-modal-actions {
 	display: flex;
 	gap: 12px;
-	margin-top: 16px;
+	margin-top: 12px;
 }
 
 .revenue-modal-cancel,
@@ -378,6 +435,69 @@
 	margin-top: 8px;
 }
 
+/* Expenses in modal */
+.revenue-modal-expense-count {
+	background: var(--color-danger);
+	color: white;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 2px 7px;
+	border-radius: 10px;
+	margin-left: auto;
+}
+
+.revenue-modal-expenses-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.revenue-modal-expense-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 14px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border-left: 3px solid var(--color-danger);
+}
+
+.revenue-modal-expense-amount {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--color-danger);
+	white-space: nowrap;
+	margin-right: 16px;
+}
+
+.revenue-modal-expense-desc {
+	font-size: 13px;
+	color: var(--color-text-secondary);
+	text-align: right;
+	flex: 1;
+	word-break: break-word;
+}
+
+.revenue-modal-expenses-total {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 10px;
+	padding: 10px 14px;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--color-danger);
+	background: rgba(239, 68, 68, 0.08);
+	border-radius: var(--radius-md);
+}
+
+.revenue-modal-no-expenses {
+	text-align: center;
+	font-size: 13px;
+	color: var(--color-text-muted);
+	margin: 4px 0 0 0;
+	font-style: italic;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
 	.revenue-days-grid {
@@ -392,5 +512,13 @@
 	.revenue-summary-item {
 		flex-direction: row;
 		justify-content: space-between;
+	}
+
+	.revenue-day-modal {
+		padding: 20px 18px !important;
+	}
+
+	.revenue-modal-fields-row {
+		flex-direction: column;
 	}
 }

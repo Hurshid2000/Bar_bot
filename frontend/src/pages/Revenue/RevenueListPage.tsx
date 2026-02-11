@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Edit2, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit2, User as UserIcon, TrendingDown } from 'lucide-react';
 import { revenueApi } from '../../api/revenue.api';
+import { expensesApi } from '../../api/expenses.api';
 import { useBar } from '../../context/BarContext';
 import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
 import { formatCurrency } from '../../utils/format';
-import { RoleType, type Revenue } from '../../types/common.types';
+import { RoleType, type Revenue, type Expense } from '../../types/common.types';
 import './RevenueListPage.css';
 
 function getMonthDays(year: number, month: number): Date[] {
@@ -66,6 +67,20 @@ export function RevenueListPage() {
 		enabled: !!selectedBar,
 	});
 
+	// Запрос расходов за этот месяц
+	const { data: expensesData } = useQuery({
+		queryKey: ['expenses', selectedBar?.id, startDate, endDate],
+		queryFn: () =>
+			expensesApi.getAll({
+				barId: selectedBar?.id,
+				startDate,
+				endDate,
+				page: 1,
+				limit: 200,
+			}),
+		enabled: !!selectedBar,
+	});
+
 	const revenueMap = useMemo(() => {
 		const map = new Map<string, Revenue>();
 		if (data?.data) {
@@ -77,19 +92,39 @@ export function RevenueListPage() {
 		return map;
 	}, [data]);
 
+	// Карта: dateKey -> Expense[]
+	const expensesMap = useMemo(() => {
+		const map = new Map<string, Expense[]>();
+		if (expensesData?.data) {
+			for (const exp of expensesData.data) {
+				const dateKey = exp.date.slice(0, 10);
+				const list = map.get(dateKey) || [];
+				list.push(exp);
+				map.set(dateKey, list);
+			}
+		}
+		return map;
+	}, [expensesData]);
+
 	const days = useMemo(() => getMonthDays(year, month), [year, month]);
 
 	const monthTotal = useMemo(() => {
 		let cash = 0;
 		let card = 0;
+		let expenses = 0;
 		if (data?.data) {
 			for (const rev of data.data) {
 				cash += rev.cash;
 				card += rev.card;
 			}
 		}
-		return { cash, card, total: cash + card };
-	}, [data]);
+		if (expensesData?.data) {
+			for (const exp of expensesData.data) {
+				expenses += exp.amount;
+			}
+		}
+		return { cash, card, total: cash + card, expenses };
+	}, [data, expensesData]);
 
 	const goToPrevMonth = () => {
 		if (month === 0) { setMonth(11); setYear(year - 1); }
@@ -164,6 +199,12 @@ export function RevenueListPage() {
 			&& day.getFullYear() === today.getFullYear();
 	};
 
+	const selectedDayExpenses = selectedDay
+		? expensesMap.get(formatDateKey(selectedDay)) || []
+		: [];
+
+	const selectedDayExpenseTotal = selectedDayExpenses.reduce((s, e) => s + e.amount, 0);
+
 	if (!selectedBar) {
 		return (
 			<div className="revenue-list-page">
@@ -203,6 +244,10 @@ export function RevenueListPage() {
 					<span className="revenue-summary-label">Итого</span>
 					<span className="revenue-summary-value">{formatCurrency(monthTotal.total)}</span>
 				</div>
+				<div className="revenue-summary-item revenue-summary-expenses">
+					<span className="revenue-summary-label">Расход</span>
+					<span className="revenue-summary-value">{formatCurrency(monthTotal.expenses)}</span>
+				</div>
 			</div>
 
 			{isLoading ? (
@@ -212,7 +257,9 @@ export function RevenueListPage() {
 					{days.map((day) => {
 						const dateKey = formatDateKey(day);
 						const rev = revenueMap.get(dateKey);
-						const hasData = !!rev;
+						const dayExpenses = expensesMap.get(dateKey) || [];
+						const dayExpenseTotal = dayExpenses.reduce((s, e) => s + e.amount, 0);
+						const hasData = !!rev || dayExpenses.length > 0;
 						const dayIsToday = isToday(day);
 
 						return (
@@ -228,19 +275,29 @@ export function RevenueListPage() {
 
 								{hasData ? (
 									<div className="revenue-day-data">
-										<div className="revenue-day-row">
-											<span>Нал:</span>
-											<span>{formatCurrency(rev.cash)}</span>
-										</div>
-										<div className="revenue-day-row">
-											<span>Карта:</span>
-											<span>{formatCurrency(rev.card)}</span>
-										</div>
-										<div className="revenue-day-row revenue-day-row-total">
-											<span>Итого:</span>
-											<span>{formatCurrency(rev.cash + rev.card)}</span>
-										</div>
-										{rev.createdBy && (
+										{rev && (
+											<>
+												<div className="revenue-day-row">
+													<span>Нал:</span>
+													<span>{formatCurrency(rev.cash)}</span>
+												</div>
+												<div className="revenue-day-row">
+													<span>Карта:</span>
+													<span>{formatCurrency(rev.card)}</span>
+												</div>
+												<div className="revenue-day-row revenue-day-row-total">
+													<span>Итого:</span>
+													<span>{formatCurrency(rev.cash + rev.card)}</span>
+												</div>
+											</>
+										)}
+										{dayExpenseTotal > 0 && (
+											<div className="revenue-day-row revenue-day-row-expense">
+												<span><TrendingDown size={10} /> Расход:</span>
+												<span>{formatCurrency(dayExpenseTotal)}</span>
+											</div>
+										)}
+										{rev?.createdBy && (
 											<div className="revenue-day-author">
 												<UserIcon size={10} />
 												<span>{rev.createdBy.name}</span>
@@ -263,95 +320,137 @@ export function RevenueListPage() {
 					<div className="modal-content revenue-day-modal" onClick={(e) => e.stopPropagation()}>
 						<h3>{formatDayLabel(selectedDay)}</h3>
 
-						{editingRevenue && (
-							<div className="revenue-modal-meta">
-								{editingRevenue.createdBy && (
-									<div className="revenue-modal-meta-row">
-										<UserIcon size={14} />
-										<span>Записал: <strong>{editingRevenue.createdBy.name}</strong></span>
-									</div>
-								)}
-								{editingRevenue.updatedBy && editingRevenue.updatedAt && (
-									<div className="revenue-modal-meta-row revenue-modal-meta-updated">
-										<Edit2 size={14} />
-										<span>
-											Изменил: <strong>{editingRevenue.updatedBy.name}</strong>
-											{' '}({new Date(editingRevenue.updatedAt).toLocaleString('ru-RU')})
-										</span>
-									</div>
-								)}
-							</div>
-						)}
+						{/* === ВЫРУЧКА === */}
+						<div className="revenue-modal-section">
+							<h4 className="revenue-modal-section-title">Выручка</h4>
 
-						{canEdit(editingRevenue) ? (
-							<>
-								<div className="revenue-modal-field">
-									<label>Наличные</label>
-									<input
-										type="number"
-										value={cashInput}
-										onChange={(e) => setCashInput(e.target.value)}
-										placeholder="0"
-										min="0"
-										step="any"
-										autoFocus
-									/>
+							{editingRevenue && (
+								<div className="revenue-modal-meta">
+									{editingRevenue.createdBy && (
+										<div className="revenue-modal-meta-row">
+											<UserIcon size={14} />
+											<span>Записал: <strong>{editingRevenue.createdBy.name}</strong></span>
+										</div>
+									)}
+									{editingRevenue.updatedBy && editingRevenue.updatedAt && (
+										<div className="revenue-modal-meta-row revenue-modal-meta-updated">
+											<Edit2 size={14} />
+											<span>
+												Изменил: <strong>{editingRevenue.updatedBy.name}</strong>
+												{' '}({new Date(editingRevenue.updatedAt).toLocaleString('ru-RU')})
+											</span>
+										</div>
+									)}
 								</div>
-								<div className="revenue-modal-field">
-									<label>Карта</label>
-									<input
-										type="number"
-										value={cardInput}
-										onChange={(e) => setCardInput(e.target.value)}
-										placeholder="0"
-										min="0"
-										step="any"
-									/>
-								</div>
+							)}
 
-								{(cashInput || cardInput) && (
-									<div className="revenue-modal-total">
-										Итого: {formatCurrency((parseFloat(cashInput) || 0) + (parseFloat(cardInput) || 0))}
+							{canEdit(editingRevenue) ? (
+								<>
+									<div className="revenue-modal-field">
+										<label>Наличные</label>
+										<input
+											type="number"
+											value={cashInput}
+											onChange={(e) => setCashInput(e.target.value)}
+											placeholder="0"
+											min="0"
+											step="any"
+											autoFocus
+										/>
 									</div>
+									<div className="revenue-modal-field">
+										<label>Карта</label>
+										<input
+											type="number"
+											value={cardInput}
+											onChange={(e) => setCardInput(e.target.value)}
+											placeholder="0"
+											min="0"
+											step="any"
+										/>
+									</div>
+
+									{(cashInput || cardInput) && (
+										<div className="revenue-modal-total">
+											Итого: {formatCurrency((parseFloat(cashInput) || 0) + (parseFloat(cardInput) || 0))}
+										</div>
+									)}
+
+									<div className="revenue-modal-actions">
+										<button
+											className="revenue-modal-save"
+											onClick={handleSave}
+											disabled={createMutation.isPending || updateMutation.isPending}
+										>
+											{createMutation.isPending || updateMutation.isPending
+												? 'Сохранение...'
+												: editingRevenue ? 'Обновить выручку' : 'Сохранить выручку'}
+										</button>
+									</div>
+								</>
+							) : (
+								<>
+									<div className="revenue-modal-readonly">
+										<div className="revenue-modal-readonly-row">
+											<span>Наличные:</span>
+											<span>{formatCurrency(editingRevenue?.cash || 0)}</span>
+										</div>
+										<div className="revenue-modal-readonly-row">
+											<span>Карта:</span>
+											<span>{formatCurrency(editingRevenue?.card || 0)}</span>
+										</div>
+										<div className="revenue-modal-readonly-row revenue-modal-readonly-total">
+											<span>Итого:</span>
+											<span>{formatCurrency((editingRevenue?.cash || 0) + (editingRevenue?.card || 0))}</span>
+										</div>
+									</div>
+									<p className="revenue-modal-no-permission">
+										Редактировать может только автор записи или администратор
+									</p>
+								</>
+							)}
+						</div>
+
+						{/* === РАСХОДЫ === */}
+						<div className="revenue-modal-section revenue-modal-expenses-section">
+							<h4 className="revenue-modal-section-title">
+								<TrendingDown size={16} />
+								Расходы за день
+								{selectedDayExpenses.length > 0 && (
+									<span className="revenue-modal-expense-count">{selectedDayExpenses.length}</span>
 								)}
+							</h4>
 
-								<div className="revenue-modal-actions">
-									<button className="revenue-modal-cancel" onClick={closeModal}>Отмена</button>
-									<button
-										className="revenue-modal-save"
-										onClick={handleSave}
-										disabled={createMutation.isPending || updateMutation.isPending}
-									>
-										{createMutation.isPending || updateMutation.isPending
-											? 'Сохранение...'
-											: editingRevenue ? 'Обновить' : 'Сохранить'}
-									</button>
-								</div>
-							</>
-						) : (
-							<>
-								<div className="revenue-modal-readonly">
-									<div className="revenue-modal-readonly-row">
-										<span>Наличные:</span>
-										<span>{formatCurrency(editingRevenue?.cash || 0)}</span>
+							{selectedDayExpenses.length > 0 ? (
+								<>
+									<div className="revenue-modal-expenses-list">
+										{selectedDayExpenses.map((exp) => (
+											<div key={exp.id} className="revenue-modal-expense-item">
+												<span className="revenue-modal-expense-amount">
+													{formatCurrency(exp.amount)}
+												</span>
+												<span className="revenue-modal-expense-desc">
+													{exp.description}
+												</span>
+											</div>
+										))}
 									</div>
-									<div className="revenue-modal-readonly-row">
-										<span>Карта:</span>
-										<span>{formatCurrency(editingRevenue?.card || 0)}</span>
+									<div className="revenue-modal-expenses-total">
+										<span>Итого расход:</span>
+										<span>{formatCurrency(selectedDayExpenseTotal)}</span>
 									</div>
-									<div className="revenue-modal-readonly-row revenue-modal-readonly-total">
-										<span>Итого:</span>
-										<span>{formatCurrency((editingRevenue?.cash || 0) + (editingRevenue?.card || 0))}</span>
-									</div>
-								</div>
-								<p className="revenue-modal-no-permission">
-									Редактировать может только автор записи или администратор
-								</p>
-								<div className="revenue-modal-actions">
-									<button className="revenue-modal-cancel" onClick={closeModal}>Закрыть</button>
-								</div>
-							</>
-						)}
+								</>
+							) : (
+								<p className="revenue-modal-no-expenses">Нет расходов за этот день</p>
+							)}
+						</div>
+
+						{/* Кнопка закрытия */}
+						<div className="revenue-modal-actions">
+							<button className="revenue-modal-cancel" onClick={closeModal}>
+								Закрыть
+							</button>
+						</div>
 
 						{(createMutation.isError || updateMutation.isError) && (
 							<p className="revenue-modal-error">
