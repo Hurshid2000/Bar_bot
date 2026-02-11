@@ -643,6 +643,47 @@
 	padding: 4px !important;
 }
 
+/* Pin button */
+.card-action-btn-pin {
+	background: var(--color-background-card) !important;
+	border-color: var(--color-border) !important;
+	color: var(--color-text-muted) !important;
+	transition: all 0.2s ease !important;
+}
+
+.card-action-btn-pin:hover {
+	background: var(--color-primary-500) !important;
+	border-color: var(--color-primary-500) !important;
+	color: white !important;
+}
+
+.card-action-btn-pin.pinned {
+	background: var(--color-primary-500) !important;
+	border-color: var(--color-primary-500) !important;
+	color: white !important;
+}
+
+/* Pinned product card */
+.product-card-pinned {
+	border-color: var(--color-primary-400) !important;
+	position: relative;
+}
+
+.product-card-pin-badge {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--color-primary-500);
+	color: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1;
+}
+
 /* Inactive product card */
 .product-card-inactive {
 	opacity: 0.5;

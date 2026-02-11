@@ -1,4 +1,4 @@
-import { Edit2, DollarSign } from 'lucide-react';
+import { Edit2, DollarSign, Pin } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
 import { formatCurrency } from '../../../utils/format';
 
@@ -28,13 +28,15 @@ interface ProductCardProps {
 	product: Product;
 	selected?: boolean;
 	isActive?: boolean;
+	isPinned?: boolean;
 	onClick?: () => void;
 	onEditProduct?: (product: Product) => void;
 	onEditPrice?: (product: Product) => void;
 	onToggleActive?: (product: Product, isActive: boolean) => void;
+	onTogglePin?: (product: Product, isPinned: boolean) => void;
 }
 
-export function ProductCard({ product, selected, isActive, onClick, onEditProduct, onEditPrice, onToggleActive }: ProductCardProps) {
+export function ProductCard({ product, selected, isActive, isPinned, onClick, onEditProduct, onEditPrice, onToggleActive, onTogglePin }: ProductCardProps) {
 	const handleEditProduct = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onEditProduct?.(product);
@@ -50,11 +52,18 @@ export function ProductCard({ product, selected, isActive, onClick, onEditProduc
 		onToggleActive?.(product, !isActive);
 	};
 
+	const handleTogglePin = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		onTogglePin?.(product, !isPinned);
+	};
+
 	return (
 		<div
-			className={`product-card ${selected ? 'product-card-selected' : ''} ${isActive === false ? 'product-card-inactive' : ''}`}
+			className={`product-card ${selected ? 'product-card-selected' : ''} ${isActive === false ? 'product-card-inactive' : ''} ${isPinned ? 'product-card-pinned' : ''}`}
 			onClick={onClick}
 		>
+			{isPinned && <div className="product-card-pin-badge"><Pin size={12} /></div>}
+
 			<div className="product-card-icon">
 				{getCategoryIcon(product.category?.name)}
 			</div>
@@ -69,8 +78,17 @@ export function ProductCard({ product, selected, isActive, onClick, onEditProduc
 				</div>
 			</div>
 
-			{(onEditProduct || onEditPrice || onToggleActive) && (
+			{(onEditProduct || onEditPrice || onToggleActive || onTogglePin) && (
 				<div className="card-actions">
+					{onTogglePin && (
+						<button
+							className={`card-action-btn card-action-btn-pin ${isPinned ? 'pinned' : ''}`}
+							onClick={handleTogglePin}
+							title={isPinned ? 'Открепить' : 'Закрепить'}
+						>
+							<Pin size={16} />
+						</button>
+					)}
 					{onToggleActive && (
 						<button
 							className={`card-action-btn card-action-btn-toggle ${isActive ? 'active' : 'inactive'}`}

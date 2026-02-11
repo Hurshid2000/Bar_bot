@@ -86,6 +86,16 @@ export function CatalogPage() {
 		},
 	});
 
+	// Мутация для закрепления/открепления продукта в баре
+	const togglePinMutation = useMutation({
+		mutationFn: ({ productId, isPinned }: { productId: string; isPinned: boolean }) =>
+			barProductsApi.updateByBarAndProduct(selectedBar!.id, productId, { isPinned }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['products'] });
+			queryClient.invalidateQueries({ queryKey: ['bar-products'] });
+		},
+	});
+
 	const filteredCategories = categories || [];
 
 	const handleTabChange = (tab: TabType) => {
@@ -124,6 +134,11 @@ export function CatalogPage() {
 		toggleActiveMutation.mutate({ productId: product.id, isActive });
 	};
 
+	const handleTogglePin = (product: Product, isPinned: boolean) => {
+		if (!selectedBar) return;
+		togglePinMutation.mutate({ productId: product.id, isPinned });
+	};
+
 	// Получаем isActive из barProducts для продукта
 	const getProductIsActive = (product: Product): boolean | undefined => {
 		if (!selectedBar) return undefined;
@@ -131,13 +146,23 @@ export function CatalogPage() {
 		return bp?.isActive;
 	};
 
+	// Получаем isPinned из barProducts
+	const getProductIsPinned = (product: Product): boolean => {
+		if (!selectedBar) return false;
+		const bp = product.barProducts?.find((bp) => bp.barId === selectedBar.id);
+		return bp?.isPinned ?? false;
+	};
+
 	const renderProductCard = (product: Product) => {
 		const productIsActive = getProductIsActive(product);
+		const productIsPinned = getProductIsPinned(product);
 		const editProps = {
 			onEditProduct: isAdmin ? handleEditProduct : undefined,
 			onEditPrice: canManage && selectedBar ? handleEditPrice : undefined,
 			onToggleActive: canManage && selectedBar ? handleToggleActive : undefined,
+			onTogglePin: canManage && selectedBar ? handleTogglePin : undefined,
 			isActive: productIsActive,
+			isPinned: productIsPinned,
 		};
 
 		switch (activeTab) {

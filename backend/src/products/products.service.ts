@@ -147,6 +147,15 @@ export class ProductsService {
 			return result;
 		});
 
+		// Закреплённые товары вверху (только при фильтре по бару)
+		if (barId) {
+			processedProducts.sort((a, b) => {
+				const aPinned = a.barProduct?.isPinned ? 1 : 0;
+				const bPinned = b.barProduct?.isPinned ? 1 : 0;
+				return bPinned - aPinned;
+			});
+		}
+
 		return createPaginatedResponse(processedProducts, total, page, limit);
 	}
 

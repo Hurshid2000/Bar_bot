@@ -74,7 +74,7 @@ export class BarProductsController {
 
 	@Patch(':id')
 	@Roles(RoleType.ADMIN, RoleType.MANAGER)
-	@ApiOperation({ summary: 'Обновить цену/isActive продукта в баре' })
+	@ApiOperation({ summary: 'Обновить цену/isActive/isPinned продукта в баре' })
 	update(
 		@Param('id') id: string,
 		@Body() updateBarProductDto: UpdateBarProductDto,
@@ -84,7 +84,7 @@ export class BarProductsController {
 
 	@Patch('bar/:barId/product/:productId')
 	@Roles(RoleType.ADMIN, RoleType.MANAGER)
-	@ApiOperation({ summary: 'Обновить цену/isActive продукта в баре по barId и productId' })
+	@ApiOperation({ summary: 'Обновить цену/isActive/isPinned продукта в баре по barId и productId' })
 	updateByBarAndProduct(
 		@Param('barId') barId: string,
 		@Param('productId') productId: string,

@@ -98,9 +98,10 @@ export class BarProductsService {
 			include: {
 				product: { include: { category: true } },
 			},
-			orderBy: {
-				product: { name: 'asc' },
-			},
+			orderBy: [
+				{ isPinned: 'desc' },
+				{ product: { name: 'asc' } },
+			],
 		});
 	}
 

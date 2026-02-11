@@ -86,6 +86,7 @@ export interface BarProduct {
 	productId: string;
 	price: number;
 	isActive: boolean;
+	isPinned: boolean;
 	createdAt: string;
 	bar?: Bar;
 	product?: Product;

@@ -12,4 +12,9 @@ export class UpdateBarProductDto {
 	@IsOptional()
 	@IsBoolean()
 	isActive?: boolean;
+
+	@ApiPropertyOptional({ description: 'Закреплён ли продукт в начале списка' })
+	@IsOptional()
+	@IsBoolean()
+	isPinned?: boolean;
 }

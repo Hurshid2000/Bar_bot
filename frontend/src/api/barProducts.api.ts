@@ -11,6 +11,7 @@ export interface CreateBarProductDto {
 export interface UpdateBarProductDto {
 	price?: number;
 	isActive?: boolean;
+	isPinned?: boolean;
 }
 
 export interface BulkAssignProduct {

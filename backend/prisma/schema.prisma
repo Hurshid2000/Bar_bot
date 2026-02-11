@@ -83,6 +83,7 @@ model BarProduct {
   productId String
   price     Float
   isActive  Boolean  @default(true)
+  isPinned  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   bar       Bar      @relation(fields: [barId], references: [id])
