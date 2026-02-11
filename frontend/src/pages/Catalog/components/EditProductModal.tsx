@@ -36,7 +36,7 @@ export function EditProductModal({ isOpen, onClose, product }: EditProductModalP
 				name: product.name,
 				barcode: product.barcode || '',
 				type: product.type,
-				costPrice: product.costPrice,
+				costPrice: product.costPrice ?? undefined,
 				defaultPrice: product.defaultPrice || undefined,
 				categoryId: product.categoryId,
 				imageUrl: product.imageUrl || '',
