@@ -1,20 +1,369 @@
 .revenue-list-page {
 	width: 100%;
+	padding: 4px;
 }
 
-.revenue-list {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-	gap: 20px;
+.revenue-no-bar {
+	text-align: center;
+	color: var(--color-text-secondary);
+	padding: 40px 20px;
 }
 
-.revenue-info p {
-	margin: 8px 0;
+.revenue-page-header {
+	margin-bottom: 12px;
+}
+
+.revenue-page-header h1 {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--color-text-primary);
+	margin: 0;
+}
+
+/* Month Picker */
+.revenue-month-picker {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.revenue-month-btn {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	border: 1px solid var(--color-border);
+	background: var(--color-background-card);
+	color: var(--color-text-primary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.revenue-month-btn:hover {
+	background: var(--color-primary-500);
+	border-color: var(--color-primary-500);
+	color: white;
+}
+
+.revenue-month-label {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	min-width: 160px;
+	text-align: center;
+}
+
+/* Month Summary */
+.revenue-month-summary {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+	padding: 12px;
+	background: var(--color-background-card);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+}
+
+.revenue-summary-item {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+
+.revenue-summary-label {
+	font-size: 11px;
 	color: var(--color-text-secondary);
 }
 
-@media (max-width: 768px) {
-	.revenue-list {
-		grid-template-columns: 1fr;
-	}
+.revenue-summary-value {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--color-success);
+}
+
+.revenue-summary-total .revenue-summary-value {
+	color: var(--color-primary-500);
+	font-size: 16px;
+}
+
+/* Days Grid */
+.revenue-days-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px;
+}
+
+/* Day Card */
+.revenue-day-card {
+	display: flex;
+	flex-direction: column;
+	padding: 10px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-background-card);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-align: left;
+	min-height: 80px;
+}
+
+.revenue-day-card:hover {
+	border-color: var(--color-primary-400);
+}
+
+.revenue-day-has-data {
+	border-color: var(--color-primary-500);
+	border-width: 1.5px;
+}
+
+.revenue-day-empty {
+	opacity: 0.6;
+}
+
+.revenue-day-empty:hover {
+	opacity: 1;
+}
+
+.revenue-day-today {
+	border-color: var(--color-success) !important;
+	box-shadow: 0 0 0 1px var(--color-success);
+}
+
+.revenue-day-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.revenue-day-number {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-text-primary);
+}
+
+.revenue-day-today-badge {
+	font-size: 9px;
+	font-weight: 600;
+	color: var(--color-success);
+	background: rgba(34, 197, 94, 0.15);
+	padding: 2px 5px;
+	border-radius: 6px;
+}
+
+.revenue-day-data {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.revenue-day-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 11px;
+	color: var(--color-text-secondary);
+}
+
+.revenue-day-row span:last-child {
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.revenue-day-row-total {
+	margin-top: 2px;
+	padding-top: 3px;
+	border-top: 1px solid var(--color-border);
+}
+
+.revenue-day-row-total span:last-child {
+	color: var(--color-success);
+	font-weight: 700;
+}
+
+.revenue-day-author {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	margin-top: 4px;
+	font-size: 9px;
+	color: var(--color-text-muted);
+}
+
+.revenue-day-no-data {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 11px;
+	color: var(--color-text-muted);
+}
+
+/* Modal */
+.revenue-day-modal {
+	max-width: 400px;
+	width: 100%;
+}
+
+.revenue-day-modal h3 {
+	margin: 0 0 12px 0;
+	font-size: 16px;
+	color: var(--color-text-primary);
+	text-align: center;
+}
+
+.revenue-modal-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 12px;
+	padding: 10px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+}
+
+.revenue-modal-meta-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.revenue-modal-meta-row strong {
+	color: var(--color-text-primary);
+}
+
+.revenue-modal-meta-updated {
+	color: var(--color-warning);
+}
+
+.revenue-modal-field {
+	margin-bottom: 10px;
+}
+
+.revenue-modal-field label {
+	display: block;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--color-text-secondary);
+	margin-bottom: 4px;
+}
+
+.revenue-modal-field input {
+	width: 100%;
+	padding: 10px 14px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text-primary);
+	font-size: 15px;
+	outline: none;
+	box-sizing: border-box;
+	transition: border-color 0.2s ease;
+}
+
+.revenue-modal-field input:focus {
+	border-color: var(--color-primary-500);
+}
+
+.revenue-modal-total {
+	text-align: center;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--color-success);
+	margin-bottom: 12px;
+	padding: 8px;
+	background: rgba(34, 197, 94, 0.08);
+	border-radius: var(--radius-md);
+}
+
+.revenue-modal-actions {
+	display: flex;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.revenue-modal-cancel,
+.revenue-modal-save {
+	flex: 1;
+	padding: 10px 14px;
+	border: none;
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.revenue-modal-cancel {
+	background: var(--color-surface-hover);
+	color: var(--color-text-secondary);
+}
+
+.revenue-modal-cancel:hover {
+	background: var(--color-border);
+}
+
+.revenue-modal-save {
+	background: var(--color-primary-500);
+	color: white;
+}
+
+.revenue-modal-save:hover:not(:disabled) {
+	background: var(--color-primary-600);
+}
+
+.revenue-modal-save:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.revenue-modal-readonly {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.revenue-modal-readonly-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.revenue-modal-readonly-row span:last-child {
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.revenue-modal-readonly-total {
+	padding-top: 8px;
+	border-top: 1px solid var(--color-border);
+}
+
+.revenue-modal-readonly-total span:last-child {
+	color: var(--color-success);
+	font-weight: 700;
+}
+
+.revenue-modal-no-permission {
+	text-align: center;
+	font-size: 12px;
+	color: var(--color-text-muted);
+	margin: 6px 0 0 0;
+	font-style: italic;
+}
+
+.revenue-modal-error {
+	text-align: center;
+	font-size: 12px;
+	color: var(--color-danger);
+	margin-top: 8px;
 }

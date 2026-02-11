@@ -1,16 +1,28 @@
 import {
 	Injectable,
-	BadRequestException,
 	NotFoundException,
+	ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
+import { UpdateRevenueDto } from './dto/update-revenue.dto';
 import { RevenueFilterDto } from './dto/revenue-filter.dto';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
 import {
 	createPaginatedResponse,
 	getSkip,
 } from '../common/utils/pagination.util';
+import { RoleType } from '@prisma/client';
+
+const REVENUE_INCLUDE = {
+	bar: true,
+	createdBy: {
+		select: { id: true, name: true, role: true },
+	},
+	updatedBy: {
+		select: { id: true, name: true, role: true },
+	},
+};
 
 @Injectable()
 export class RevenueService {
@@ -18,11 +30,11 @@ export class RevenueService {
 
 	/**
 	 * Создаёт или обновляет запись выручки (upsert)
-	 * - Если запись на эту дату не существует - создаёт новую
-	 * - Если существует - обновляет переданные поля (cash/card)
-	 * - Можно обновлять только cash или только card
+	 * - Если запись на эту дату не существует — создаёт новую
+	 * - Если существует — обновляет переданные поля (cash/card)
+	 * - Записывает автора создания / изменения
 	 */
-	async create(createRevenueDto: CreateRevenueDto) {
+	async create(createRevenueDto: CreateRevenueDto, userId: string) {
 		const { barId, date } = createRevenueDto;
 
 		// Проверяем существование бара
@@ -35,17 +47,14 @@ export class RevenueService {
 
 		const dateObj = new Date(date);
 
-		// Проверяем, какие поля реально были переданы в запросе
-		// hasOwnProperty проверяет наличие ключа, даже если значение undefined/null
 		const hasCash = 'cash' in createRevenueDto && createRevenueDto.cash !== undefined && createRevenueDto.cash !== null;
 		const hasCard = 'card' in createRevenueDto && createRevenueDto.card !== undefined && createRevenueDto.card !== null;
 
-		// Формируем объект для update - только реально переданные поля
-		const updateData: { cash?: number; card?: number } = {};
+		// Формируем объект для update — только реально переданные поля
+		const updateData: any = { updatedById: userId };
 		if (hasCash) updateData.cash = createRevenueDto.cash;
 		if (hasCard) updateData.card = createRevenueDto.card;
 
-		// Используем upsert: создаём если нет, обновляем если есть
 		return this.prisma.revenue.upsert({
 			where: {
 				barId_date: {
@@ -53,50 +62,74 @@ export class RevenueService {
 					date: dateObj,
 				},
 			},
-			// При создании новой записи - устанавливаем переданные значения или 0
 			create: {
 				barId,
 				date: dateObj,
-				cash: hasCash ? createRevenueDto.cash : 0,
-				card: hasCard ? createRevenueDto.card : 0,
+				cash: hasCash ? createRevenueDto.cash! : 0,
+				card: hasCard ? createRevenueDto.card! : 0,
+				createdById: userId,
 			},
-			// При обновлении - обновляем ТОЛЬКО реально переданные поля
 			update: updateData,
+			include: REVENUE_INCLUDE,
+		});
+	}
+
+	/**
+	 * Обновить запись выручки по ID.
+	 * Может только автор записи или ADMIN.
+	 */
+	async update(id: string, updateRevenueDto: UpdateRevenueDto, userId: string, userRole: RoleType) {
+		const revenue = await this.prisma.revenue.findUnique({
+			where: { id },
+		});
+
+		if (!revenue) {
+			throw new NotFoundException(`Revenue with ID ${id} not found`);
+		}
+
+		// Проверяем права: только автор или ADMIN
+		if (userRole !== RoleType.ADMIN && revenue.createdById !== userId) {
+			throw new ForbiddenException('Только автор записи или администратор может редактировать');
+		}
+
+		const data: any = { updatedById: userId };
+		if (updateRevenueDto.cash !== undefined) data.cash = updateRevenueDto.cash;
+		if (updateRevenueDto.card !== undefined) data.card = updateRevenueDto.card;
+
+		return this.prisma.revenue.update({
+			where: { id },
+			data,
+			include: REVENUE_INCLUDE,
 		});
 	}
 
 	async findAll(
 		filter: RevenueFilterDto,
 	): Promise<PaginatedResponse<any>> {
-		const { barId, date, startDate, endDate, page = 1, limit = 20 } = filter;
+		const { barId, date, startDate, endDate, page = 1, limit = 50 } = filter;
 
 		const where: any = {};
 		if (barId) where.barId = barId;
-		
-		// Если передан date, используем его для точного дня (startOfDay <= date < nextDay)
+
 		if (date) {
-			// Создаем дату с началом дня в UTC
 			const dateObj = new Date(date + 'T00:00:00.000Z');
 			const nextDay = new Date(dateObj);
 			nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 			where.date = {
 				gte: dateObj,
-				lt: nextDay, // Меньше следующего дня = точный день
+				lt: nextDay,
 			};
 		} else if (startDate || endDate) {
-			// Фильтрация по полю date в диапазоне (inclusive)
 			where.date = {};
 			if (startDate) {
-				// startOfDay для startDate
 				const startDateObj = new Date(startDate + 'T00:00:00.000Z');
 				where.date.gte = startDateObj;
 			}
 			if (endDate) {
-				// startOfDay(endDate + 1 day) для inclusive endDate
 				const endDateObj = new Date(endDate + 'T00:00:00.000Z');
 				const nextDay = new Date(endDateObj);
 				nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-				where.date.lt = nextDay; // Меньше следующего дня = включительно до конца endDate
+				where.date.lt = nextDay;
 			}
 		}
 
@@ -106,6 +139,7 @@ export class RevenueService {
 				orderBy: {
 					date: 'desc',
 				},
+				include: REVENUE_INCLUDE,
 				skip: getSkip(page, limit),
 				take: limit,
 			}),
@@ -113,5 +147,18 @@ export class RevenueService {
 		]);
 
 		return createPaginatedResponse(revenues, total, page, limit);
+	}
+
+	async findOne(id: string) {
+		const revenue = await this.prisma.revenue.findUnique({
+			where: { id },
+			include: REVENUE_INCLUDE,
+		});
+
+		if (!revenue) {
+			throw new NotFoundException(`Revenue with ID ${id} not found`);
+		}
+
+		return revenue;
 	}
 }

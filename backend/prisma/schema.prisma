@@ -23,6 +23,8 @@ model User {
   inventories Inventory[]
   clientTransactions ClientTransaction[]
   clientEditLogs ClientEditLog[]
+  revenuesCreated Revenue[] @relation("RevenueCreatedBy")
+  revenuesUpdated Revenue[] @relation("RevenueUpdatedBy")
 }
 
 model Bar {
@@ -93,13 +95,18 @@ model BarProduct {
 }
 
 model Revenue {
-  id        String   @id @default(uuid())
-  barId     String
-  date      DateTime
-  cash      Float
-  card      Float
-  createdAt DateTime @default(now())
-  bar       Bar      @relation(fields: [barId], references: [id])
+  id          String    @id @default(uuid())
+  barId       String
+  date        DateTime
+  cash        Float
+  card        Float
+  createdById String?
+  updatedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  bar         Bar       @relation(fields: [barId], references: [id])
+  createdBy   User?     @relation("RevenueCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?     @relation("RevenueUpdatedBy", fields: [updatedById], references: [id])
 
   @@unique([barId, date])
 }

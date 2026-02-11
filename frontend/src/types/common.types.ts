@@ -91,14 +91,25 @@ export interface BarProduct {
 	product?: Product;
 }
 
+export interface RevenueAuthor {
+	id: string;
+	name: string;
+	role: string;
+}
+
 export interface Revenue {
 	id: string;
 	barId: string;
 	date: string;
 	cash: number;
 	card: number;
+	createdById?: string | null;
+	updatedById?: string | null;
 	createdAt: string;
+	updatedAt?: string | null;
 	bar?: Bar;
+	createdBy?: RevenueAuthor | null;
+	updatedBy?: RevenueAuthor | null;
 }
 
 export interface Expense {

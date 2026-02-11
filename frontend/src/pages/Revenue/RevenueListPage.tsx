@@ -1,54 +1,365 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, Edit2, User as UserIcon } from 'lucide-react';
 import { revenueApi } from '../../api/revenue.api';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { useBar } from '../../context/BarContext';
+import { useAuth } from '../../context/AuthContext';
 import { Loading } from '../../components/ui/Loading';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency } from '../../utils/format';
+import { RoleType, type Revenue } from '../../types/common.types';
 import './RevenueListPage.css';
 
+function getMonthDays(year: number, month: number): Date[] {
+	const days: Date[] = [];
+	const daysInMonth = new Date(year, month + 1, 0).getDate();
+	for (let d = 1; d <= daysInMonth; d++) {
+		days.push(new Date(year, month, d));
+	}
+	return days;
+}
+
+function formatDateKey(date: Date): string {
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, '0');
+	const d = String(date.getDate()).padStart(2, '0');
+	return `${y}-${m}-${d}`;
+}
+
+function formatDayLabel(date: Date): string {
+	return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const MONTH_NAMES = [
+	'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+	'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+];
+
 export function RevenueListPage() {
+	const { selectedBar } = useBar();
+	const { user, hasRole } = useAuth();
+	const queryClient = useQueryClient();
+	const isAdmin = hasRole([RoleType.ADMIN]);
+
+	const now = new Date();
+	const [year, setYear] = useState(now.getFullYear());
+	const [month, setMonth] = useState(now.getMonth());
+
+	const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+	const [editingRevenue, setEditingRevenue] = useState<Revenue | null>(null);
+	const [cashInput, setCashInput] = useState('');
+	const [cardInput, setCardInput] = useState('');
+
+	const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+	const lastDay = new Date(year, month + 1, 0).getDate();
+	const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
 	const { data, isLoading } = useQuery({
-		queryKey: ['revenue'],
-		queryFn: () => revenueApi.getAll({ page: 1, limit: 50 }),
+		queryKey: ['revenue', selectedBar?.id, startDate, endDate],
+		queryFn: () =>
+			revenueApi.getAll({
+				barId: selectedBar?.id,
+				startDate,
+				endDate,
+				page: 1,
+				limit: 50,
+			}),
+		enabled: !!selectedBar,
 	});
 
-	if (isLoading) {
-		return <Loading />;
+	const revenueMap = useMemo(() => {
+		const map = new Map<string, Revenue>();
+		if (data?.data) {
+			for (const rev of data.data) {
+				const dateKey = rev.date.slice(0, 10);
+				map.set(dateKey, rev);
+			}
+		}
+		return map;
+	}, [data]);
+
+	const days = useMemo(() => getMonthDays(year, month), [year, month]);
+
+	const monthTotal = useMemo(() => {
+		let cash = 0;
+		let card = 0;
+		if (data?.data) {
+			for (const rev of data.data) {
+				cash += rev.cash;
+				card += rev.card;
+			}
+		}
+		return { cash, card, total: cash + card };
+	}, [data]);
+
+	const goToPrevMonth = () => {
+		if (month === 0) { setMonth(11); setYear(year - 1); }
+		else setMonth(month - 1);
+	};
+
+	const goToNextMonth = () => {
+		if (month === 11) { setMonth(0); setYear(year + 1); }
+		else setMonth(month + 1);
+	};
+
+	const createMutation = useMutation({
+		mutationFn: (dto: { barId: string; date: string; cash: number; card: number }) =>
+			revenueApi.create(dto),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['revenue'] });
+			queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
+			closeModal();
+		},
+	});
+
+	const updateMutation = useMutation({
+		mutationFn: ({ id, cash, card }: { id: string; cash: number; card: number }) =>
+			revenueApi.update(id, { cash, card }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['revenue'] });
+			queryClient.invalidateQueries({ queryKey: ['monthly-stats'] });
+			closeModal();
+		},
+	});
+
+	const openDay = (day: Date) => {
+		const dateKey = formatDateKey(day);
+		const existing = revenueMap.get(dateKey);
+		setSelectedDay(day);
+		setEditingRevenue(existing || null);
+		setCashInput(existing ? String(existing.cash) : '');
+		setCardInput(existing ? String(existing.card) : '');
+	};
+
+	const closeModal = () => {
+		setSelectedDay(null);
+		setEditingRevenue(null);
+		setCashInput('');
+		setCardInput('');
+	};
+
+	const canEdit = (revenue: Revenue | null): boolean => {
+		if (isAdmin) return true;
+		if (!revenue) return true;
+		if (!revenue.createdById) return true;
+		return revenue.createdById === user?.id;
+	};
+
+	const handleSave = () => {
+		if (!selectedBar || !selectedDay) return;
+		const cash = parseFloat(cashInput) || 0;
+		const card = parseFloat(cardInput) || 0;
+		const dateKey = formatDateKey(selectedDay);
+
+		if (editingRevenue) {
+			updateMutation.mutate({ id: editingRevenue.id, cash, card });
+		} else {
+			createMutation.mutate({ barId: selectedBar.id, date: dateKey, cash, card });
+		}
+	};
+
+	const isToday = (day: Date): boolean => {
+		const today = new Date();
+		return day.getDate() === today.getDate()
+			&& day.getMonth() === today.getMonth()
+			&& day.getFullYear() === today.getFullYear();
+	};
+
+	if (!selectedBar) {
+		return (
+			<div className="revenue-list-page">
+				<p className="revenue-no-bar">Выберите бар для просмотра выручки</p>
+			</div>
+		);
 	}
 
 	return (
 		<div className="revenue-list-page">
-			<div className="page-header">
+			<div className="revenue-page-header">
 				<h1>Выручка</h1>
-				<Button variant="primary">Добавить выручку</Button>
 			</div>
 
-			{data && data.data.length > 0 ? (
-				<div className="revenue-list">
-					{data.data.map((revenue) => (
-						<Card key={revenue.id}>
-							<div className="revenue-info">
-								<p>
-									<strong>Дата:</strong> {formatDate(revenue.date)}
-								</p>
-								<p>
-									<strong>Наличные:</strong> {formatCurrency(revenue.cash)}
-								</p>
-								<p>
-									<strong>Карта:</strong> {formatCurrency(revenue.card)}
-								</p>
-								<p>
-									<strong>Итого:</strong>{' '}
-									{formatCurrency(revenue.cash + revenue.card)}
-								</p>
-							</div>
-						</Card>
-					))}
+			<div className="revenue-month-picker">
+				<button className="revenue-month-btn" onClick={goToPrevMonth}>
+					<ChevronLeft size={20} />
+				</button>
+				<span className="revenue-month-label">
+					{MONTH_NAMES[month]} {year}
+				</span>
+				<button className="revenue-month-btn" onClick={goToNextMonth}>
+					<ChevronRight size={20} />
+				</button>
+			</div>
+
+			<div className="revenue-month-summary">
+				<div className="revenue-summary-item">
+					<span className="revenue-summary-label">Наличные</span>
+					<span className="revenue-summary-value">{formatCurrency(monthTotal.cash)}</span>
 				</div>
+				<div className="revenue-summary-item">
+					<span className="revenue-summary-label">Карта</span>
+					<span className="revenue-summary-value">{formatCurrency(monthTotal.card)}</span>
+				</div>
+				<div className="revenue-summary-item revenue-summary-total">
+					<span className="revenue-summary-label">Итого</span>
+					<span className="revenue-summary-value">{formatCurrency(monthTotal.total)}</span>
+				</div>
+			</div>
+
+			{isLoading ? (
+				<Loading />
 			) : (
-				<Card>
-					<p>Записи выручки не найдены</p>
-				</Card>
+				<div className="revenue-days-grid">
+					{days.map((day) => {
+						const dateKey = formatDateKey(day);
+						const rev = revenueMap.get(dateKey);
+						const hasData = !!rev;
+						const dayIsToday = isToday(day);
+
+						return (
+							<button
+								key={dateKey}
+								className={`revenue-day-card ${hasData ? 'revenue-day-has-data' : 'revenue-day-empty'} ${dayIsToday ? 'revenue-day-today' : ''}`}
+								onClick={() => openDay(day)}
+							>
+								<div className="revenue-day-header">
+									<span className="revenue-day-number">{day.getDate()}</span>
+									{dayIsToday && <span className="revenue-day-today-badge">Сегодня</span>}
+								</div>
+
+								{hasData ? (
+									<div className="revenue-day-data">
+										<div className="revenue-day-row">
+											<span>Нал:</span>
+											<span>{formatCurrency(rev.cash)}</span>
+										</div>
+										<div className="revenue-day-row">
+											<span>Карта:</span>
+											<span>{formatCurrency(rev.card)}</span>
+										</div>
+										<div className="revenue-day-row revenue-day-row-total">
+											<span>Итого:</span>
+											<span>{formatCurrency(rev.cash + rev.card)}</span>
+										</div>
+										{rev.createdBy && (
+											<div className="revenue-day-author">
+												<UserIcon size={10} />
+												<span>{rev.createdBy.name}</span>
+											</div>
+										)}
+									</div>
+								) : (
+									<div className="revenue-day-no-data">
+										<span>Нет данных</span>
+									</div>
+								)}
+							</button>
+						);
+					})}
+				</div>
+			)}
+
+			{selectedDay && (
+				<div className="modal-overlay" onClick={closeModal}>
+					<div className="modal-content revenue-day-modal" onClick={(e) => e.stopPropagation()}>
+						<h3>{formatDayLabel(selectedDay)}</h3>
+
+						{editingRevenue && (
+							<div className="revenue-modal-meta">
+								{editingRevenue.createdBy && (
+									<div className="revenue-modal-meta-row">
+										<UserIcon size={14} />
+										<span>Записал: <strong>{editingRevenue.createdBy.name}</strong></span>
+									</div>
+								)}
+								{editingRevenue.updatedBy && editingRevenue.updatedAt && (
+									<div className="revenue-modal-meta-row revenue-modal-meta-updated">
+										<Edit2 size={14} />
+										<span>
+											Изменил: <strong>{editingRevenue.updatedBy.name}</strong>
+											{' '}({new Date(editingRevenue.updatedAt).toLocaleString('ru-RU')})
+										</span>
+									</div>
+								)}
+							</div>
+						)}
+
+						{canEdit(editingRevenue) ? (
+							<>
+								<div className="revenue-modal-field">
+									<label>Наличные</label>
+									<input
+										type="number"
+										value={cashInput}
+										onChange={(e) => setCashInput(e.target.value)}
+										placeholder="0"
+										min="0"
+										step="any"
+										autoFocus
+									/>
+								</div>
+								<div className="revenue-modal-field">
+									<label>Карта</label>
+									<input
+										type="number"
+										value={cardInput}
+										onChange={(e) => setCardInput(e.target.value)}
+										placeholder="0"
+										min="0"
+										step="any"
+									/>
+								</div>
+
+								{(cashInput || cardInput) && (
+									<div className="revenue-modal-total">
+										Итого: {formatCurrency((parseFloat(cashInput) || 0) + (parseFloat(cardInput) || 0))}
+									</div>
+								)}
+
+								<div className="revenue-modal-actions">
+									<button className="revenue-modal-cancel" onClick={closeModal}>Отмена</button>
+									<button
+										className="revenue-modal-save"
+										onClick={handleSave}
+										disabled={createMutation.isPending || updateMutation.isPending}
+									>
+										{createMutation.isPending || updateMutation.isPending
+											? 'Сохранение...'
+											: editingRevenue ? 'Обновить' : 'Сохранить'}
+									</button>
+								</div>
+							</>
+						) : (
+							<>
+								<div className="revenue-modal-readonly">
+									<div className="revenue-modal-readonly-row">
+										<span>Наличные:</span>
+										<span>{formatCurrency(editingRevenue?.cash || 0)}</span>
+									</div>
+									<div className="revenue-modal-readonly-row">
+										<span>Карта:</span>
+										<span>{formatCurrency(editingRevenue?.card || 0)}</span>
+									</div>
+									<div className="revenue-modal-readonly-row revenue-modal-readonly-total">
+										<span>Итого:</span>
+										<span>{formatCurrency((editingRevenue?.cash || 0) + (editingRevenue?.card || 0))}</span>
+									</div>
+								</div>
+								<p className="revenue-modal-no-permission">
+									Редактировать может только автор записи или администратор
+								</p>
+								<div className="revenue-modal-actions">
+									<button className="revenue-modal-cancel" onClick={closeModal}>Закрыть</button>
+								</div>
+							</>
+						)}
+
+						{(createMutation.isError || updateMutation.isError) && (
+							<p className="revenue-modal-error">
+								{(createMutation.error as any)?.message || (updateMutation.error as any)?.message || 'Ошибка сохранения'}
+							</p>
+						)}
+					</div>
+				</div>
 			)}
 		</div>
 	);

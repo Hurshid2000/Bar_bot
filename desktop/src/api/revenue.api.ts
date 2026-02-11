@@ -1,11 +1,16 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost, apiPatch } from './client';
 import type { Revenue, PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface CreateRevenueDto {
 	barId: string;
 	date: string;
-	cash?: number;  // Опционально - можно обновлять только cash
-	card?: number;  // Опционально - можно обновлять только card
+	cash?: number;
+	card?: number;
+}
+
+export interface UpdateRevenueDto {
+	cash?: number;
+	card?: number;
 }
 
 export interface RevenueFilterParams extends PaginationParams {
@@ -33,6 +38,12 @@ export const revenueApi = {
 		);
 	},
 
+	getById: (id: string): Promise<Revenue> =>
+		apiGet<Revenue>(`/revenue/${id}`),
+
 	create: (data: CreateRevenueDto): Promise<Revenue> =>
 		apiPost<Revenue>('/revenue', data),
+
+	update: (id: string, data: UpdateRevenueDto): Promise<Revenue> =>
+		apiPatch<Revenue>(`/revenue/${id}`, data),
 };
