@@ -76,7 +76,7 @@ export function RevenueListPage() {
 				startDate,
 				endDate,
 				page: 1,
-				limit: 200,
+				limit: 100,
 			}),
 		enabled: !!selectedBar,
 	});
