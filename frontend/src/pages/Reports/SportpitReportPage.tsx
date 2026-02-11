@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, Dumbbell } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Select } from '../../components/ui/Select';
@@ -111,12 +111,7 @@ export function SportpitReportPage() {
 			{report && (
 				<>
 					<Card
-						title={
-							<span className="sportpit-report-title">
-								<Dumbbell size={20} />
-								{barName}
-							</span>
-						}
+						title={barName}
 						className="report-card"
 					>
 						<div className="report-header">
