@@ -201,7 +201,7 @@ export function CatalogPage() {
 
 	// Мутация для продажи спортпита
 	const sellMutation = useMutation({
-		mutationFn: (dto: { barId: string; productId: string; quantity: number; price: number }) =>
+		mutationFn: (dto: { barId: string; productId: string; quantity: number; price: number; buyerName?: string }) =>
 			salesApi.create(dto),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['stock-map'] });
