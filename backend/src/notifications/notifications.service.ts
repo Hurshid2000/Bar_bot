@@ -1,17 +1,27 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { RevenueService } from '../revenue/revenue.service';
 import * as TelegramBot from 'node-telegram-bot-api';
 import { RoleType } from '@prisma/client';
+
+const PENDING_IMPORT_TTL_MS = 10 * 60 * 1000; // 10 минут
+const EXCEL_BAR_PREFIX = 'excel_bar:';
 
 @Injectable()
 export class NotificationsService implements OnModuleInit {
 	private readonly logger = new Logger(NotificationsService.name);
 	private bot: TelegramBot | null = null;
+	/** Ожидание выбора бара после отправки Excel: chatId -> { buffer, userId, expiresAt } */
+	private pendingExcelImport = new Map<
+		number,
+		{ buffer: Buffer; userId: string; expiresAt: number }
+	>();
 
 	constructor(
 		private prisma: PrismaService,
 		private configService: ConfigService,
+		private revenueService: RevenueService,
 	) {
 		this.initBot();
 	}
@@ -31,10 +41,116 @@ export class NotificationsService implements OnModuleInit {
 		try {
 			this.bot = new TelegramBot(botToken, { polling: false });
 			this.logger.log('Telegram Bot initialized successfully');
+			this.setupExcelImportHandlers();
+			void this.bot.startPolling();
 		} catch (error) {
 			this.logger.error('Failed to initialize Telegram Bot:', error);
 			this.bot = null;
 		}
+	}
+
+	/**
+	 * Обработчики: документ Excel → выбор бара → импорт поступлений на карту.
+	 */
+	private setupExcelImportHandlers() {
+		const bot = this.bot;
+		if (!bot) return;
+
+		bot.on('document', async (msg) => {
+			const chatId = msg.chat.id;
+			const doc = msg.document;
+			if (!doc) return;
+			const fileName = (doc.file_name || '').toLowerCase();
+			if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+				return;
+			}
+			try {
+				const file = await bot.getFile(doc.file_id);
+				const filePath = (file as any).file_path;
+				if (!filePath) {
+					await bot.sendMessage(chatId, 'Не удалось получить файл.');
+					return;
+				}
+				const token = this.configService.get<string>('BOT_TOKEN');
+				const url = `https://api.telegram.org/file/bot${token}/${filePath}`;
+				const resp = await fetch(url);
+				if (!resp.ok) {
+					await bot.sendMessage(chatId, 'Ошибка загрузки файла.');
+					return;
+				}
+				const arrayBuffer = await resp.arrayBuffer();
+				const buffer = Buffer.from(arrayBuffer);
+
+				const telegramId = String(msg.from?.id ?? '');
+				const user = await this.prisma.user.findFirst({
+					where: { telegramId },
+					include: { bars: { include: { bar: true } } },
+				});
+				if (!user) {
+					await bot.sendMessage(chatId, 'Вы не зарегистрированы в Bar Bot.');
+					return;
+				}
+				const bars =
+					user.role === RoleType.ADMIN
+						? await this.prisma.bar.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } })
+						: user.bars.map((ub) => ub.bar).filter(Boolean);
+				if (bars.length === 0) {
+					await bot.sendMessage(chatId, 'Нет доступных баров.');
+					return;
+				}
+
+				this.pendingExcelImport.set(chatId, {
+					buffer,
+					userId: user.id,
+					expiresAt: Date.now() + PENDING_IMPORT_TTL_MS,
+				});
+
+				const keyboard = bars.map((b) => [{ text: b.name, callback_data: `${EXCEL_BAR_PREFIX}${b.id}` }]);
+				await bot.sendMessage(chatId, 'Выберите бар для импорта поступлений на карту:', {
+					reply_markup: { inline_keyboard: keyboard },
+				});
+			} catch (err: any) {
+				this.logger.warn('Excel import document handler error', err?.message || err);
+				await bot.sendMessage(chatId, 'Ошибка обработки файла. Попробуйте ещё раз или загрузите через веб/десктоп.');
+			}
+		});
+
+		bot.on('callback_query', async (query) => {
+			const data = query.data;
+			if (!data?.startsWith(EXCEL_BAR_PREFIX)) return;
+			const barId = data.slice(EXCEL_BAR_PREFIX.length);
+			const chatId = query.message?.chat?.id;
+			if (chatId == null) return;
+
+			const pending = this.pendingExcelImport.get(chatId);
+			if (!pending) {
+				await bot.answerCallbackQuery(query.id, { text: 'Время выбора истекло. Отправьте файл заново.' });
+				return;
+			}
+			if (Date.now() > pending.expiresAt) {
+				this.pendingExcelImport.delete(chatId);
+				await bot.answerCallbackQuery(query.id, { text: 'Время выбора истекло. Отправьте файл заново.' });
+				return;
+			}
+
+			try {
+				await bot.answerCallbackQuery(query.id);
+				const result = await this.revenueService.importCardFromExcel(
+					pending.buffer,
+					barId,
+					pending.userId,
+				);
+				this.pendingExcelImport.delete(chatId);
+				await bot.sendMessage(
+					chatId,
+					`Готово.\nЗаполнено дней: ${result.imported}\nПропущено (уже было заполнено): ${result.skipped}`,
+				);
+			} catch (err: any) {
+				this.logger.warn('Excel import callback error', err?.message || err);
+				this.pendingExcelImport.delete(chatId);
+				await bot.sendMessage(chatId, 'Ошибка импорта: ' + (err?.message || 'неизвестная ошибка'));
+			}
+		});
 	}
 
 	/**

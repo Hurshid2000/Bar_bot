@@ -13,6 +13,7 @@ import {
 	getSkip,
 } from '../common/utils/pagination.util';
 import { RoleType } from '@prisma/client';
+import { parseCardTotalsFromExcel } from './card-excel.parser';
 
 const REVENUE_INCLUDE = {
 	bar: true,
@@ -160,5 +161,62 @@ export class RevenueService {
 		}
 
 		return revenue;
+	}
+
+	/**
+	 * Импорт поступлений на карту из Excel.
+	 * Заполняет только те дни, где запись отсутствует или card === 0. Остальное не трогает.
+	 * Ожидаемый формат в файле: строки вида "Итого за DD.MM.YYYY: Поступление: X XXX".
+	 */
+	async importCardFromExcel(
+		fileBuffer: Buffer,
+		barId: string,
+		userId: string,
+	): Promise<{ imported: number; skipped: number }> {
+		const bar = await this.prisma.bar.findUnique({
+			where: { id: barId },
+		});
+		if (!bar) {
+			throw new NotFoundException(`Bar with ID ${barId} not found`);
+		}
+
+		const rows = await parseCardTotalsFromExcel(fileBuffer);
+		let imported = 0;
+		let skipped = 0;
+
+		for (const { date, amount } of rows) {
+			const dateObj = new Date(date + 'T00:00:00.000Z');
+			const existing = await this.prisma.revenue.findUnique({
+				where: {
+					barId_date: { barId, date: dateObj },
+				},
+			});
+
+			if (existing && existing.card !== 0) {
+				skipped++;
+				continue;
+			}
+
+			await this.prisma.revenue.upsert({
+				where: {
+					barId_date: { barId, date: dateObj },
+				},
+				create: {
+					barId,
+					date: dateObj,
+					cash: 0,
+					card: amount,
+					createdById: userId,
+					updatedById: userId,
+				},
+				update: {
+					card: amount,
+					updatedById: userId,
+				},
+			});
+			imported++;
+		}
+
+		return { imported, skipped };
 	}
 }

@@ -7,8 +7,13 @@ import {
 	Body,
 	Query,
 	UseGuards,
+	UseInterceptors,
+	UploadedFile,
+	BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as multer from 'multer';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { RevenueService } from './revenue.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
 import { UpdateRevenueDto } from './dto/update-revenue.dto';
@@ -24,6 +29,39 @@ import { User } from '@prisma/client';
 @UseGuards(RolesGuard, BarAccessGuard)
 export class RevenueController {
 	constructor(private readonly revenueService: RevenueService) {}
+
+	@Post('import-card-excel')
+	@UseInterceptors(
+		FileInterceptor('file', {
+			storage: multer.memoryStorage(),
+			limits: { fileSize: 5 * 1024 * 1024 },
+		}),
+	)
+	@ApiOperation({ summary: 'Импорт поступлений на карту из Excel (строки «Итого за … Поступление»)' })
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				file: { type: 'string', format: 'binary' },
+				barId: { type: 'string' },
+			},
+			required: ['file', 'barId'],
+		},
+	})
+	async importCardExcel(
+		@CurrentUser() user: User,
+		@UploadedFile() file: { buffer?: Buffer },
+		@Body('barId') barId: string,
+	) {
+		if (!file?.buffer) {
+			throw new BadRequestException('Файл не загружен');
+		}
+		if (!barId) {
+			throw new BadRequestException('Укажите barId');
+		}
+		return this.revenueService.importCardFromExcel(file.buffer, barId, user.id);
+	}
 
 	@Post()
 	@ApiOperation({ summary: 'Создать или обновить выручку (upsert по barId+date)' })
