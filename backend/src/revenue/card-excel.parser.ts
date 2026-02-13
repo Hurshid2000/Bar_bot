@@ -1,7 +1,10 @@
 import * as ExcelJS from 'exceljs';
 
-/** "Итого за 05.02.2026: Поступление: 840 000" — дата 1–2 цифры, месяц 1–2 цифры (разбивка по ячейкам ок) */
-const TOTAL_ROW_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*:?\s*Поступление\s*:?\s*([\d\s]+)/i;
+/** Основной: "Итого за 12.02.2026: Поступление: 1 030 024.5 Расход: ..." (может быть в одной или нескольких ячейках) */
+const TOTAL_ROW_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*:?\s*Поступление\s*:?\s*([\d\s.,]+?)(?=\s*Расход|$)/i;
+/** Запасной: дата и сумма в одной строке, но в любом порядке */
+const DATE_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})/i;
+const AMOUNT_REGEX = /Поступление\s*:?\s*([\d\s.,]+?)(?=\s*Расход|$)/i;
 
 export interface DailyCardRow {
 	date: string;
@@ -56,10 +59,22 @@ export async function parseCardTotalsFromExcel(buffer: Buffer): Promise<DailyCar
 				rowTexts.push(getCellText(cell.value).trim());
 			});
 			const rowText = rowTexts.join(' ');
-			const match = rowText.match(TOTAL_ROW_REGEX);
-			if (!match) return;
+			let dateStr: string | null = null;
+			let amountStr: string | null = null;
 
-			const [, dateStr, amountStr] = match;
+			const mainMatch = rowText.match(TOTAL_ROW_REGEX);
+			if (mainMatch) {
+				[, dateStr, amountStr] = mainMatch;
+			} else {
+				const dateMatch = rowText.match(DATE_REGEX);
+				const amountMatch = rowText.match(AMOUNT_REGEX);
+				if (dateMatch && amountMatch) {
+					dateStr = dateMatch[1];
+					amountStr = amountMatch[1];
+				}
+			}
+			if (!dateStr || !amountStr) return;
+
 			const dateNorm = dateDdMmYyyyToYyyyMmDd(dateStr);
 			const amount = parseAmount(amountStr);
 			if (!dateNorm || amount === undefined || amount < 0) return;
@@ -83,7 +98,7 @@ function dateDdMmYyyyToYyyyMmDd(ddMmYyyy: string): string | null {
 }
 
 function parseAmount(str: string): number | undefined {
-	const cleaned = str.replace(/\s/g, '');
-	const num = parseInt(cleaned, 10);
+	const cleaned = str.replace(/\s/g, '').replace(',', '.');
+	const num = parseFloat(cleaned);
 	return isNaN(num) ? undefined : num;
 }
