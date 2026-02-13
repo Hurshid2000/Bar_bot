@@ -172,7 +172,7 @@ export class RevenueService {
 		fileBuffer: Buffer,
 		barId: string,
 		userId: string,
-	): Promise<{ imported: number; skipped: number }> {
+	): Promise<{ imported: number; skipped: number; parsed: number }> {
 		const bar = await this.prisma.bar.findUnique({
 			where: { id: barId },
 		});
@@ -192,7 +192,8 @@ export class RevenueService {
 				},
 			});
 
-			if (existing && existing.card !== 0) {
+			// Пропускаем только если карта уже заполнена (число > 0)
+			if (existing && (existing.card ?? 0) > 0.01) {
 				skipped++;
 				continue;
 			}
@@ -217,6 +218,6 @@ export class RevenueService {
 			imported++;
 		}
 
-		return { imported, skipped };
+		return { imported, skipped, parsed: rows.length };
 	}
 }

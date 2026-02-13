@@ -141,10 +141,11 @@ export class NotificationsService implements OnModuleInit {
 					pending.userId,
 				);
 				this.pendingExcelImport.delete(chatId);
-				await bot.sendMessage(
-					chatId,
-					`Готово.\nЗаполнено дней: ${result.imported}\nПропущено (уже было заполнено): ${result.skipped}`,
-				);
+				const msg =
+					result.parsed === 0
+						? 'В файле не найдено строк «Итого за DD.MM.YYYY: Поступление: ...». Проверьте формат.'
+						: `Готово.\nНайдено в файле: ${result.parsed} дн.\nЗаполнено: ${result.imported}\nПропущено (уже заполнено): ${result.skipped}`;
+				await bot.sendMessage(chatId, msg);
 			} catch (err: any) {
 				this.logger.warn('Excel import callback error', err?.message || err);
 				this.pendingExcelImport.delete(chatId);
