@@ -1,0 +1,126 @@
+.arrival-detail-page {
+	padding: 4px;
+	max-width: 800px;
+}
+
+.arrival-detail-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.arrival-detail-header h1 {
+	margin: 0;
+	font-size: 24px;
+	color: var(--color-text-primary);
+}
+
+.arrival-detail-card,
+.arrival-detail-items {
+	padding: 20px;
+	margin-bottom: 16px;
+}
+
+.arrival-detail-items h2 {
+	margin: 0 0 16px 0;
+	font-size: 18px;
+	color: var(--color-text-primary);
+}
+
+.arrival-detail-info {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.arrival-detail-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.arrival-detail-label {
+	font-size: 14px;
+	color: var(--color-text-secondary);
+}
+
+.arrival-detail-value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.arrival-detail-total {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-primary-500);
+}
+
+.arrival-detail-comment {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border);
+}
+
+.arrival-detail-comment p {
+	margin: 0;
+	font-size: 14px;
+	color: var(--color-text-primary);
+	line-height: 1.5;
+}
+
+.arrival-detail-items-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.arrival-detail-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background: var(--color-background-muted);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+}
+
+.arrival-detail-item-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+}
+
+.arrival-detail-item-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary);
+}
+
+.arrival-detail-item-category {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}
+
+.arrival-detail-item-right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+}
+
+.arrival-detail-item-quantity {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--color-primary-500);
+}
+
+.arrival-detail-item-price {
+	font-size: 12px;
+	color: var(--color-text-secondary);
+}

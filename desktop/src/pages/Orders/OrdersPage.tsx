@@ -168,6 +168,7 @@ export function OrdersPage() {
 									<Card
 										key={arrival.id}
 										className="orders-history-card"
+										onClick={() => navigate(`/arrivals/${arrival.id}`)}
 									>
 										<div className="orders-history-card-header">
 											<div>
