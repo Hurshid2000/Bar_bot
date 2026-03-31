@@ -529,7 +529,108 @@ export class NotificationsService implements OnModuleInit {
 	}
 
 	/**
-	 * Отправка уведомления о выручке в конце дня
+	 * Мгновенное уведомление при изменении кассы (наличка / карта)
+	 */
+	async notifyRevenueChanged(revenue: {
+		bar: { id: string; name: string };
+		cash: number;
+		card: number;
+		date: Date;
+	}, changedBy?: string) {
+		const barName = revenue.bar.name;
+		const total = revenue.cash + revenue.card;
+		const dateStr = new Date(revenue.date).toLocaleDateString('ru-RU', {
+			day: '2-digit', month: '2-digit', year: 'numeric',
+		});
+
+		const body = [
+			`Бар: ${barName}`,
+			`Дата: ${dateStr}`,
+			`Наличка: ${revenue.cash.toLocaleString('ru-RU')} сум`,
+			`Карта: ${revenue.card.toLocaleString('ru-RU')} сум`,
+			`Итого: ${total.toLocaleString('ru-RU')} сум`,
+			changedBy ? `\nИзменил(а): ${changedBy}` : '',
+		].filter(Boolean).join('\n');
+
+		// Отправляем всем админам
+		const admins = await this.prisma.user.findMany({
+			where: { role: RoleType.ADMIN },
+		});
+
+		// Отправляем менеджерам этого бара
+		const managers = await this.prisma.user.findMany({
+			where: {
+				role: RoleType.MANAGER,
+				bars: { some: { barId: revenue.bar.id } },
+			},
+		});
+
+		const recipients = [...admins, ...managers];
+
+		await Promise.all(
+			recipients.map((user) =>
+				this.sendNotification(user.id, {
+					title: `Касса обновлена — ${barName}`,
+					body,
+					data: { type: 'revenue_changed' },
+				}),
+			),
+		);
+	}
+
+	/**
+	 * Мгновенное уведомление при создании / изменении расхода
+	 */
+	async notifyExpenseChanged(expense: {
+		barId: string;
+		amount: number;
+		description: string;
+		date: Date;
+	}, action: 'created' | 'updated' | 'deleted', changedBy?: string) {
+		const bar = await this.prisma.bar.findUnique({ where: { id: expense.barId } });
+		const barName = bar?.name || 'Неизвестный бар';
+		const dateStr = new Date(expense.date).toLocaleDateString('ru-RU', {
+			day: '2-digit', month: '2-digit', year: 'numeric',
+		});
+
+		const actionLabel = action === 'created' ? 'Новый расход' : action === 'updated' ? 'Расход изменён' : 'Расход удалён';
+
+		const body = [
+			`Бар: ${barName}`,
+			`Дата: ${dateStr}`,
+			`Сумма: ${expense.amount.toLocaleString('ru-RU')} сум`,
+			`Описание: ${expense.description}`,
+			changedBy ? `\nИзменил(а): ${changedBy}` : '',
+		].filter(Boolean).join('\n');
+
+		// Отправляем всем админам
+		const admins = await this.prisma.user.findMany({
+			where: { role: RoleType.ADMIN },
+		});
+
+		// Отправляем менеджерам этого бара
+		const managers = await this.prisma.user.findMany({
+			where: {
+				role: RoleType.MANAGER,
+				bars: { some: { barId: expense.barId } },
+			},
+		});
+
+		const recipients = [...admins, ...managers];
+
+		await Promise.all(
+			recipients.map((user) =>
+				this.sendNotification(user.id, {
+					title: `${actionLabel} — ${barName}`,
+					body,
+					data: { type: 'expense_changed', action },
+				}),
+			),
+		);
+	}
+
+	/**
+	 * Отправка уведомления о выручке в конце дня (устаревший, оставлен для совместимости)
 	 */
 	async notifyDailyRevenue(revenues: Array<{ bar: { id: string; name: string }; cash: number; card: number }>) {
 		// Получаем всех админов

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { ExpenseFilterDto } from './dto/expense-filter.dto';
@@ -11,7 +12,10 @@ import {
 
 @Injectable()
 export class ExpensesService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		private notificationsService: NotificationsService,
+	) {}
 
 	async create(createExpenseDto: CreateExpenseDto) {
 		const { barId, amount, description, date } = createExpenseDto;
@@ -23,7 +27,7 @@ export class ExpensesService {
 			throw new NotFoundException(`Bar with ID ${barId} not found`);
 		}
 
-		return this.prisma.expense.create({
+		const result = await this.prisma.expense.create({
 			data: {
 				barId,
 				amount,
@@ -31,6 +35,13 @@ export class ExpensesService {
 				date: date ? new Date(date + 'T00:00:00.000Z') : new Date(),
 			},
 		});
+
+		// Мгновенное уведомление о новом расходе
+		this.notificationsService
+			.notifyExpenseChanged(result, 'created')
+			.catch(() => {});
+
+		return result;
 	}
 
 	async findOne(id: string) {
@@ -51,17 +62,32 @@ export class ExpensesService {
 		if (updateExpenseDto.description !== undefined) data.description = updateExpenseDto.description;
 		if (updateExpenseDto.date) data.date = new Date(updateExpenseDto.date + 'T00:00:00.000Z');
 
-		return this.prisma.expense.update({
+		const result = await this.prisma.expense.update({
 			where: { id },
 			data,
 		});
+
+		// Мгновенное уведомление об изменении расхода
+		this.notificationsService
+			.notifyExpenseChanged(result, 'updated')
+			.catch(() => {});
+
+		return result;
 	}
 
 	async remove(id: string) {
-		await this.findOne(id);
-		return this.prisma.expense.delete({
+		const expense = await this.findOne(id);
+
+		await this.prisma.expense.delete({
 			where: { id },
 		});
+
+		// Мгновенное уведомление об удалении расхода
+		this.notificationsService
+			.notifyExpenseChanged(expense, 'deleted')
+			.catch(() => {});
+
+		return expense;
 	}
 
 	async findAll(

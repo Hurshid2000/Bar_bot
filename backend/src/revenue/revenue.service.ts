@@ -1,9 +1,12 @@
 import {
 	Injectable,
+	Inject,
+	forwardRef,
 	NotFoundException,
 	ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
 import { UpdateRevenueDto } from './dto/update-revenue.dto';
 import { RevenueFilterDto } from './dto/revenue-filter.dto';
@@ -27,7 +30,11 @@ const REVENUE_INCLUDE = {
 
 @Injectable()
 export class RevenueService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		@Inject(forwardRef(() => NotificationsService))
+		private notificationsService: NotificationsService,
+	) {}
 
 	/**
 	 * Создаёт или обновляет запись выручки (upsert)
@@ -56,7 +63,7 @@ export class RevenueService {
 		if (hasCash) updateData.cash = createRevenueDto.cash;
 		if (hasCard) updateData.card = createRevenueDto.card;
 
-		return this.prisma.revenue.upsert({
+		const result = await this.prisma.revenue.upsert({
 			where: {
 				barId_date: {
 					barId,
@@ -73,6 +80,17 @@ export class RevenueService {
 			update: updateData,
 			include: REVENUE_INCLUDE,
 		});
+
+		// Мгновенное уведомление о изменении кассы
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+			select: { name: true },
+		});
+		this.notificationsService
+			.notifyRevenueChanged(result, user?.name)
+			.catch(() => {});
+
+		return result;
 	}
 
 	/**
@@ -97,11 +115,22 @@ export class RevenueService {
 		if (updateRevenueDto.cash !== undefined) data.cash = updateRevenueDto.cash;
 		if (updateRevenueDto.card !== undefined) data.card = updateRevenueDto.card;
 
-		return this.prisma.revenue.update({
+		const result = await this.prisma.revenue.update({
 			where: { id },
 			data,
 			include: REVENUE_INCLUDE,
 		});
+
+		// Мгновенное уведомление о изменении кассы
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+			select: { name: true },
+		});
+		this.notificationsService
+			.notifyRevenueChanged(result, user?.name)
+			.catch(() => {});
+
+		return result;
 	}
 
 	async findAll(

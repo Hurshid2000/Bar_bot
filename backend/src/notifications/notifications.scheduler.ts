@@ -46,42 +46,6 @@ export class NotificationsScheduler {
 		}
 	}
 
-	/**
-	 * Ежедневная отправка выручки админам и менеджерам в 23:00
-	 */
-	@Cron('0 23 * * *', {
-		name: 'daily-revenue-report',
-		timeZone: 'Asia/Tashkent', // Узбекистан (UTC+5)
-	})
-	async handleDailyRevenueReport() {
-		try {
-			this.logger.log('Sending daily revenue report to admins and managers');
-
-			// Получаем выручку за сегодня
-			const today = new Date();
-			today.setHours(0, 0, 0, 0);
-			const tomorrow = new Date(today);
-			tomorrow.setDate(tomorrow.getDate() + 1);
-
-			const revenues = await this.prisma.revenue.findMany({
-				where: {
-					date: {
-						gte: today,
-						lt: tomorrow,
-					},
-				},
-				include: {
-					bar: true,
-				},
-			});
-
-			if (revenues.length > 0) {
-				await this.notificationsService.notifyDailyRevenue(revenues);
-			} else {
-				this.logger.log('No revenue data for today');
-			}
-		} catch (error) {
-			this.logger.error('Failed to send daily revenue report:', error);
-		}
-	}
+	// Ежедневный отчёт в 23:00 удалён — теперь уведомления
+	// отправляются мгновенно при изменении кассы (наличка/карта/расход).
 }
