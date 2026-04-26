@@ -53,6 +53,7 @@ export function OrdersPage() {
 		enabled: mode === 'arrival',
 	});
 
+
 	const { data: ordersData, isLoading: ordersLoading } = useQuery({
 		queryKey: ['orders', 'history'],
 		queryFn: () => ordersApi.getAll({ page: 1, limit: 20 }),
@@ -164,36 +165,48 @@ export function OrdersPage() {
 							<Loading />
 						) : arrivalsData && arrivalsData.data.length > 0 ? (
 							<div className="orders-history-list">
-								{arrivalsData.data.map((arrival) => (
-									<Card
-										key={arrival.id}
-										className="orders-history-card"
-										onClick={() => navigate(`/arrivals/${arrival.id}`)}
-									>
-										<div className="orders-history-card-header">
-											<div>
-												<h4>
-													{arrivalTypeLabels[arrival.type]} #{arrival.id.slice(0, 8)}
-												</h4>
-												<p className="orders-history-card-bar">
-													{arrival.bar?.name || 'Неизвестный бар'}
-												</p>
+								{arrivalsData.data.map((arrival) => {
+									const visibleItems = arrival.items.slice(0, 4);
+									const hiddenCount = arrival.items.length - visibleItems.length;
+									return (
+										<Card
+											key={arrival.id}
+											className="orders-history-card"
+											onClick={() => navigate(`/arrivals/${arrival.id}`)}
+										>
+											<div className="orders-history-card-header">
+												<div>
+													<h4>
+														{arrivalTypeLabels[arrival.type]} #{arrival.id.slice(0, 8)}
+													</h4>
+													<p className="orders-history-card-bar">
+														{arrival.bar?.name || 'Неизвестный бар'}
+													</p>
+												</div>
+												<div className="orders-history-card-right">
+													<span
+														className="orders-history-card-type"
+														data-type={arrival.type}
+													>
+														{arrivalTypeLabels[arrival.type]}
+													</span>
+													<p className="orders-history-card-date">{formatDate(arrival.createdAt)}</p>
+												</div>
 											</div>
-											<span
-												className="orders-history-card-type"
-												data-type={arrival.type}
-											>
-												{arrivalTypeLabels[arrival.type]}
-											</span>
-										</div>
-										<div className="orders-history-card-info">
-											<p>
-												Товаров: {arrival.items.length} ({arrival.items.reduce((sum, item) => sum + item.quantity, 0)} шт.)
-											</p>
-											<p className="orders-history-card-date">{formatDate(arrival.createdAt)}</p>
-										</div>
-									</Card>
-								))}
+											<div className="arrival-items-list">
+												{visibleItems.map((item) => (
+													<div key={item.id} className="arrival-item-row">
+														<span className="arrival-item-name">{item.product?.name ?? 'Товар'}</span>
+														<span className="arrival-item-qty">{item.quantity} шт.</span>
+													</div>
+												))}
+												{hiddenCount > 0 && (
+													<p className="arrival-items-more">+{hiddenCount} ещё</p>
+												)}
+											</div>
+										</Card>
+									);
+								})}
 							</div>
 						) : (
 							<Card>
