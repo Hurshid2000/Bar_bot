@@ -127,6 +127,49 @@
 	margin: 0;
 }
 
+.orders-history-card-right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 6px;
+}
+
+.arrival-items-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid var(--color-border, rgba(255,255,255,0.08));
+}
+
+.arrival-item-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13px;
+}
+
+.arrival-item-name {
+	color: var(--color-text-secondary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 70%;
+}
+
+.arrival-item-qty {
+	font-weight: 600;
+	color: var(--color-text-primary);
+	white-space: nowrap;
+}
+
+.arrival-items-more {
+	margin: 0;
+	font-size: 12px;
+	color: var(--color-primary-500);
+}
+
 @media (max-width: 768px) {
 	.orders-page {
 		padding: 12px;
