@@ -195,6 +195,7 @@ export interface Arrival {
 	barId: string;
 	userId: string;
 	type: ArrivalType;
+	isSportPit: boolean;
 	comment?: string | null;
 	createdAt: string;
 	updatedAt: string;

@@ -92,9 +92,16 @@ export function ArrivalCreatePage() {
 	};
 
 	const handleTabChange = (tab: TabType) => {
+		if (tab !== activeTab && hasSelectedItems) {
+			const confirmed = window.confirm(
+				'При смене вкладки выбранные товары будут сброшены. Продолжить?'
+			);
+			if (!confirmed) return;
+		}
 		setActiveTab(tab);
 		setSelectedCategoryId(null);
 		setSearchQuery('');
+		setQuantities({});
 	};
 
 	const handleCategorySelect = (categoryId: string | null) => {

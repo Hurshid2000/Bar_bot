@@ -208,16 +208,17 @@ model OrderItem {
 }
 
 model Arrival {
-  id        String       @id @default(uuid())
-  barId     String
-  userId    String
-  type      ArrivalType  @default(ARRIVAL)
-  comment   String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  bar       Bar          @relation(fields: [barId], references: [id])
-  user      User         @relation(fields: [userId], references: [id])
-  items     ArrivalItem[]
+  id          String       @id @default(uuid())
+  barId       String
+  userId      String
+  type        ArrivalType  @default(ARRIVAL)
+  isSportPit  Boolean      @default(false)
+  comment     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  bar         Bar          @relation(fields: [barId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  items       ArrivalItem[]
 }
 
 model ArrivalItem {

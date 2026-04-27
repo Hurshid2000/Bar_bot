@@ -184,12 +184,19 @@ export function OrdersPage() {
 													</p>
 												</div>
 												<div className="orders-history-card-right">
-													<span
-														className="orders-history-card-type"
-														data-type={arrival.type}
-													>
-														{arrivalTypeLabels[arrival.type]}
-													</span>
+													<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+														<span
+															className="orders-history-card-type"
+															data-type={arrival.type}
+														>
+															{arrivalTypeLabels[arrival.type]}
+														</span>
+														{arrival.isSportPit && (
+															<span className="orders-history-card-sportpit-badge">
+																Спортпит
+															</span>
+														)}
+													</div>
 													<p className="orders-history-card-date">{formatDate(arrival.createdAt)}</p>
 												</div>
 											</div>

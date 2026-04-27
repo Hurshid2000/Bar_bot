@@ -54,12 +54,23 @@ export class ArrivalsService {
 			throw new NotFoundException('Some products not found');
 		}
 
+		// Запрещаем смешивать спортпит с другими типами товаров
+		const hasSportPit = products.some((p) => p.type === 'SPORT_PIT');
+		const hasOther = products.some((p) => p.type !== 'SPORT_PIT');
+		if (hasSportPit && hasOther) {
+			throw new BadRequestException(
+				'Нельзя смешивать спортпит с другими товарами в одном приходе. Создайте отдельные приходы.',
+			);
+		}
+		const isSportPit = hasSportPit;
+
 		// Создаем приход/списание с товарами
 		const arrival = await this.prisma.arrival.create({
 			data: {
 				barId,
 				userId,
 				type,
+				isSportPit,
 				comment: comment || null,
 				items: {
 					create: items.map((item) => {

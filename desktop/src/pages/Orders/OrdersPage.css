@@ -115,6 +115,15 @@
 	color: white;
 }
 
+.orders-history-card-sportpit-badge {
+	font-size: 11px;
+	font-weight: 600;
+	padding: 2px 7px;
+	border-radius: 4px;
+	background: #7c3aed;
+	color: white;
+}
+
 .orders-history-card-info {
 	display: flex;
 	justify-content: space-between;
