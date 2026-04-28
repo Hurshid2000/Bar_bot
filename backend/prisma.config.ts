@@ -3,16 +3,11 @@ import { existsSync } from 'fs';
 import { defineConfig } from 'prisma/config';
 
 // Локально подгружаем .env (если есть). На Railway/проде env-переменные
-// инжектятся платформой напрямую, файла .env нет.
+// инжектятся платформой напрямую — файла .env нет.
+// На этапе билда (Docker build) DATABASE_URL может отсутствовать —
+// это ок для `prisma generate`, поэтому НЕ бросаем ошибку.
 if (existsSync('.env')) {
 	config({ path: '.env' });
-}
-
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-	throw new Error(
-		'DATABASE_URL не задан. На Railway проверьте переменные окружения сервиса (Variables → DATABASE_URL).',
-	);
 }
 
 export default defineConfig({
@@ -21,6 +16,9 @@ export default defineConfig({
 		seed: 'npx ts-node prisma/seed.ts',
 	},
 	datasource: {
-		url: databaseUrl,
+		// Если DATABASE_URL не задан (например, во время docker build) —
+		// подставляем плейсхолдер, чтобы prisma generate не падал.
+		// На рантайме (migrate deploy / приложение) URL ОБЯЗАТЕЛЕН — иначе будет ясная ошибка.
+		url: process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
 	},
 })
