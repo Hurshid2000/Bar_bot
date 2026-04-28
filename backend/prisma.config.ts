@@ -1,9 +1,19 @@
 import { config } from 'dotenv';
+import { existsSync } from 'fs';
 import { defineConfig } from 'prisma/config';
 
-// Загружаем .env файл из текущей директории (backend)
-// process.cwd() вернет путь к директории, откуда запущена команда
-config({ path: '.env' });
+// Локально подгружаем .env (если есть). На Railway/проде env-переменные
+// инжектятся платформой напрямую, файла .env нет.
+if (existsSync('.env')) {
+	config({ path: '.env' });
+}
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+	throw new Error(
+		'DATABASE_URL не задан. На Railway проверьте переменные окружения сервиса (Variables → DATABASE_URL).',
+	);
+}
 
 export default defineConfig({
 	migrations: {
@@ -11,6 +21,6 @@ export default defineConfig({
 		seed: 'npx ts-node prisma/seed.ts',
 	},
 	datasource: {
-		url: process.env.DATABASE_URL!,
+		url: databaseUrl,
 	},
 })
