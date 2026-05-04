@@ -115,10 +115,19 @@ export function ArrivalCreatePage() {
 	const createArrivalMutation = useMutation({
 		mutationFn: (data: { barId: string; type: 'ARRIVAL' | 'WRITE_OFF'; items: CreateArrivalItemDto[]; comment?: string }) =>
 			arrivalsApi.create(data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['arrivals'] });
+		onSuccess: async () => {
+			// Принудительно перезапрашиваем историю, чтобы новый приход точно появился
+			await queryClient.refetchQueries({ queryKey: ['arrivals'] });
 			setQuantities({});
+			setShowConfirmModal(false);
 			navigate('/orders?mode=arrival');
+		},
+		onError: (error: any) => {
+			const apiMessage = error?.data?.message;
+			const message = Array.isArray(apiMessage)
+				? apiMessage.join('\n')
+				: apiMessage || error?.message || 'Не удалось создать приход. Попробуйте ещё раз.';
+			alert(`Ошибка: ${message}`);
 		},
 	});
 
