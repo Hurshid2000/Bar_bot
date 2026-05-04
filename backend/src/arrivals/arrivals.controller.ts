@@ -38,6 +38,15 @@ export class ArrivalsController {
 		return this.arrivalsService.findAll(user.id, user.role, filter);
 	}
 
+	@Get('summary')
+	@ApiOperation({ summary: 'Сводка приходов/списаний за период с группировкой по товарам' })
+	getSummary(
+		@CurrentUser() user: User,
+		@Query() filter: ArrivalFilterDto,
+	) {
+		return this.arrivalsService.getSummary(user.id, user.role, filter);
+	}
+
 	@Get(':id')
 	@ApiOperation({ summary: 'Получить приход/списание по ID' })
 	@ApiParam({ name: 'id', description: 'ID прихода/списания' })

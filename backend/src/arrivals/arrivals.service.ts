@@ -221,6 +221,110 @@ export class ArrivalsService {
 		return createPaginatedResponse(data, total, filter.page || 1, filter.limit || 10);
 	}
 
+	/**
+	 * Сводный список приходов/списаний за период с группировкой по товарам.
+	 * Возвращает: [{ productId, productName, productType, totalQuantity, deliveriesCount, totalAmount }]
+	 */
+	async getSummary(
+		userId: string,
+		userRole: string,
+		filter: ArrivalFilterDto,
+	) {
+		const where: any = {
+			type: filter.type || ArrivalType.ARRIVAL,
+		};
+
+		if (filter.barId) {
+			where.barId = filter.barId;
+		}
+
+		if (filter.startDate || filter.endDate) {
+			where.createdAt = {};
+			if (filter.startDate) where.createdAt.gte = new Date(filter.startDate);
+			if (filter.endDate) where.createdAt.lte = new Date(filter.endDate);
+		}
+
+		// Ограничения доступа по роли
+		if (userRole === 'WORKER' || userRole === 'MANAGER') {
+			const userBars = await this.prisma.userBar.findMany({
+				where: { userId },
+				select: { barId: true },
+			});
+			const barIds = userBars.map((ub) => ub.barId);
+			if (barIds.length === 0) return { items: [], totalDeliveries: 0 };
+
+			if (userRole === 'MANAGER' && filter.barId && !barIds.includes(filter.barId)) {
+				throw new BadRequestException('Access denied to this bar');
+			}
+			if (!filter.barId) {
+				where.barId = { in: barIds };
+			}
+		}
+
+		const arrivals = await this.prisma.arrival.findMany({
+			where,
+			include: {
+				items: {
+					include: {
+						product: {
+							select: { id: true, name: true, type: true, unit: true },
+						},
+					},
+				},
+			},
+		});
+
+		// Группируем по productId
+		const map = new Map<
+			string,
+			{
+				productId: string;
+				productName: string;
+				productType: string;
+				unit: string | null;
+				totalQuantity: number;
+				deliveriesCount: number;
+				totalAmount: number;
+			}
+		>();
+
+		for (const arrival of arrivals) {
+			const productIdsInArrival = new Set<string>();
+			for (const item of arrival.items) {
+				const product = item.product;
+				if (!product) continue;
+				const existing = map.get(product.id);
+				if (existing) {
+					existing.totalQuantity += item.quantity;
+					existing.totalAmount += item.price * item.quantity;
+					if (!productIdsInArrival.has(product.id)) {
+						existing.deliveriesCount += 1;
+					}
+				} else {
+					map.set(product.id, {
+						productId: product.id,
+						productName: product.name,
+						productType: product.type,
+						unit: product.unit ?? null,
+						totalQuantity: item.quantity,
+						totalAmount: item.price * item.quantity,
+						deliveriesCount: 1,
+					});
+				}
+				productIdsInArrival.add(product.id);
+			}
+		}
+
+		const items = Array.from(map.values()).sort(
+			(a, b) => b.totalQuantity - a.totalQuantity,
+		);
+
+		return {
+			items,
+			totalDeliveries: arrivals.length,
+		};
+	}
+
 	async findOne(id: string, userId: string, userRole: string) {
 		const arrival = await this.prisma.arrival.findUnique({
 			where: { id },

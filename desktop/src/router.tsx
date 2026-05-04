@@ -25,6 +25,7 @@ import { OrderHistoryPage } from './pages/Orders/OrderHistoryPage';
 import { OrderStatusPage } from './pages/Orders/OrderStatusPage';
 import { ArrivalCreatePage } from './pages/Arrivals/ArrivalCreatePage';
 import { ArrivalDetailPage } from './pages/Arrivals/ArrivalDetailPage';
+import { ArrivalsSummaryPage } from './pages/Arrivals/ArrivalsSummaryPage';
 import { InventoryPage } from './pages/Inventories/InventoryPage';
 import { InventoryDetailPage } from './pages/Inventories/InventoryDetailPage';
 import { ClientsPage } from './pages/Clients/ClientsPage';
@@ -160,6 +161,10 @@ export const router = createBrowserRouter([
 			{
 				path: '/arrivals/create',
 				element: <ArrivalCreatePage />,
+			},
+			{
+				path: '/arrivals/summary',
+				element: <ArrivalsSummaryPage />,
 			},
 			{
 				path: '/arrivals/:id',
