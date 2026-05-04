@@ -164,7 +164,7 @@ export function ArrivalsSummaryPage() {
 								</div>
 								<div className="arrivals-summary-item-numbers">
 									<div className="arrivals-summary-item-qty">
-										{item.totalQuantity.toLocaleString('ru-RU')} {item.unit || 'шт'}.
+										{item.totalQuantity.toLocaleString('ru-RU')} шт.
 									</div>
 									<div className="arrivals-summary-item-amount">
 										{item.totalAmount.toLocaleString('ru-RU')} сум

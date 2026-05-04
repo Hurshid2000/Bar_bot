@@ -267,7 +267,7 @@ export class ArrivalsService {
 				items: {
 					include: {
 						product: {
-							select: { id: true, name: true, type: true, unit: true },
+							select: { id: true, name: true, type: true },
 						},
 					},
 				},
@@ -281,7 +281,6 @@ export class ArrivalsService {
 				productId: string;
 				productName: string;
 				productType: string;
-				unit: string | null;
 				totalQuantity: number;
 				deliveriesCount: number;
 				totalAmount: number;
@@ -305,7 +304,6 @@ export class ArrivalsService {
 						productId: product.id,
 						productName: product.name,
 						productType: product.type,
-						unit: product.unit ?? null,
 						totalQuantity: item.quantity,
 						totalAmount: item.price * item.quantity,
 						deliveriesCount: 1,

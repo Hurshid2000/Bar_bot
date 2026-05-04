@@ -26,7 +26,6 @@ export interface ArrivalSummaryItem {
 	productId: string;
 	productName: string;
 	productType: string;
-	unit: string | null;
 	totalQuantity: number;
 	deliveriesCount: number;
 	totalAmount: number;
