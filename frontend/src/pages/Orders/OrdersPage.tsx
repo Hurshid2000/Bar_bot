@@ -153,6 +153,9 @@ export function OrdersPage() {
 								<Button variant="primary" size="lg" onClick={() => navigate('/arrivals/create')}>
 									Создать приход
 								</Button>
+								<Button variant="outline" size="lg" onClick={() => navigate('/arrivals/summary')}>
+									Сводка за период
+								</Button>
 							</div>
 						</Card>
 					</div>
