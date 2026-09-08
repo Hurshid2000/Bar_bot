@@ -1,7 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RevenueService } from '../revenue/revenue.service';
+import { BotCommandsService } from './bot-commands.service';
 import * as TelegramBot from 'node-telegram-bot-api';
 import { RoleType } from '@prisma/client';
 
@@ -22,6 +23,8 @@ export class NotificationsService implements OnModuleInit {
 		private prisma: PrismaService,
 		private configService: ConfigService,
 		private revenueService: RevenueService,
+		@Inject(forwardRef(() => BotCommandsService))
+		private botCommands: BotCommandsService,
 	) {
 		this.initBot();
 	}
@@ -29,6 +32,18 @@ export class NotificationsService implements OnModuleInit {
 	onModuleInit() {
 		const token = this.configService.get<string>('BOT_TOKEN');
 		this.logger.log(`Telegram notifications: BOT_TOKEN ${token ? 'present (bot ' + (this.bot ? 'OK)' : 'failed to init)') : 'MISSING — set BOT_TOKEN in backend/.env'}`);
+
+		// Диалоговые обработчики регистрируем здесь, а не в конструкторе:
+		// к этому моменту все провайдеры (включая BotCommandsService) уже созданы,
+		// что важно при циклической зависимости через forwardRef.
+		if (this.bot) {
+			try {
+				this.botCommands.register(this.bot);
+			} catch (error) {
+				this.logger.error('Failed to register bot command handlers:', error);
+			}
+			void this.bot.startPolling();
+		}
 	}
 
 	private initBot() {
@@ -42,7 +57,7 @@ export class NotificationsService implements OnModuleInit {
 			this.bot = new TelegramBot(botToken, { polling: false });
 			this.logger.log('Telegram Bot initialized successfully');
 			this.setupExcelImportHandlers();
-			void this.bot.startPolling();
+			// Регистрация диалоговых обработчиков и запуск polling — в onModuleInit.
 		} catch (error) {
 			this.logger.error('Failed to initialize Telegram Bot:', error);
 			this.bot = null;
