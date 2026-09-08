@@ -18,6 +18,27 @@ import {
 import { RoleType } from '@prisma/client';
 import { parseCardTotalsFromExcel } from './card-excel.parser';
 
+export interface ImportCardDay {
+	/** Дата в формате yyyy-MM-dd. */
+	date: string;
+	/** Сумма поступления на карту из выписки. */
+	amount: number;
+	/** Ранее сохранённое значение карты (только для пропущенных дней). */
+	existingCard?: number;
+}
+
+export interface ImportCardResult {
+	barName: string;
+	/** Сколько дней найдено в файле. */
+	parsed: number;
+	/** Сколько дней заполнено. */
+	imported: number;
+	/** Сколько дней пропущено (карта уже была заполнена). */
+	skipped: number;
+	filled: ImportCardDay[];
+	skippedDays: ImportCardDay[];
+}
+
 const REVENUE_INCLUDE = {
 	bar: true,
 	createdBy: {
@@ -201,7 +222,7 @@ export class RevenueService {
 		fileBuffer: Buffer,
 		barId: string,
 		userId: string,
-	): Promise<{ imported: number; skipped: number; parsed: number }> {
+	): Promise<ImportCardResult> {
 		const bar = await this.prisma.bar.findUnique({
 			where: { id: barId },
 		});
@@ -210,8 +231,8 @@ export class RevenueService {
 		}
 
 		const rows = await parseCardTotalsFromExcel(fileBuffer);
-		let imported = 0;
-		let skipped = 0;
+		const filled: ImportCardDay[] = [];
+		const skippedDays: ImportCardDay[] = [];
 
 		for (const { date, amount } of rows) {
 			const dateObj = new Date(date + 'T00:00:00.000Z');
@@ -223,7 +244,7 @@ export class RevenueService {
 
 			// Пропускаем только если карта уже заполнена (число > 0)
 			if (existing && (existing.card ?? 0) > 0.01) {
-				skipped++;
+				skippedDays.push({ date, amount, existingCard: existing.card });
 				continue;
 			}
 
@@ -244,9 +265,16 @@ export class RevenueService {
 					updatedById: userId,
 				},
 			});
-			imported++;
+			filled.push({ date, amount });
 		}
 
-		return { imported, skipped, parsed: rows.length };
+		return {
+			barName: bar.name,
+			parsed: rows.length,
+			imported: filled.length,
+			skipped: skippedDays.length,
+			filled,
+			skippedDays,
+		};
 	}
 }

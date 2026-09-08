@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { RevenueService } from '../revenue/revenue.service';
+import { RevenueService, ImportCardResult } from '../revenue/revenue.service';
 import { BotCommandsService } from './bot-commands.service';
 import * as TelegramBot from 'node-telegram-bot-api';
 import { RoleType } from '@prisma/client';
@@ -156,17 +156,70 @@ export class NotificationsService implements OnModuleInit {
 					pending.userId,
 				);
 				this.pendingExcelImport.delete(chatId);
-				const msg =
-					result.parsed === 0
-						? 'В файле не найдено строк «Итого за DD.MM.YYYY: Поступление: ...». Проверьте формат.'
-						: `Готово.\nНайдено в файле: ${result.parsed} дн.\nЗаполнено: ${result.imported}\nПропущено (уже заполнено): ${result.skipped}`;
-				await bot.sendMessage(chatId, msg);
+				await bot.sendMessage(chatId, this.formatImportResult(result));
 			} catch (err: any) {
 				this.logger.warn('Excel import callback error', err?.message || err);
 				this.pendingExcelImport.delete(chatId);
 				await bot.sendMessage(chatId, 'Ошибка импорта: ' + (err?.message || 'неизвестная ошибка'));
 			}
 		});
+	}
+
+	/**
+	 * Формирует текст отчёта об импорте выписки на карту:
+	 * какие дни заполнены (и какими суммами) и какие пропущены.
+	 */
+	private formatImportResult(result: ImportCardResult): string {
+		if (result.parsed === 0) {
+			return (
+				'В файле не найдено данных о поступлениях на карту.\n' +
+				'Ожидается выписка по карте (колонки «Дата», «Сумма», «Тип платежа») ' +
+				'или строки «Итого за DD.MM.YYYY: Поступление: ...». Проверьте формат.'
+			);
+		}
+
+		const money = (n: number) => Math.round(n).toLocaleString('ru-RU');
+		const ru = (ymd: string) => {
+			const [y, m, d] = ymd.split('-');
+			return `${d}.${m}.${y}`;
+		};
+		// Не превышаем лимит Telegram (4096): при большом списке обрезаем.
+		const MAX_LINES = 40;
+		const listLines = (days: typeof result.filled, render: (d: (typeof days)[number]) => string) => {
+			const lines = days.map(render);
+			if (lines.length > MAX_LINES) {
+				const hidden = lines.length - MAX_LINES;
+				return lines.slice(0, MAX_LINES).concat(`  …и ещё ${hidden} дн.`);
+			}
+			return lines;
+		};
+
+		const parts: string[] = [
+			`Импорт карты — ${result.barName}`,
+			`Найдено в файле: ${result.parsed} дн. · заполнено: ${result.imported} · пропущено: ${result.skipped}`,
+		];
+
+		if (result.filled.length > 0) {
+			parts.push(
+				'',
+				`✅ Заполнено (${result.filled.length}):`,
+				...listLines(result.filled, (d) => `  ${ru(d.date)} — ${money(d.amount)} сум`),
+			);
+		}
+
+		if (result.skippedDays.length > 0) {
+			parts.push(
+				'',
+				`⏭ Пропущено — карта уже была заполнена (${result.skippedDays.length}):`,
+				...listLines(
+					result.skippedDays,
+					(d) =>
+						`  ${ru(d.date)} — оставлено ${money(d.existingCard ?? 0)} сум (в файле ${money(d.amount)})`,
+				),
+			);
+		}
+
+		return parts.join('\n');
 	}
 
 	/**
