@@ -6,6 +6,8 @@ const TOTAL_ROW_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*:?\s*П
 const DATE_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})/i;
 const AMOUNT_REGEX = /Поступление\s*:?\s*([\d\s.,]+?)(?=\s*Расход|$)/i;
 
+const DATE_CELL_REGEX = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+
 export interface DailyCardRow {
 	date: string;
 	amount: number;
@@ -38,17 +40,94 @@ function getCellText(value: ExcelJS.CellValue): string {
 		return (v.richText as Array<{ text?: string }>).map((t) => t.text || '').join('');
 	}
 	if (v && typeof v.text === 'string') return v.text;
-	return String(value);
+	if (v && v.result != null) return String(v.result);
+	return '';
 }
 
 /**
- * Парсит Excel: ищет строки "Итого за DD.MM.YYYY: Поступление: X XXX".
- * Проверяет целую строку (ячейки могут быть в разных столбцах).
+ * Парсит Excel с поступлениями на карту за день.
+ *
+ * Поддерживает два формата:
+ *  1. Выписка по карте (список транзакций): колонки «Дата», «Сумма», «Тип платежа».
+ *     Поступление за день = сумма всех транзакций с типом «Приход».
+ *  2. Старый формат с готовыми строками «Итого за DD.MM.YYYY: Поступление: X XXX».
+ *
+ * Сначала пробуем формат выписки; если он не распознан — старый формат.
  */
 export async function parseCardTotalsFromExcel(buffer: Buffer): Promise<DailyCardRow[]> {
 	const workbook = new ExcelJS.Workbook();
 	await workbook.xlsx.load(buffer as any);
 
+	// 1. Формат «список транзакций»
+	const fromTransactions = parseTransactionStatement(workbook);
+	if (fromTransactions.length > 0) return fromTransactions;
+
+	// 2. Старый формат «Итого за … Поступление: …»
+	return parseLegacyTotals(workbook);
+}
+
+/**
+ * Формат выписки по карте: суммируем транзакции с типом «Приход» по дням.
+ */
+function parseTransactionStatement(workbook: ExcelJS.Workbook): DailyCardRow[] {
+	const byDay = new Map<string, number>();
+
+	for (const sheet of workbook.worksheets) {
+		const cols = detectColumns(sheet);
+		if (!cols) continue;
+
+		sheet.eachRow({ includeEmpty: false }, (row) => {
+			const type = getCellText(row.getCell(cols.typeCol).value).trim().toLowerCase();
+			if (type !== 'приход') return; // расход/итого/заголовки пропускаем
+
+			const dateNorm = dateDdMmYyyyToYyyyMmDd(getCellText(row.getCell(cols.dateCol).value).trim());
+			if (!dateNorm) return;
+
+			const amount = parseAmount(getCellText(row.getCell(cols.amountCol).value));
+			if (amount === undefined || amount <= 0) return;
+
+			byDay.set(dateNorm, (byDay.get(dateNorm) ?? 0) + amount);
+		});
+	}
+
+	return Array.from(byDay.entries())
+		.map(([date, amount]) => ({ date, amount }))
+		.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * Ищет строку-заголовок таблицы транзакций и возвращает номера нужных колонок.
+ * Заголовок содержит ячейки «Дата», «Сумма», «Тип платежа».
+ */
+function detectColumns(
+	sheet: ExcelJS.Worksheet,
+): { dateCol: number; amountCol: number; typeCol: number } | null {
+	let found: { dateCol: number; amountCol: number; typeCol: number } | null = null;
+
+	sheet.eachRow({ includeEmpty: false }, (row) => {
+		if (found) return;
+		let dateCol = 0;
+		let amountCol = 0;
+		let typeCol = 0;
+		row.eachCell({ includeEmpty: false }, (cell) => {
+			const t = getCellText(cell.value).trim().toLowerCase();
+			if (t === 'дата') dateCol = Number(cell.col);
+			else if (t === 'сумма') amountCol = Number(cell.col);
+			else if (t === 'тип платежа') typeCol = Number(cell.col);
+		});
+		if (dateCol && amountCol && typeCol) {
+			found = { dateCol, amountCol, typeCol };
+		}
+	});
+
+	return found;
+}
+
+/**
+ * Старый формат: строки «Итого за DD.MM.YYYY: Поступление: X XXX».
+ * Проверяет целую строку (ячейки могут быть в разных столбцах).
+ */
+function parseLegacyTotals(workbook: ExcelJS.Workbook): DailyCardRow[] {
 	const result: DailyCardRow[] = [];
 	const seen = new Set<string>();
 
@@ -90,15 +169,40 @@ export async function parseCardTotalsFromExcel(buffer: Buffer): Promise<DailyCar
 }
 
 function dateDdMmYyyyToYyyyMmDd(ddMmYyyy: string): string | null {
-	const m = ddMmYyyy.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+	const m = ddMmYyyy.match(DATE_CELL_REGEX);
 	if (!m) return null;
 	const [, d, mo, y] = m;
+	const day = Number(d);
+	const month = Number(mo);
+	if (day < 1 || day > 31 || month < 1 || month > 12) return null;
 	const pad = (s: string) => s.padStart(2, '0');
 	return `${y}-${pad(mo)}-${pad(d)}`;
 }
 
+/**
+ * Разбирает денежную сумму.
+ * Пробелы — разделители тысяч; запятые/точки как разделители тысяч убираются,
+ * последний разделитель считается десятичным, если после него 1–2 цифры.
+ */
 function parseAmount(str: string): number | undefined {
-	const cleaned = str.replace(/\s/g, '').replace(',', '.');
-	const num = parseFloat(cleaned);
+	let s = str.replace(/\s/g, '');
+	if (!s) return undefined;
+
+	// Позиция последнего разделителя (точка или запятая)
+	const lastSep = Math.max(s.lastIndexOf('.'), s.lastIndexOf(','));
+	if (lastSep >= 0) {
+		const decimals = s.length - lastSep - 1;
+		if (decimals >= 1 && decimals <= 2) {
+			// Считаем последний разделитель десятичным, остальные — тысячные
+			const intPart = s.slice(0, lastSep).replace(/[.,]/g, '');
+			const fracPart = s.slice(lastSep + 1);
+			s = `${intPart}.${fracPart}`;
+		} else {
+			// Все разделители — тысячные
+			s = s.replace(/[.,]/g, '');
+		}
+	}
+
+	const num = parseFloat(s);
 	return isNaN(num) ? undefined : num;
 }
