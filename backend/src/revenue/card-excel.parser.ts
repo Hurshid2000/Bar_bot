@@ -6,7 +6,10 @@ const TOTAL_ROW_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})\s*:?\s*П
 const DATE_REGEX = /Итого\s+за\s+(\d{1,2}\.\d{1,2}\.\d{4})/i;
 const AMOUNT_REGEX = /Поступление\s*:?\s*([\d\s.,]+?)(?=\s*Расход|$)/i;
 
-const DATE_CELL_REGEX = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+// Дата в ячейке: DD.MM.YYYY (UzCard) или DD-MM-YYYY (выписка приложения)
+const DATE_CELL_REGEX = /^(\d{1,2})[.\-](\d{1,2})[.\-](\d{4})$/;
+// Тип операции, означающий поступление на карту
+const INCOME_TYPES = new Set(['приход', 'поступление']);
 
 export interface DailyCardRow {
 	date: string;
@@ -78,12 +81,12 @@ function parseTransactionStatement(workbook: ExcelJS.Workbook): DailyCardRow[] {
 
 		sheet.eachRow({ includeEmpty: false }, (row) => {
 			const type = getCellText(row.getCell(cols.typeCol).value).trim().toLowerCase();
-			if (type !== 'приход') return; // расход/итого/заголовки пропускаем
+			if (!INCOME_TYPES.has(type)) return; // расход/списание/итого/заголовки пропускаем
 
 			const dateNorm = dateDdMmYyyyToYyyyMmDd(getCellText(row.getCell(cols.dateCol).value).trim());
 			if (!dateNorm) return;
 
-			const amount = parseAmount(getCellText(row.getCell(cols.amountCol).value));
+			const amount = parseAmountCell(row.getCell(cols.amountCol).value);
 			if (amount === undefined || amount <= 0) return;
 
 			byDay.set(dateNorm, (byDay.get(dateNorm) ?? 0) + amount);
@@ -111,9 +114,11 @@ function detectColumns(
 		let typeCol = 0;
 		row.eachCell({ includeEmpty: false }, (cell) => {
 			const t = getCellText(cell.value).trim().toLowerCase();
-			if (t === 'дата') dateCol = Number(cell.col);
-			else if (t === 'сумма') amountCol = Number(cell.col);
-			else if (t === 'тип платежа') typeCol = Number(cell.col);
+			// UzCard: «Дата» / «Сумма» / «Тип платежа»
+			// Выписка приложения: «Дата платежа» / «Сумма платежа» / «Тип операции»
+			if (t === 'дата' || t === 'дата платежа') dateCol = Number(cell.col);
+			else if (t === 'сумма' || t === 'сумма платежа') amountCol = Number(cell.col);
+			else if (t === 'тип платежа' || t === 'тип операции') typeCol = Number(cell.col);
 		});
 		if (dateCol && amountCol && typeCol) {
 			found = { dateCol, amountCol, typeCol };
@@ -166,6 +171,21 @@ function parseLegacyTotals(workbook: ExcelJS.Workbook): DailyCardRow[] {
 
 	result.sort((a, b) => a.date.localeCompare(b.date));
 	return result;
+}
+
+/**
+ * Читает денежную сумму из ячейки БЕЗ «датовой» эвристики getCellText:
+ * числовые ячейки берём как есть (иначе число вроде 10000 будет ошибочно
+ * истолковано как серийная дата Excel).
+ */
+function parseAmountCell(value: ExcelJS.CellValue): number | undefined {
+	if (typeof value === 'number') return value;
+	if (value instanceof Date) return undefined; // сумма не может быть датой
+	if (value && typeof value === 'object') {
+		const v = value as unknown as Record<string, unknown>;
+		if (typeof v.result === 'number') return v.result; // формула с числовым результатом
+	}
+	return parseAmount(getCellText(value));
 }
 
 function dateDdMmYyyyToYyyyMmDd(ddMmYyyy: string): string | null {
