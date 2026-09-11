@@ -6,7 +6,9 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateArrivalDto } from './dto/create-arrival.dto';
+import { UpdateArrivalDto } from './dto/update-arrival.dto';
 import { ArrivalFilterDto } from './dto/arrival-filter.dto';
+import type { Prisma } from '@prisma/client';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
 import {
 	createPaginatedResponse,
@@ -364,5 +366,145 @@ export class ArrivalsService {
 		}
 
 		return arrival;
+	}
+
+	private async assertBarAccess(userId: string, userRole: string, barId: string) {
+		if (userRole === 'WORKER' || userRole === 'MANAGER') {
+			const userBars = await this.prisma.userBar.findMany({
+				where: { userId },
+				select: { barId: true },
+			});
+			if (!userBars.map((ub) => ub.barId).includes(barId)) {
+				throw new BadRequestException('Access denied to this arrival');
+			}
+		}
+	}
+
+	/** Прибавляет/убавляет остаток с защитой от ухода в минус. */
+	private async applyStockDelta(
+		tx: Prisma.TransactionClient,
+		barId: string,
+		productId: string,
+		delta: number,
+	) {
+		const cur = await tx.stock.findUnique({
+			where: { barId_productId: { barId, productId } },
+		});
+		const q = Math.max(0, (cur?.quantity ?? 0) + delta);
+		await tx.stock.upsert({
+			where: { barId_productId: { barId, productId } },
+			create: { barId, productId, quantity: q },
+			update: { quantity: q },
+		});
+	}
+
+	/** Знак влияния операции на склад: приход +, списание −. */
+	private stockSign(type: ArrivalType): number {
+		return type === ArrivalType.ARRIVAL ? 1 : -1;
+	}
+
+	/**
+	 * Правка прихода/списания: откатываем старое влияние на склад,
+	 * заменяем позиции и применяем новое влияние.
+	 */
+	async update(
+		id: string,
+		userId: string,
+		userRole: string,
+		dto: UpdateArrivalDto,
+	) {
+		const arrival = await this.prisma.arrival.findUnique({
+			where: { id },
+			include: { items: true },
+		});
+		if (!arrival) {
+			throw new NotFoundException(`Arrival with ID ${id} not found`);
+		}
+		await this.assertBarAccess(userId, userRole, arrival.barId);
+
+		const newType = dto.type ?? arrival.type;
+		const barId = arrival.barId;
+		const items = dto.items ?? [];
+		if (items.length === 0) {
+			throw new BadRequestException('Arrival must contain at least one item');
+		}
+
+		// Получаем продукты и цены (как при создании)
+		const productIds = items.map((i) => i.productId);
+		const products = await this.prisma.product.findMany({
+			where: { id: { in: productIds } },
+			include: { barProducts: { where: { barId, isActive: true }, select: { price: true } } },
+		});
+		if (products.length !== new Set(productIds).size) {
+			throw new NotFoundException('Some products not found');
+		}
+		const hasSportPit = products.some((p) => p.type === 'SPORT_PIT');
+		const hasOther = products.some((p) => p.type !== 'SPORT_PIT');
+		if (hasSportPit && hasOther) {
+			throw new BadRequestException(
+				'Нельзя смешивать спортпит с другими товарами в одном приходе.',
+			);
+		}
+
+		return this.prisma.$transaction(async (tx) => {
+			// 1. Откатываем влияние старых позиций на склад
+			const oldSign = this.stockSign(arrival.type);
+			for (const it of arrival.items) {
+				await this.applyStockDelta(tx, barId, it.productId, -oldSign * it.quantity);
+			}
+
+			// 2. Удаляем старые позиции
+			await tx.arrivalItem.deleteMany({ where: { arrivalId: id } });
+
+			// 3. Создаём новые позиции с ценами из каталога
+			const newSign = this.stockSign(newType);
+			for (const item of items) {
+				const product = products.find((p) => p.id === item.productId)!;
+				const barProduct = product.barProducts[0];
+				const price = barProduct?.price || product.defaultPrice || (product.costPrice ?? 0);
+				await tx.arrivalItem.create({
+					data: { arrivalId: id, productId: item.productId, quantity: item.quantity, price },
+				});
+				// 4. Применяем новое влияние на склад
+				await this.applyStockDelta(tx, barId, item.productId, newSign * item.quantity);
+			}
+
+			// 5. Обновляем сам приход
+			return tx.arrival.update({
+				where: { id },
+				data: {
+					type: newType,
+					isSportPit: hasSportPit,
+					comment: dto.comment !== undefined ? dto.comment || null : undefined,
+				},
+				include: {
+					items: { include: { product: { include: { category: true } } } },
+					bar: true,
+					user: { select: { id: true, name: true, role: true } },
+				},
+			});
+		});
+	}
+
+	/** Удаление прихода/списания — откатывает влияние на склад. */
+	async remove(id: string, userId: string, userRole: string) {
+		const arrival = await this.prisma.arrival.findUnique({
+			where: { id },
+			include: { items: true },
+		});
+		if (!arrival) {
+			throw new NotFoundException(`Arrival with ID ${id} not found`);
+		}
+		await this.assertBarAccess(userId, userRole, arrival.barId);
+
+		await this.prisma.$transaction(async (tx) => {
+			const sign = this.stockSign(arrival.type);
+			for (const it of arrival.items) {
+				await this.applyStockDelta(tx, arrival.barId, it.productId, -sign * it.quantity);
+			}
+			await tx.arrivalItem.deleteMany({ where: { arrivalId: id } });
+			await tx.arrival.delete({ where: { id } });
+		});
+		return { id };
 	}
 }

@@ -2,6 +2,8 @@ import {
 	Controller,
 	Get,
 	Post,
+	Patch,
+	Delete,
 	Body,
 	Param,
 	Query,
@@ -10,6 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { ArrivalsService } from './arrivals.service';
 import { CreateArrivalDto } from './dto/create-arrival.dto';
+import { UpdateArrivalDto } from './dto/update-arrival.dto';
 import { ArrivalFilterDto } from './dto/arrival-filter.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
@@ -55,5 +58,24 @@ export class ArrivalsController {
 		@CurrentUser() user: User,
 	) {
 		return this.arrivalsService.findOne(id, user.id, user.role);
+	}
+
+	@Patch(':id')
+	@ApiOperation({ summary: 'Изменить приход/списание (корректирует склад)' })
+	update(
+		@Param('id') id: string,
+		@CurrentUser() user: User,
+		@Body() dto: UpdateArrivalDto,
+	) {
+		return this.arrivalsService.update(id, user.id, user.role, dto);
+	}
+
+	@Delete(':id')
+	@ApiOperation({ summary: 'Удалить приход/списание (откатывает склад)' })
+	remove(
+		@Param('id') id: string,
+		@CurrentUser() user: User,
+	) {
+		return this.arrivalsService.remove(id, user.id, user.role);
 	}
 }

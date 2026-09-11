@@ -7,6 +7,7 @@ import { ProductType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockService } from '../stock/stock.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { UpdateSaleDto } from './dto/update-sale.dto';
 import { SaleFilterDto } from './dto/sale-filter.dto';
 import {
 	createPaginatedResponse,
@@ -122,6 +123,111 @@ export class SalesService {
 		]);
 
 		return createPaginatedResponse(data, total, page, limit);
+	}
+
+	async findOne(id: string) {
+		const sale = await this.prisma.sale.findUnique({
+			where: { id },
+			include: SALE_INCLUDE,
+		});
+		if (!sale) {
+			throw new NotFoundException('Продажа не найдена');
+		}
+		return sale;
+	}
+
+	/**
+	 * Правка продажи с корректировкой остатков.
+	 * Меняем товар/количество/цену/покупателя. Склад пересчитывается атомарно.
+	 */
+	async update(id: string, dto: UpdateSaleDto) {
+		const sale = await this.prisma.sale.findUnique({ where: { id } });
+		if (!sale) {
+			throw new NotFoundException('Продажа не найдена');
+		}
+
+		const newProductId = dto.productId ?? sale.productId;
+		const newQuantity = dto.quantity ?? sale.quantity;
+		const newPrice = dto.price ?? sale.price;
+		const newTotal = newQuantity * newPrice;
+
+		return this.prisma.$transaction(async (tx) => {
+			if (newProductId === sale.productId) {
+				// Тот же товар — корректируем остаток на разницу
+				const delta = newQuantity - sale.quantity;
+				if (delta > 0) {
+					const res = await tx.stock.updateMany({
+						where: { barId: sale.barId, productId: newProductId, quantity: { gte: delta } },
+						data: { quantity: { decrement: delta } },
+					});
+					if (res.count === 0) {
+						const cur = await tx.stock.findUnique({
+							where: { barId_productId: { barId: sale.barId, productId: newProductId } },
+						});
+						throw new BadRequestException(
+							`Недостаточно товара на складе. Доступно: ${cur?.quantity ?? 0}, нужно ещё: ${delta}`,
+						);
+					}
+				} else if (delta < 0) {
+					await tx.stock.upsert({
+						where: { barId_productId: { barId: sale.barId, productId: newProductId } },
+						create: { barId: sale.barId, productId: newProductId, quantity: -delta },
+						update: { quantity: { increment: -delta } },
+					});
+				}
+			} else {
+				// Сменили товар — возвращаем старый на склад, списываем новый
+				await tx.stock.upsert({
+					where: { barId_productId: { barId: sale.barId, productId: sale.productId } },
+					create: { barId: sale.barId, productId: sale.productId, quantity: sale.quantity },
+					update: { quantity: { increment: sale.quantity } },
+				});
+				const res = await tx.stock.updateMany({
+					where: { barId: sale.barId, productId: newProductId, quantity: { gte: newQuantity } },
+					data: { quantity: { decrement: newQuantity } },
+				});
+				if (res.count === 0) {
+					const cur = await tx.stock.findUnique({
+						where: { barId_productId: { barId: sale.barId, productId: newProductId } },
+					});
+					throw new BadRequestException(
+						`Недостаточно нового товара на складе. Доступно: ${cur?.quantity ?? 0}, нужно: ${newQuantity}`,
+					);
+				}
+			}
+
+			return tx.sale.update({
+				where: { id },
+				data: {
+					productId: newProductId,
+					quantity: newQuantity,
+					price: newPrice,
+					total: newTotal,
+					buyerName: dto.buyerName !== undefined ? dto.buyerName || null : undefined,
+					date: dto.date ? new Date(dto.date + 'T00:00:00.000Z') : undefined,
+				},
+				include: SALE_INCLUDE,
+			});
+		});
+	}
+
+	/**
+	 * Удаление продажи — возвращает товар на склад.
+	 */
+	async remove(id: string) {
+		const sale = await this.prisma.sale.findUnique({ where: { id } });
+		if (!sale) {
+			throw new NotFoundException('Продажа не найдена');
+		}
+		await this.prisma.$transaction(async (tx) => {
+			await tx.stock.upsert({
+				where: { barId_productId: { barId: sale.barId, productId: sale.productId } },
+				create: { barId: sale.barId, productId: sale.productId, quantity: sale.quantity },
+				update: { quantity: { increment: sale.quantity } },
+			});
+			await tx.sale.delete({ where: { id } });
+		});
+		return { id };
 	}
 
 	/**

@@ -2,6 +2,8 @@ import {
 	Controller,
 	Get,
 	Post,
+	Patch,
+	Delete,
 	Body,
 	Query,
 	Param,
@@ -10,6 +12,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SalesService } from './sales.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { UpdateSaleDto } from './dto/update-sale.dto';
 import { SaleFilterDto } from './dto/sale-filter.dto';
 import { RolesGuard } from '../guards/roles.guard';
 import { BarAccessGuard } from '../guards/bar-access.guard';
@@ -63,5 +66,17 @@ export class SalesController {
 		@Query('endDate') endDate: string,
 	) {
 		return this.salesService.getSportpitReport(barId, startDate, endDate);
+	}
+
+	@Patch(':id')
+	@ApiOperation({ summary: 'Изменить продажу (корректирует склад)' })
+	update(@Param('id') id: string, @Body() dto: UpdateSaleDto) {
+		return this.salesService.update(id, dto);
+	}
+
+	@Delete(':id')
+	@ApiOperation({ summary: 'Удалить продажу (возвращает товар на склад)' })
+	remove(@Param('id') id: string) {
+		return this.salesService.remove(id);
 	}
 }
