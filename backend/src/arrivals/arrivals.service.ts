@@ -2,6 +2,8 @@ import {
 	Injectable,
 	NotFoundException,
 	BadRequestException,
+	Inject,
+	forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -21,6 +23,7 @@ import { StockService } from '../stock/stock.service';
 export class ArrivalsService {
 	constructor(
 		private prisma: PrismaService,
+		@Inject(forwardRef(() => NotificationsService))
 		private notificationsService: NotificationsService,
 		private stockService: StockService,
 	) {}
