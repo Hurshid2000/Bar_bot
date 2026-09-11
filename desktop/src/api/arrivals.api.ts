@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 import type { Arrival, PaginatedResponse } from '../types/common.types';
 
 export interface CreateArrivalItemDto {
@@ -9,6 +9,12 @@ export interface CreateArrivalItemDto {
 export interface CreateArrivalDto {
 	barId: string;
 	type: 'ARRIVAL' | 'WRITE_OFF';
+	items: CreateArrivalItemDto[];
+	comment?: string;
+}
+
+export interface UpdateArrivalDto {
+	type?: 'ARRIVAL' | 'WRITE_OFF';
 	items: CreateArrivalItemDto[];
 	comment?: string;
 }
@@ -64,4 +70,10 @@ export const arrivalsApi = {
 
 	getById: (id: string): Promise<Arrival> =>
 		apiGet<Arrival>(`/arrivals/${id}`),
+
+	update: (id: string, data: UpdateArrivalDto): Promise<Arrival> =>
+		apiPatch<Arrival>(`/arrivals/${id}`, data),
+
+	remove: (id: string): Promise<{ id: string }> =>
+		apiDelete<{ id: string }>(`/arrivals/${id}`),
 };

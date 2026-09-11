@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface CreateSaleDto {
@@ -7,6 +7,14 @@ export interface CreateSaleDto {
 	quantity: number;
 	price: number;
 	buyerName?: string;
+}
+
+export interface UpdateSaleDto {
+	productId?: string;
+	quantity?: number;
+	price?: number;
+	buyerName?: string;
+	date?: string;
 }
 
 export interface Sale {
@@ -45,6 +53,12 @@ export interface SalesSummary {
 export const salesApi = {
 	create: (data: CreateSaleDto): Promise<Sale> =>
 		apiPost<Sale>('/sales', data),
+
+	update: (id: string, data: UpdateSaleDto): Promise<Sale> =>
+		apiPatch<Sale>(`/sales/${id}`, data),
+
+	remove: (id: string): Promise<{ id: string }> =>
+		apiDelete<{ id: string }>(`/sales/${id}`),
 
 	getAll: (params?: SaleFilterParams): Promise<PaginatedResponse<Sale>> => {
 		const queryParams = new URLSearchParams();

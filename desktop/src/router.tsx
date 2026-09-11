@@ -15,6 +15,8 @@ import { CatalogPage } from './pages/Catalog';
 import { RevenueListPage } from './pages/Revenue/RevenueListPage';
 import { ExpensesListPage } from './pages/Expenses/ExpensesListPage';
 import { PurchasesListPage } from './pages/Purchases/PurchasesListPage';
+import { SportpitSalesPage } from './pages/Sportpit/SportpitSalesPage';
+import { SportpitArrivalsPage } from './pages/Sportpit/SportpitArrivalsPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { CashAuditReportPage } from './pages/Reports/CashAuditReportPage';
 import { ProfitReportPage } from './pages/Reports/ProfitReportPage';
@@ -109,6 +111,14 @@ export const router = createBrowserRouter([
 			{
 				path: '/purchases',
 				element: <PurchasesListPage />,
+			},
+			{
+				path: '/sportpit/sales',
+				element: <SportpitSalesPage />,
+			},
+			{
+				path: '/sportpit/arrivals',
+				element: <SportpitArrivalsPage />,
 			},
 			{
 				path: '/reports',

@@ -239,6 +239,28 @@ export function BarDashboardPage() {
 					Закупки
 				</Button>
 			</div>
+
+			{/* Кнопки спортпита */}
+			<div className="bar-dashboard-inventory-btn">
+				<Button
+					variant="primary"
+					size="lg"
+					onClick={() => navigate('/sportpit/arrivals')}
+					className="bar-dashboard-inventory-button"
+				>
+					Спортпит: приходы
+				</Button>
+			</div>
+			<div className="bar-dashboard-inventory-btn">
+				<Button
+					variant="primary"
+					size="lg"
+					onClick={() => navigate('/sportpit/sales')}
+					className="bar-dashboard-inventory-button"
+				>
+					Спортпит: продажи
+				</Button>
+			</div>
 		</div>
 	);
 }
