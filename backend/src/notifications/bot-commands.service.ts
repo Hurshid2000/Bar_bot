@@ -4,6 +4,7 @@ import { NotificationsService } from './notifications.service';
 import { PurchasesService } from '../purchases/purchases.service';
 import { SalesService } from '../sales/sales.service';
 import { ArrivalsService } from '../arrivals/arrivals.service';
+import { AiParserService } from './ai-parser.service';
 import * as TelegramBot from 'node-telegram-bot-api';
 import { RoleType, ProductType, ArrivalType } from '@prisma/client';
 
@@ -86,6 +87,7 @@ export class BotCommandsService {
 		private salesService: SalesService,
 		@Inject(forwardRef(() => ArrivalsService))
 		private arrivalsService: ArrivalsService,
+		private aiParser: AiParserService,
 	) {}
 
 	/**
@@ -384,8 +386,12 @@ export class BotCommandsService {
 			return;
 		}
 
-		const parsed =
-			session.flow === 'sp_sale' ? this.parseSaleLines(text) : this.parseNameQty(text);
+		// Сначала пробуем умный разбор через Claude, при неудаче — эвристика.
+		let parsed = await this.aiParser.parseItems(text, session.flow);
+		if (!parsed || parsed.length === 0) {
+			parsed =
+				session.flow === 'sp_sale' ? this.parseSaleLines(text) : this.parseNameQty(text);
+		}
 
 		if (parsed.length === 0) {
 			await this.send(chatId, 'Не удалось разобрать список. Попробуйте ещё раз, каждую позицию с новой строки.');
@@ -397,6 +403,11 @@ export class BotCommandsService {
 			if (p.note) {
 				// строку не удалось распознать
 				draft.push({ rawName: p.name, quantity: 0, status: 'notfound', note: p.note });
+				continue;
+			}
+			// Для продажи спортпита обязательна цена
+			if (session.flow === 'sp_sale' && (!p.price || p.price <= 0)) {
+				draft.push({ rawName: p.name, quantity: p.quantity, status: 'notfound', note: 'не указана цена' });
 				continue;
 			}
 			const m = await this.matchOne(session.barId, p.name, session.flow);

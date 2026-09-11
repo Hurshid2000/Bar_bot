@@ -4,6 +4,7 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsScheduler } from './notifications.scheduler';
 import { BotCommandsService } from './bot-commands.service';
+import { AiParserService } from './ai-parser.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RevenueModule } from '../revenue/revenue.module';
 import { PurchasesModule } from '../purchases/purchases.module';
@@ -22,7 +23,7 @@ import { ArrivalsModule } from '../arrivals/arrivals.module';
 		forwardRef(() => ArrivalsModule),
 	],
 	controllers: [NotificationsController],
-	providers: [NotificationsService, NotificationsScheduler, BotCommandsService],
+	providers: [NotificationsService, NotificationsScheduler, BotCommandsService, AiParserService],
 	exports: [NotificationsService],
 })
 export class NotificationsModule {}
