@@ -1,6 +1,7 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 import type {
 	Purchase,
+	PurchaseItem,
 	PaginatedResponse,
 	PaginationParams,
 } from '../types/common.types';
@@ -15,10 +16,37 @@ export interface CreatePurchaseDto {
 	items: CreatePurchaseItemDto[];
 }
 
+export interface UpdatePurchaseDto {
+	items: CreatePurchaseItemDto[];
+}
+
 export interface PurchaseFilterParams extends PaginationParams {
 	barId?: string;
 	startDate?: string;
 	endDate?: string;
+}
+
+/** Разобранная позиция закупа (в БД хранится JSON-снимком в поле name). */
+export interface ParsedPurchaseItem {
+	productName: string;
+	productId?: string;
+	price: number;
+	quantity: number;
+}
+
+/** Парсит JSON-снимок позиции закупа. Возвращает null, если формат неизвестен. */
+export function parsePurchaseItem(item: PurchaseItem): ParsedPurchaseItem {
+	try {
+		const data = JSON.parse(item.name);
+		return {
+			productName: data.productName ?? item.name,
+			productId: data.productId,
+			price: Number(data.price) || 0,
+			quantity: Number(data.quantity ?? item.amount) || 0,
+		};
+	} catch {
+		return { productName: item.name, price: 0, quantity: item.amount };
+	}
 }
 
 export const purchasesApi = {
@@ -40,4 +68,10 @@ export const purchasesApi = {
 
 	create: (data: CreatePurchaseDto): Promise<Purchase> =>
 		apiPost<Purchase>('/purchases', data),
+
+	update: (id: string, data: UpdatePurchaseDto): Promise<Purchase> =>
+		apiPatch<Purchase>(`/purchases/${id}`, data),
+
+	remove: (id: string): Promise<{ id: string }> =>
+		apiDelete<{ id: string }>(`/purchases/${id}`),
 };

@@ -236,6 +236,18 @@ export function BarDashboardPage() {
 					Инвентаризация
 				</Button>
 			</div>
+
+			{/* Кнопка Закупки */}
+			<div className="bar-dashboard-inventory-btn">
+				<Button
+					variant="primary"
+					size="lg"
+					onClick={() => navigate('/purchases')}
+					className="bar-dashboard-inventory-button"
+				>
+					Закупки
+				</Button>
+			</div>
 		</div>
 	);
 }
