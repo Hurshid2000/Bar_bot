@@ -1,8 +1,11 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
+import { PurchasesService } from '../purchases/purchases.service';
+import { SalesService } from '../sales/sales.service';
+import { ArrivalsService } from '../arrivals/arrivals.service';
 import * as TelegramBot from 'node-telegram-bot-api';
-import { RoleType } from '@prisma/client';
+import { RoleType, ProductType, ArrivalType } from '@prisma/client';
 
 /** Время жизни диалоговой сессии (ожидание ввода суммы и т.п.). */
 const SESSION_TTL_MS = 15 * 60 * 1000;
@@ -10,6 +13,8 @@ const SESSION_TTL_MS = 15 * 60 * 1000;
 const CB = 'df:';
 /** Сколько последних дней показывать в выборе «Другой день». */
 const RECENT_DAYS = 14;
+/** Сколько кандидатов показывать при неоднозначном сопоставлении товара. */
+const MAX_CANDIDATES = 5;
 
 // Подписи кнопок главного меню (reply keyboard). Сравниваются с текстом сообщения.
 const BTN_CASH = '💵 Наличка';
@@ -17,13 +22,33 @@ const BTN_CARD = '💳 Карта';
 const BTN_EXPENSE = '🧾 Расход';
 const BTN_OTHER_DAY = '📅 Другой день';
 const BTN_MONTH = '📊 Сводка за месяц';
+const BTN_PURCHASE = '📦 Закуп';
+const BTN_SP_ARRIVAL = '🏋️ Приход спортпита';
+const BTN_SP_SALE = '🛒 Продажа спортпита';
 
 type FlowAction = 'cash' | 'card' | 'exp' | 'view';
-type Awaiting = 'amount' | 'expense' | 'manualDate' | null;
+/** Сценарии закупа/спортпита. */
+type ProcFlow = 'purchase' | 'sp_arrival' | 'sp_sale';
+type Awaiting = 'amount' | 'expense' | 'manualDate' | 'items' | null;
 
 interface AccessBar {
 	id: string;
 	name: string;
+}
+
+/** Разобранная позиция списка, которую сопоставляем с каталогом. */
+interface DraftItem {
+	rawName: string;
+	quantity: number;
+	/** Цена продажи за единицу (для продажи спортпита — вводит работник; иначе из каталога). */
+	price?: number;
+	buyerName?: string;
+	productId?: string;
+	productName?: string;
+	candidates?: AccessBar[];
+	status: 'ok' | 'ambiguous' | 'notfound' | 'skip';
+	/** Причина, если позицию нельзя записать. */
+	note?: string;
 }
 
 interface Session {
@@ -38,6 +63,10 @@ interface Session {
 	/** Явно ли пользователь выбрал день (для сценария «Другой день»). */
 	dayChosen: boolean;
 	pendingAction?: FlowAction;
+	/** Активный сценарий закупа/спортпита. */
+	flow?: ProcFlow;
+	/** Разобранные позиции для закупа/прихода/продажи. */
+	draft?: DraftItem[];
 	awaiting: Awaiting;
 	expiresAt: number;
 }
@@ -53,6 +82,10 @@ export class BotCommandsService {
 		private prisma: PrismaService,
 		@Inject(forwardRef(() => NotificationsService))
 		private notifications: NotificationsService,
+		private purchasesService: PurchasesService,
+		private salesService: SalesService,
+		@Inject(forwardRef(() => ArrivalsService))
+		private arrivalsService: ArrivalsService,
 	) {}
 
 	/**
@@ -118,9 +151,15 @@ export class BotCommandsService {
 				return this.startOtherDay(chatId, msg.from?.id);
 			case BTN_MONTH:
 				return this.startMonthSummary(chatId, msg.from?.id);
+			case BTN_PURCHASE:
+				return this.startProcurement(chatId, msg.from?.id, 'purchase');
+			case BTN_SP_ARRIVAL:
+				return this.startProcurement(chatId, msg.from?.id, 'sp_arrival');
+			case BTN_SP_SALE:
+				return this.startProcurement(chatId, msg.from?.id, 'sp_sale');
 		}
 
-		// Иначе — это ввод для активной сессии (сумма / расход / дата).
+		// Иначе — это ввод для активной сессии (сумма / расход / дата / список).
 		const session = this.getSession(chatId);
 		if (!session || !session.awaiting) {
 			// Нет активного ожидания — подсказываем меню.
@@ -137,6 +176,9 @@ export class BotCommandsService {
 		}
 		if (session.awaiting === 'expense') {
 			return this.handleExpense(chatId, session, text);
+		}
+		if (session.awaiting === 'items') {
+			return this.handleItemsInput(chatId, session, text);
 		}
 	}
 
@@ -192,6 +234,41 @@ export class BotCommandsService {
 			session.pendingAction = action;
 			this.touch(session);
 			return this.continueFlow(chatId, session);
+		}
+
+		// Сопоставление позиций закупа/спортпита
+		if (kind === 'pick') {
+			const index = Number(params[0]);
+			const productId = params.slice(1).join(':');
+			const item = session.draft?.[index];
+			if (item && item.candidates) {
+				const cand = item.candidates.find((c) => c.id === productId);
+				if (cand) {
+					item.productId = cand.id;
+					item.productName = cand.name;
+					item.status = 'ok';
+				}
+			}
+			this.touch(session);
+			return this.resolveNext(chatId, session);
+		}
+
+		if (kind === 'skip') {
+			const index = Number(params[0]);
+			const item = session.draft?.[index];
+			if (item) item.status = 'skip';
+			this.touch(session);
+			return this.resolveNext(chatId, session);
+		}
+
+		if (kind === 'pconfirm') {
+			return this.commitProcurement(chatId, session);
+		}
+
+		if (kind === 'pcancel') {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Отменено.');
+			return;
 		}
 	}
 
@@ -253,6 +330,361 @@ export class BotCommandsService {
 		await this.sendMonthSummary(chatId, bars);
 	}
 
+	// ───────────────── Закуп / приход спортпита / продажа спортпита ─────────────────
+
+	private async startProcurement(
+		chatId: number,
+		fromId: number | undefined,
+		flow: ProcFlow,
+	) {
+		const user = await this.loadUser(fromId);
+		if (!user) {
+			await this.send(chatId, 'Вы не зарегистрированы в Bar Bot.');
+			return;
+		}
+		if (user.bars.length === 0) {
+			await this.send(chatId, 'К вашему аккаунту не привязан ни один бар. Обратитесь к администратору.');
+			return;
+		}
+		const session = this.newSession(user);
+		session.flow = flow;
+		this.sessions.set(chatId, session);
+		// continueFlow выберет бар (или спросит), затем вызовет promptItems.
+		return this.continueFlow(chatId, session);
+	}
+
+	/** Просит работника прислать список позиций (текстом). */
+	private async promptItems(chatId: number, session: Session) {
+		session.awaiting = 'items';
+		this.touch(session);
+		const header = `Бар: ${session.barName}`;
+		if (session.flow === 'purchase') {
+			await this.send(
+				chatId,
+				`${header}\n\n📦 Закуп. Напишите, что пришло — название и количество, каждый товар с новой строки или через запятую.\nНапример:\nкола 10\nвода 20\nред булл 12`,
+			);
+		} else if (session.flow === 'sp_arrival') {
+			await this.send(
+				chatId,
+				`${header}\n\n🏋️ Приход спортпита. Напишите список спортпита и количество.\nНапример:\nкреатин 5\nвей протеин 3`,
+			);
+		} else if (session.flow === 'sp_sale') {
+			await this.send(
+				chatId,
+				`${header}\n\n🛒 Продажа спортпита. Формат: название количество цена [кому], каждая продажа с новой строки.\nНапример:\nкреатин 1 150000 Иван\nвей протеин 2 300000`,
+			);
+		}
+	}
+
+	/** Разбирает присланный список и сопоставляет позиции с каталогом. */
+	private async handleItemsInput(chatId: number, session: Session, text: string) {
+		if (!session.barId || !session.flow) {
+			await this.send(chatId, 'Что-то пошло не так. Начните заново через меню.');
+			this.sessions.delete(chatId);
+			return;
+		}
+
+		const parsed =
+			session.flow === 'sp_sale' ? this.parseSaleLines(text) : this.parseNameQty(text);
+
+		if (parsed.length === 0) {
+			await this.send(chatId, 'Не удалось разобрать список. Попробуйте ещё раз, каждую позицию с новой строки.');
+			return;
+		}
+
+		const draft: DraftItem[] = [];
+		for (const p of parsed) {
+			if (p.note) {
+				// строку не удалось распознать
+				draft.push({ rawName: p.name, quantity: 0, status: 'notfound', note: p.note });
+				continue;
+			}
+			const m = await this.matchOne(session.barId, p.name, session.flow);
+			draft.push({
+				rawName: p.name,
+				quantity: p.quantity,
+				price: session.flow === 'sp_sale' ? p.price : m.price,
+				buyerName: p.buyer,
+				productId: m.productId,
+				productName: m.productName,
+				candidates: m.candidates,
+				status: m.status,
+			});
+		}
+
+		session.draft = draft;
+		session.awaiting = null;
+		this.touch(session);
+		return this.resolveNext(chatId, session);
+	}
+
+	/** Находит следующую неоднозначную/ненайденную позицию и просит выбрать; иначе — подтверждение. */
+	private async resolveNext(chatId: number, session: Session) {
+		const draft = session.draft ?? [];
+		const idx = draft.findIndex(
+			(d) => d.status === 'ambiguous' || d.status === 'notfound',
+		);
+		if (idx === -1) {
+			return this.showProcurementConfirm(chatId, session);
+		}
+
+		const item = draft[idx];
+		const buttons: TelegramBot.InlineKeyboardButton[][] = [];
+		if (item.status === 'ambiguous' && item.candidates) {
+			for (const c of item.candidates) {
+				buttons.push([{ text: c.name, callback_data: `${CB}pick:${idx}:${c.id}` }]);
+			}
+			buttons.push([{ text: '⛔ Пропустить', callback_data: `${CB}skip:${idx}` }]);
+			await this.bot?.sendMessage(
+				chatId,
+				`«${item.rawName}» — уточните товар (×${item.quantity}):`,
+				{ reply_markup: { inline_keyboard: buttons } },
+			);
+		} else {
+			// notfound
+			buttons.push([{ text: '⛔ Пропустить', callback_data: `${CB}skip:${idx}` }]);
+			await this.bot?.sendMessage(
+				chatId,
+				`«${item.rawName}» — не найдено в каталоге. Добавьте товар в мини-аппе или пропустите.`,
+				{ reply_markup: { inline_keyboard: buttons } },
+			);
+		}
+	}
+
+	/** Показывает итоговый список на подтверждение. */
+	private async showProcurementConfirm(chatId: number, session: Session) {
+		const draft = session.draft ?? [];
+		const okItems = draft.filter((d) => d.status === 'ok' && d.productId);
+		const excluded = draft.filter((d) => d.status === 'skip' || d.status === 'notfound');
+
+		if (okItems.length === 0) {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Нет позиций для записи. Операция отменена.');
+			return;
+		}
+
+		const lines: string[] = [`Бар: ${session.barName}`];
+		let total = 0;
+
+		if (session.flow === 'purchase') {
+			lines.push('', '📦 Закуп — проверьте:');
+			for (const d of okItems) {
+				const price = d.price ?? 0;
+				const sum = price * d.quantity;
+				total += sum;
+				const warn = price <= 0 ? '  ⚠️ цена не задана' : '';
+				lines.push(`  • ${d.productName} ×${d.quantity} × ${this.money(price)} = ${this.money(sum)}${warn}`);
+			}
+			lines.push('', `Итого закуп: ${this.money(total)} сум`);
+		} else if (session.flow === 'sp_arrival') {
+			lines.push('', '🏋️ Приход спортпита — проверьте:');
+			for (const d of okItems) {
+				lines.push(`  • ${d.productName} ×${d.quantity}`);
+			}
+		} else if (session.flow === 'sp_sale') {
+			lines.push('', '🛒 Продажа спортпита — проверьте:');
+			for (const d of okItems) {
+				const price = d.price ?? 0;
+				const sum = price * d.quantity;
+				total += sum;
+				const buyer = d.buyerName ? ` — ${d.buyerName}` : '';
+				lines.push(`  • ${d.productName} ×${d.quantity} × ${this.money(price)} = ${this.money(sum)}${buyer}`);
+			}
+			lines.push('', `Итого продажа: ${this.money(total)} сум`);
+		}
+
+		if (excluded.length > 0) {
+			lines.push('', 'Не будут записаны:');
+			for (const d of excluded) {
+				lines.push(`  ⛔ ${d.rawName}${d.note ? ` (${d.note})` : ''}`);
+			}
+		}
+
+		await this.bot?.sendMessage(chatId, lines.join('\n'), {
+			reply_markup: {
+				inline_keyboard: [
+					[
+						{ text: '✅ Подтвердить', callback_data: `${CB}pconfirm` },
+						{ text: 'Отмена', callback_data: `${CB}pcancel` },
+					],
+				],
+			},
+		});
+	}
+
+	/** Записывает подтверждённые позиции в базу. */
+	private async commitProcurement(chatId: number, session: Session) {
+		const draft = session.draft ?? [];
+		const okItems = draft.filter((d) => d.status === 'ok' && d.productId);
+		if (!session.barId || !session.flow || okItems.length === 0) {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Нечего записывать.');
+			return;
+		}
+		const barId = session.barId;
+
+		try {
+			if (session.flow === 'purchase') {
+				const result = await this.purchasesService.create({
+					barId,
+					items: okItems.map((d) => ({ productId: d.productId!, quantity: d.quantity })),
+				});
+				this.sessions.delete(chatId);
+				await this.send(
+					chatId,
+					`✅ Закуп записан.\nБар: ${session.barName}\nПозиций: ${okItems.length}\nСумма: ${this.money(result.totalAmount)} сум`,
+				);
+			} else if (session.flow === 'sp_arrival') {
+				await this.arrivalsService.create(session.userId, {
+					barId,
+					type: ArrivalType.ARRIVAL,
+					items: okItems.map((d) => ({ productId: d.productId!, quantity: d.quantity })),
+				});
+				this.sessions.delete(chatId);
+				await this.send(
+					chatId,
+					`✅ Приход спортпита записан, остатки обновлены.\nБар: ${session.barName}\nПозиций: ${okItems.length}`,
+				);
+			} else if (session.flow === 'sp_sale') {
+				const done: string[] = [];
+				const failed: string[] = [];
+				for (const d of okItems) {
+					try {
+						await this.salesService.create(session.userId, {
+							barId,
+							productId: d.productId!,
+							quantity: d.quantity,
+							price: d.price ?? 0,
+							buyerName: d.buyerName,
+						});
+						done.push(`${d.productName} ×${d.quantity}`);
+					} catch (e: any) {
+						failed.push(`${d.productName} — ${e?.message || 'ошибка'}`);
+					}
+				}
+				this.sessions.delete(chatId);
+				const lines = [`🛒 Продажа спортпита — ${session.barName}`];
+				if (done.length) lines.push('', '✅ Записано:', ...done.map((s) => `  • ${s}`));
+				if (failed.length) lines.push('', '❌ Не записано:', ...failed.map((s) => `  • ${s}`));
+				await this.send(chatId, lines.join('\n'));
+			}
+		} catch (e: any) {
+			this.sessions.delete(chatId);
+			this.logger.warn('commitProcurement error', e?.message || e);
+			await this.send(chatId, `Ошибка записи: ${e?.message || 'неизвестная ошибка'}`);
+		}
+	}
+
+	/** Сопоставляет одно название с товаром каталога нужного типа. */
+	private async matchOne(
+		barId: string,
+		term: string,
+		flow: ProcFlow,
+	): Promise<Pick<DraftItem, 'status' | 'productId' | 'productName' | 'price' | 'candidates'>> {
+		const typeFilter =
+			flow === 'purchase' ? { not: ProductType.SPORT_PIT } : ProductType.SPORT_PIT;
+		const include = {
+			barProducts: { where: { barId, isActive: true }, select: { price: true } },
+		};
+		const search = term.trim();
+
+		// 1. Точное совпадение по названию
+		let products = await this.prisma.product.findMany({
+			where: { isActive: true, type: typeFilter, name: { equals: search, mode: 'insensitive' } },
+			include,
+			take: 2,
+		});
+
+		// 2. Частичное совпадение
+		if (products.length !== 1) {
+			products = await this.prisma.product.findMany({
+				where: { isActive: true, type: typeFilter, name: { contains: search, mode: 'insensitive' } },
+				include,
+				orderBy: { name: 'asc' },
+				take: MAX_CANDIDATES + 1,
+			});
+			// 3. По первому слову, если ничего не нашли
+			if (products.length === 0) {
+				const firstWord = search.split(/\s+/)[0];
+				if (firstWord && firstWord.length >= 3 && firstWord !== search) {
+					products = await this.prisma.product.findMany({
+						where: { isActive: true, type: typeFilter, name: { contains: firstWord, mode: 'insensitive' } },
+						include,
+						orderBy: { name: 'asc' },
+						take: MAX_CANDIDATES + 1,
+					});
+				}
+			}
+		}
+
+		if (products.length === 0) return { status: 'notfound' };
+		if (products.length === 1) {
+			const p = products[0];
+			return { status: 'ok', productId: p.id, productName: p.name, price: this.sellPrice(p) };
+		}
+		return {
+			status: 'ambiguous',
+			candidates: products.slice(0, MAX_CANDIDATES).map((p) => ({ id: p.id, name: p.name })),
+		};
+	}
+
+	private sellPrice(p: {
+		defaultPrice: number | null;
+		barProducts?: { price: number }[];
+	}): number {
+		return p.barProducts?.[0]?.price ?? p.defaultPrice ?? 0;
+	}
+
+	/** Разбор строк «название количество» (закуп / приход спортпита). */
+	private parseNameQty(text: string): Array<{ name: string; quantity: number; price?: number; buyer?: string; note?: string }> {
+		const chunks = text.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+		const res: Array<{ name: string; quantity: number; note?: string }> = [];
+		for (const c of chunks) {
+			// "название 10" / "название - 10 шт"
+			let m = c.match(/^(.+?)[\s:=—-]+(\d+(?:[.,]\d+)?)\s*(?:шт|штук|ед|уп|kg|кг|л)?\.?$/i);
+			if (!m) {
+				// "10 название"
+				const m2 = c.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
+				if (m2) {
+					res.push({ name: m2[2].trim(), quantity: this.qtyInt(m2[1]) });
+					continue;
+				}
+				// без количества — по умолчанию 1
+				res.push({ name: c, quantity: 1 });
+				continue;
+			}
+			res.push({ name: m[1].trim(), quantity: this.qtyInt(m[2]) });
+		}
+		return res;
+	}
+
+	/** Разбор строк «название количество цена [кому]» (продажа спортпита). */
+	private parseSaleLines(text: string): Array<{ name: string; quantity: number; price?: number; buyer?: string; note?: string }> {
+		const chunks = text.split(/[\n;]+/).map((s) => s.trim()).filter(Boolean);
+		const res: Array<{ name: string; quantity: number; price?: number; buyer?: string; note?: string }> = [];
+		for (const c of chunks) {
+			const m = c.match(/^(.+?)\s+(\d+)\s+([\d][\d\s.,]*?)(?:\s+([^\d].*))?$/);
+			if (!m) {
+				res.push({ name: c, quantity: 0, note: 'не распознано (нужно: название кол-во цена)' });
+				continue;
+			}
+			res.push({
+				name: m[1].trim(),
+				quantity: this.qtyInt(m[2]),
+				price: this.qtyInt(m[3]),
+				buyer: m[4]?.trim() || undefined,
+			});
+		}
+		return res;
+	}
+
+	/** Число из строки (убираем разделители тысяч), целое неотрицательное. */
+	private qtyInt(s: string): number {
+		const digits = String(s).replace(/[^\d]/g, '');
+		const n = Number(digits);
+		return Number.isFinite(n) ? n : 0;
+	}
+
 	// ─────────────────────────── Ядро сценария ───────────────────────────
 
 	/** Продолжает сценарий, докупая недостающие данные (бар → день → ввод/сводка). */
@@ -265,6 +697,11 @@ export class BotCommandsService {
 			} else {
 				return this.askBar(chatId, session);
 			}
+		}
+
+		// Сценарии закупа/спортпита: после выбора бара просим список.
+		if (session.flow) {
+			return this.promptItems(chatId, session);
 		}
 
 		const action = session.pendingAction;
@@ -553,6 +990,8 @@ export class BotCommandsService {
 		const rows: TelegramBot.KeyboardButton[][] = [
 			[{ text: BTN_CASH }, { text: BTN_CARD }],
 			[{ text: BTN_EXPENSE }, { text: BTN_OTHER_DAY }],
+			[{ text: BTN_PURCHASE }],
+			[{ text: BTN_SP_ARRIVAL }, { text: BTN_SP_SALE }],
 		];
 		if (role === RoleType.ADMIN || role === RoleType.MANAGER) {
 			rows.push([{ text: BTN_MONTH }]);

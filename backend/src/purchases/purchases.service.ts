@@ -61,9 +61,9 @@ export class PurchasesService {
 					throw new NotFoundException(`Product ${item.productId} not found`);
 				}
 
-				// Получаем цену из BarProduct или используем 0 если не назначена
+				// Продажная цена: из BarProduct, иначе defaultPrice, иначе 0
 				const barProduct = product.barProducts?.[0];
-				const price = barProduct?.price ?? 0;
+				const price = barProduct?.price ?? product.defaultPrice ?? 0;
 
 				const itemPriceAmount = price * item.quantity;
 				const itemCostAmount = (product.costPrice ?? 0) * item.quantity;
@@ -85,9 +85,10 @@ export class PurchasesService {
 				};
 			});
 
-			// Используем totalCostAmount для totalAmount (закупка использует себестоимость)
-			// totalPriceAmount также рассчитывается для возможного использования в будущем
-			const totalAmount = totalCostAmount;
+			// Сумма закупа = полная стоимость по ПРОДАЖНОЙ цене (кол-во × цена продажи).
+			// totalCostAmount (себестоимость) сохраняем для возможной аналитики.
+			void totalCostAmount;
+			const totalAmount = totalPriceAmount;
 
 			// Создаем Purchase
 			const purchase = await tx.purchase.create({
