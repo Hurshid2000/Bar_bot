@@ -1,4 +1,5 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
 import { PurchasesService } from '../purchases/purchases.service';
@@ -26,6 +27,7 @@ const BTN_MONTH = '📊 Сводка за месяц';
 const BTN_PURCHASE = '📦 Закуп';
 const BTN_SP_ARRIVAL = '🏋️ Приход спортпита';
 const BTN_SP_SALE = '🛒 Продажа спортпита';
+const BTN_DESKTOP = '💻 Десктоп версия';
 
 type FlowAction = 'cash' | 'card' | 'exp' | 'view';
 /** Сценарии закупа/спортпита. */
@@ -88,6 +90,7 @@ export class BotCommandsService {
 		@Inject(forwardRef(() => ArrivalsService))
 		private arrivalsService: ArrivalsService,
 		private aiParser: AiParserService,
+		private config: ConfigService,
 	) {}
 
 	/**
@@ -159,6 +162,8 @@ export class BotCommandsService {
 				return this.startProcurement(chatId, msg.from?.id, 'sp_arrival');
 			case BTN_SP_SALE:
 				return this.startProcurement(chatId, msg.from?.id, 'sp_sale');
+			case BTN_DESKTOP:
+				return this.sendDesktopLink(chatId);
 		}
 
 		// Иначе — это ввод для активной сессии (сумма / расход / дата / список).
@@ -1044,6 +1049,9 @@ export class BotCommandsService {
 		if (role === RoleType.ADMIN || role === RoleType.MANAGER) {
 			rows.push([{ text: BTN_MONTH }]);
 		}
+		if (this.config.get<string>('DESKTOP_URL')) {
+			rows.push([{ text: BTN_DESKTOP }]);
+		}
 		await this.bot?.sendMessage(chatId, text, {
 			reply_markup: { keyboard: rows, resize_keyboard: true },
 		});
@@ -1106,6 +1114,20 @@ export class BotCommandsService {
 
 	private async send(chatId: number, text: string) {
 		await this.bot?.sendMessage(chatId, text);
+	}
+
+	/** Отправляет ссылку на десктопную версию (URL из DESKTOP_URL). */
+	private async sendDesktopLink(chatId: number) {
+		const url = this.config.get<string>('DESKTOP_URL');
+		if (!url) {
+			await this.send(chatId, 'Ссылка на десктоп не настроена. Задайте DESKTOP_URL в переменных окружения.');
+			return;
+		}
+		await this.bot?.sendMessage(chatId, 'Десктопная версия:', {
+			reply_markup: {
+				inline_keyboard: [[{ text: '💻 Открыть десктоп', url }]],
+			},
+		});
 	}
 
 	// ─────────────────────────── Данные / утилиты ───────────────────────────
