@@ -21,7 +21,7 @@ const MAX_CANDIDATES = 5;
 const BTN_CASH = '💵 Наличка';
 const BTN_CARD = '💳 Карта';
 const BTN_EXPENSE = '🧾 Расход';
-const BTN_OTHER_DAY = '📅 Другой день';
+const BTN_OTHER_DAY = '📅 Записи по дням';
 const BTN_MONTH = '📊 Сводка за месяц';
 const BTN_PURCHASE = '📦 Закуп';
 const BTN_SP_ARRIVAL = '🏋️ Приход спортпита';
@@ -222,6 +222,18 @@ export class BotCommandsService {
 			session.dayChosen = true;
 			this.touch(session);
 			return this.continueFlow(chatId, session);
+		}
+
+		// Навигация по дням ◀️/▶️ на экране записей
+		if (kind === 'nav') {
+			const ymd = params[0];
+			if (ymd && ymd <= this.today()) {
+				session.selectedDate = ymd;
+				session.dayChosen = true;
+				session.pendingAction = 'view';
+				this.touch(session);
+			}
+			return this.showDaySummary(chatId, session);
 		}
 
 		if (kind === 'manual') {
@@ -718,9 +730,10 @@ export class BotCommandsService {
 		const action = session.pendingAction;
 
 		if (action === 'view') {
-			// Для просмотра сначала нужен явно выбранный день.
+			// Открываем сразу сегодняшний день; дальше — стрелками ◀️/▶️.
 			if (!session.dayChosen) {
-				return this.askDay(chatId);
+				session.selectedDate = this.today();
+				session.dayChosen = true;
 			}
 			return this.showDaySummary(chatId, session);
 		}
@@ -812,6 +825,10 @@ export class BotCommandsService {
 				session.userName,
 			)
 			.catch(() => {});
+
+		// Возвращаем на экран записей за этот день (с навигацией).
+		session.pendingAction = 'view';
+		await this.showDaySummary(chatId, session);
 	}
 
 	private async handleExpense(chatId: number, session: Session, text: string) {
@@ -861,6 +878,10 @@ export class BotCommandsService {
 				session.userName,
 			)
 			.catch(() => {});
+
+		// Возвращаем на экран записей за этот день (с навигацией).
+		session.pendingAction = 'view';
+		await this.showDaySummary(chatId, session);
 	}
 
 	private async handleManualDate(chatId: number, session: Session, text: string) {
@@ -905,11 +926,12 @@ export class BotCommandsService {
 			}),
 		]);
 
-		const header = `Бар: ${session.barName}\nДата: ${this.fmtRu(session.selectedDate)}`;
+		const header = `Бар: ${session.barName}\nДата: ${this.fmtRu(session.selectedDate)} (${this.navLabel(session.selectedDate)})`;
 
 		if (!revenue && expenses.length === 0) {
-			await this.sendWithAddButtons(
+			await this.sendDayView(
 				chatId,
+				session,
 				`${header}\n\nЗа этот день нет записей.`,
 			);
 			return;
@@ -934,7 +956,7 @@ export class BotCommandsService {
 			lines.push('', 'Расходов нет.');
 		}
 
-		await this.sendWithAddButtons(chatId, lines.join('\n'));
+		await this.sendDayView(chatId, session, lines.join('\n'));
 	}
 
 	private async sendMonthSummary(chatId: number, bars: AccessBar[]) {
@@ -1037,15 +1059,31 @@ export class BotCommandsService {
 		});
 	}
 
-	private async sendWithAddButtons(chatId: number, text: string) {
+	/** Экран записей за день: навигация по дням + кнопки ввода. */
+	private async sendDayView(chatId: number, session: Session, text: string) {
+		const cur = session.selectedDate;
+		const prev = this.addDays(cur, -1);
+		const next = this.addDays(cur, 1);
+		const today = this.today();
+
+		const navRow: TelegramBot.InlineKeyboardButton[] = [
+			{ text: `◀️ ${this.navLabel(prev)}`, callback_data: `${CB}nav:${prev}` },
+		];
+		// Вперёд — не дальше сегодняшнего дня
+		if (cur < today) {
+			navRow.push({ text: `${this.navLabel(next)} ▶️`, callback_data: `${CB}nav:${next}` });
+		}
+
 		await this.bot?.sendMessage(chatId, text, {
 			reply_markup: {
 				inline_keyboard: [
+					navRow,
 					[
 						{ text: '💵 Внести наличку', callback_data: `${CB}add:cash` },
 						{ text: '💳 Внести карту', callback_data: `${CB}add:card` },
 					],
 					[{ text: '🧾 Внести расход', callback_data: `${CB}add:exp` }],
+					[{ text: '📅 Выбрать дату', callback_data: `${CB}manual` }],
 				],
 			},
 		});
@@ -1149,6 +1187,22 @@ export class BotCommandsService {
 	private fmtRu(ymd: string): string {
 		const [y, m, d] = ymd.split('-');
 		return `${d}.${m}.${y}`;
+	}
+
+	/** Сдвигает дату yyyy-MM-dd на delta дней. */
+	private addDays(ymd: string, delta: number): string {
+		const d = this.toUtc(ymd);
+		d.setUTCDate(d.getUTCDate() + delta);
+		return d.toISOString().slice(0, 10);
+	}
+
+	/** Короткая метка дня для кнопок: Сегодня / Вчера / dd.MM. */
+	private navLabel(ymd: string): string {
+		const today = this.today();
+		const [, m, d] = ymd.split('-');
+		if (ymd === today) return 'Сегодня';
+		if (ymd === this.addDays(today, -1)) return 'Вчера';
+		return `${d}.${m}`;
 	}
 
 	private recentDays(count: number): string[] {
