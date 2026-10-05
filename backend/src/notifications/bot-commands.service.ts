@@ -606,8 +606,10 @@ export class BotCommandsService {
 	): Promise<Pick<DraftItem, 'status' | 'productId' | 'productName' | 'price' | 'candidates'>> {
 		const typeFilter =
 			flow === 'purchase' ? { not: ProductType.SPORT_PIT } : ProductType.SPORT_PIT;
+		// Берём все активные цены товара (по всем барам), чтобы цену можно было
+		// подхватить, даже если для выбранного бара она не задана.
 		const include = {
-			barProducts: { where: { barId, isActive: true }, select: { price: true } },
+			barProducts: { where: { isActive: true }, select: { price: true, barId: true } },
 		};
 		const search = term.trim();
 
@@ -643,7 +645,7 @@ export class BotCommandsService {
 		if (products.length === 0) return { status: 'notfound' };
 		if (products.length === 1) {
 			const p = products[0];
-			return { status: 'ok', productId: p.id, productName: p.name, price: this.sellPrice(p) };
+			return { status: 'ok', productId: p.id, productName: p.name, price: this.sellPrice(p, barId) };
 		}
 		return {
 			status: 'ambiguous',
@@ -651,11 +653,24 @@ export class BotCommandsService {
 		};
 	}
 
-	private sellPrice(p: {
-		defaultPrice: number | null;
-		barProducts?: { price: number }[];
-	}): number {
-		return p.barProducts?.[0]?.price ?? p.defaultPrice ?? 0;
+	private sellPrice(
+		p: {
+			defaultPrice: number | null;
+			costPrice?: number | null;
+			barProducts?: { price: number; barId: string }[];
+		},
+		barId: string,
+	): number {
+		// 1. Цена выбранного бара
+		const barPrice = p.barProducts?.find((bp) => bp.barId === barId)?.price;
+		if (barPrice && barPrice > 0) return barPrice;
+		// 2. Цена по умолчанию
+		if (p.defaultPrice && p.defaultPrice > 0) return p.defaultPrice;
+		// 3. Цена этого же товара в любом другом баре
+		const anyPrice = p.barProducts?.find((bp) => bp.price > 0)?.price;
+		if (anyPrice && anyPrice > 0) return anyPrice;
+		// 4. Себестоимость как последний вариант
+		return p.costPrice ?? 0;
 	}
 
 	/** Разбор строк «название количество» (закуп / приход спортпита). */

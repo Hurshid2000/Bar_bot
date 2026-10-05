@@ -25,9 +25,10 @@ export class PurchasesService {
 		items: CreatePurchaseItemDto[],
 	): Promise<{ purchaseItemsData: { name: string; amount: number }[]; totalAmount: number }> {
 		const productIds = items.map((item) => item.productId);
+		// Берём все активные цены товара (по всем барам) для устойчивого поиска цены.
 		const products = await tx.product.findMany({
 			where: { id: { in: productIds } },
-			include: { barProducts: { where: { barId, isActive: true } } },
+			include: { barProducts: { where: { isActive: true }, select: { price: true, barId: true } } },
 		});
 
 		if (products.length !== new Set(productIds).size) {
@@ -46,8 +47,7 @@ export class PurchasesService {
 			if (!product) {
 				throw new NotFoundException(`Product ${item.productId} not found`);
 			}
-			const barProduct = product.barProducts?.[0];
-			const price = barProduct?.price ?? product.defaultPrice ?? 0;
+			const price = this.resolvePrice(product, barId);
 			totalAmount += price * item.quantity;
 
 			return {
@@ -64,6 +64,25 @@ export class PurchasesService {
 		});
 
 		return { purchaseItemsData, totalAmount };
+	}
+
+	/**
+	 * Цена товара: бар → defaultPrice → цена в любом баре → costPrice.
+	 */
+	private resolvePrice(
+		product: {
+			defaultPrice: number | null;
+			costPrice: number | null;
+			barProducts?: { price: number; barId: string }[];
+		},
+		barId: string,
+	): number {
+		const barPrice = product.barProducts?.find((bp) => bp.barId === barId)?.price;
+		if (barPrice && barPrice > 0) return barPrice;
+		if (product.defaultPrice && product.defaultPrice > 0) return product.defaultPrice;
+		const anyPrice = product.barProducts?.find((bp) => bp.price > 0)?.price;
+		if (anyPrice && anyPrice > 0) return anyPrice;
+		return product.costPrice ?? 0;
 	}
 
 	async create(createPurchaseDto: CreatePurchaseDto) {
