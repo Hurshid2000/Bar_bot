@@ -21,8 +21,10 @@ export function HomePage() {
 	// Редирект для WORKER на страницу его бара
 	useEffect(() => {
 		if (user?.role === RoleType.WORKER && user.bars && user.bars.length > 0) {
-			const firstBarId = user.bars[0].barId;
-			navigate(`/bars/${firstBarId}`, { replace: true });
+			// Предпочитаем активный бар
+			const activeBar = user.bars.find((ub) => ub.bar?.isActive);
+			const targetBarId = activeBar?.barId ?? user.bars[0].barId;
+			navigate(`/bars/${targetBarId}`, { replace: true });
 		}
 	}, [user, navigate]);
 
@@ -41,9 +43,9 @@ export function HomePage() {
 		: [];
 
 	// Определяем какие бары показывать
-	const barsToShow = hasRole([RoleType.ADMIN])
-		? allBars || []
-		: managerBars;
+	const barsToShow = (hasRole([RoleType.ADMIN]) ? allBars || [] : managerBars).filter(
+		(bar) => bar.isActive,
+	);
 
 	// Если WORKER, показываем loading (будет редирект)
 	if (user?.role === RoleType.WORKER) {
