@@ -28,7 +28,7 @@ export function AddExpenseModal({
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation({
-		mutationFn: (data: { barId: string; amount: number; description: string }) =>
+		mutationFn: (data: { barId: string; amount: number; description: string; date: string }) =>
 			expensesApi.create(data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['expenses'] });
@@ -61,6 +61,7 @@ export function AddExpenseModal({
 			barId,
 			amount: amountValue,
 			description: description.trim(),
+			date: format(selectedDate, 'yyyy-MM-dd'),
 		});
 	};
 
