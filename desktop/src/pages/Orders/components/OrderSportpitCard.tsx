@@ -1,5 +1,6 @@
 import { Tag } from 'lucide-react';
 import type { Product } from '../../../types/common.types';
+import { formatCurrency } from '../../../utils/format';
 
 const sportpitIcons: Record<string, string> = {
 	'Протеин': '💪',
@@ -17,9 +18,11 @@ interface OrderSportpitCardProps {
 	product: Product;
 	quantity: number;
 	onQuantityChange: (productId: string, quantity: number) => void;
+	showPrice?: boolean;
 }
 
-export function OrderSportpitCard({ product, quantity, onQuantityChange }: OrderSportpitCardProps) {
+export function OrderSportpitCard({ product, quantity, onQuantityChange, showPrice }: OrderSportpitCardProps) {
+	const unitPrice = product.barProducts?.[0]?.price ?? product.defaultPrice ?? product.costPrice ?? 0;
 	const handleIncrement = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onQuantityChange(product.id, quantity + 1);
@@ -58,6 +61,19 @@ export function OrderSportpitCard({ product, quantity, onQuantityChange }: Order
 							<Tag className="order-sportpit-card-category-icon" />
 							<span>{product.category?.name || 'Без категории'}</span>
 						</div>
+						{showPrice && (
+							<div className="order-sportpit-card-category">
+								<span>
+									{formatCurrency(unitPrice)}
+									{quantity > 0 && (
+										<span style={{ color: 'var(--color-primary-400)', fontWeight: 600 }}>
+											{' · '}
+											{formatCurrency(unitPrice * quantity)}
+										</span>
+									)}
+								</span>
+							</div>
+						)}
 					</div>
 				</div>
 

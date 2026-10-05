@@ -13,6 +13,7 @@ import { OrderFoodCard } from '../Orders/components/OrderFoodCard';
 import { CategoryFilter } from '../Catalog/components/CategoryFilter';
 import { InventoryConfirmModal } from './components/InventoryConfirmModal';
 import { Button } from '../../components/ui/Button';
+import { formatCurrency } from '../../utils/format';
 import './InventoryPage.css';
 
 type TabType = 'products' | 'sportpit' | 'food';
@@ -91,6 +92,15 @@ export function InventoryPage() {
 
 	const hasSelectedItems = selectedItems.length > 0;
 
+	// Общая стоимость выбранных товаров (по продажной цене)
+	const totalValue = selectedItems.reduce((sum, item) => {
+		const p = selectedProducts[item.productId];
+		const price = p
+			? p.barProducts?.[0]?.price ?? p.defaultPrice ?? p.costPrice ?? 0
+			: 0;
+		return sum + price * item.quantity;
+	}, 0);
+
 	const handleQuantityChange = (productId: string, quantity: number) => {
 		setQuantities((prev) => ({
 			...prev,
@@ -149,6 +159,7 @@ export function InventoryPage() {
 						product={product}
 						quantity={quantity}
 						onQuantityChange={handleQuantityChange}
+						showPrice
 					/>
 				);
 			case 'sportpit':
@@ -158,6 +169,7 @@ export function InventoryPage() {
 						product={product}
 						quantity={quantity}
 						onQuantityChange={handleQuantityChange}
+						showPrice
 					/>
 				);
 			case 'food':
@@ -167,6 +179,7 @@ export function InventoryPage() {
 						product={product}
 						quantity={quantity}
 						onQuantityChange={handleQuantityChange}
+						showPrice
 					/>
 				);
 		}
@@ -260,7 +273,7 @@ export function InventoryPage() {
 					{hasSelectedItems && (
 						<div className="inventory-fixed-btn">
 							<Button variant="primary" size="lg" onClick={handleInventoryClick} className="inventory-btn-full">
-								Продолжить ({selectedItems.reduce((sum, item) => sum + item.quantity, 0)})
+								Продолжить ({selectedItems.reduce((sum, item) => sum + item.quantity, 0)} шт · {formatCurrency(totalValue)})
 							</Button>
 						</div>
 					)}

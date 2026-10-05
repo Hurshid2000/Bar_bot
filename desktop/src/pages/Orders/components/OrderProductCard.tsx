@@ -1,4 +1,5 @@
 import type { Product } from '../../../types/common.types';
+import { formatCurrency } from '../../../utils/format';
 
 const categoryIcons: Record<string, string> = {
 	'Напитки': '🥤',
@@ -16,9 +17,11 @@ interface OrderProductCardProps {
 	product: Product;
 	quantity: number;
 	onQuantityChange: (productId: string, quantity: number) => void;
+	showPrice?: boolean;
 }
 
-export function OrderProductCard({ product, quantity, onQuantityChange }: OrderProductCardProps) {
+export function OrderProductCard({ product, quantity, onQuantityChange, showPrice }: OrderProductCardProps) {
+	const unitPrice = product.barProducts?.[0]?.price ?? product.defaultPrice ?? product.costPrice ?? 0;
 	const handleIncrement = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onQuantityChange(product.id, quantity + 1);
@@ -51,6 +54,17 @@ export function OrderProductCard({ product, quantity, onQuantityChange }: OrderP
 					<p className="order-product-card-meta">
 						{product.category?.name || 'Без категории'}
 					</p>
+					{showPrice && (
+						<p className="order-product-card-meta">
+							{formatCurrency(unitPrice)}
+							{quantity > 0 && (
+								<span style={{ color: 'var(--color-primary-400)', fontWeight: 600 }}>
+									{' · '}
+									{formatCurrency(unitPrice * quantity)}
+								</span>
+							)}
+						</p>
+					)}
 				</div>
 
 				<div className="order-product-card-quantity">
