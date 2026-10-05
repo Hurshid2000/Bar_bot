@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, DollarSign, CreditCard, TrendingDown, Calculator } from 'lucide-react';
+import { ArrowLeft, DollarSign, CreditCard, TrendingDown, Calculator, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { barsApi } from '../../api/bars.api';
@@ -14,7 +14,7 @@ import { AddCardIncomeModal } from '../../components/AddCardIncomeModal';
 import { AddExpenseModal } from '../../components/AddExpenseModal';
 import { Loading } from '../../components/ui/Loading';
 import { formatCurrency } from '../../utils/format';
-import { format, startOfToday } from 'date-fns';
+import { format, startOfToday, addDays, isBefore } from 'date-fns';
 import { RoleType } from '../../types/common.types';
 import './BarDashboardPage.css';
 
@@ -110,7 +110,26 @@ export function BarDashboardPage() {
 				<div>
 					<h1 className="bar-dashboard-title">{bar.name}</h1>
 				</div>
-				<DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+				<div className="bar-dashboard-date-nav">
+					<button
+						type="button"
+						className="bar-dashboard-day-arrow"
+						onClick={() => setSelectedDate((d) => addDays(d, -1))}
+						aria-label="Предыдущий день"
+					>
+						<ChevronLeft size={20} />
+					</button>
+					<DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+					<button
+						type="button"
+						className="bar-dashboard-day-arrow"
+						onClick={() => setSelectedDate((d) => addDays(d, 1))}
+						disabled={!isBefore(selectedDate, startOfToday())}
+						aria-label="Следующий день"
+					>
+						<ChevronRight size={20} />
+					</button>
+				</div>
 			</div>
 
 			<div className="bar-dashboard-metrics">

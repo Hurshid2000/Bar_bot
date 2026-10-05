@@ -29,6 +29,31 @@
 	margin: 0;
 }
 
+.bar-dashboard-date-nav {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.bar-dashboard-day-arrow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+	border-radius: 8px;
+	background: var(--color-bg-elevated, rgba(255, 255, 255, 0.05));
+	color: var(--color-text-primary, inherit);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.bar-dashboard-day-arrow:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
 .bar-dashboard-metrics {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
