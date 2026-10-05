@@ -33,8 +33,9 @@ export function OrderSportpitCard({ product, quantity, onQuantityChange }: Order
 	};
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = parseInt(e.target.value) || 0;
-		if (value >= 0) {
+		const raw = e.target.value;
+		const value = raw === '' ? 0 : parseInt(raw, 10);
+		if (!Number.isNaN(value) && value >= 0) {
 			onQuantityChange(product.id, value);
 		}
 	};
@@ -71,8 +72,10 @@ export function OrderSportpitCard({ product, quantity, onQuantityChange }: Order
 					<input
 						type="number"
 						className="order-quantity-input"
-						value={quantity}
+						value={quantity === 0 ? '' : quantity}
 						onChange={handleInputChange}
+						onFocus={(e) => e.target.select()}
+						placeholder="0"
 						min="0"
 					/>
 					<button

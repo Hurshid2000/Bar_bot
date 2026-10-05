@@ -45,6 +45,8 @@ export function InventoryPage() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 	const [quantities, setQuantities] = useState<Record<string, number>>({});
+	// Накапливаем выбранные товары по всем фильтрам/вкладкам (для модалки и сумм)
+	const [selectedProducts, setSelectedProducts] = useState<Record<string, Product>>({});
 	const [showConfirmModal, setShowConfirmModal] = useState(false);
 
 	const tabConfig = TAB_CONFIG[activeTab];
@@ -94,6 +96,11 @@ export function InventoryPage() {
 			...prev,
 			[productId]: quantity,
 		}));
+		// Запоминаем сам товар, чтобы он не потерялся при смене фильтра/вкладки
+		const product = productsData?.data.find((p) => p.id === productId);
+		if (product) {
+			setSelectedProducts((prev) => ({ ...prev, [productId]: product }));
+		}
 	};
 
 	const handleTabChange = (tab: TabType) => {
@@ -116,6 +123,7 @@ export function InventoryPage() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['inventories'] });
 			setQuantities({});
+			setSelectedProducts({});
 			setMode('history');
 			setShowConfirmModal(false);
 		},
@@ -263,7 +271,7 @@ export function InventoryPage() {
 						onClose={() => setShowConfirmModal(false)}
 						onConfirm={handleConfirmInventory}
 						selectedItems={selectedItems}
-						products={productsData?.data || []}
+						products={Object.values(selectedProducts)}
 						isLoading={createInventoryMutation.isPending}
 						barId={barId}
 					/>
