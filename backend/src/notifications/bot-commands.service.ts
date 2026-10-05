@@ -39,6 +39,13 @@ interface AccessBar {
 	name: string;
 }
 
+/** Вариант товара при неоднозначном сопоставлении (с ценой для подстановки). */
+interface Candidate {
+	id: string;
+	name: string;
+	price: number;
+}
+
 /** Разобранная позиция списка, которую сопоставляем с каталогом. */
 interface DraftItem {
 	rawName: string;
@@ -48,7 +55,7 @@ interface DraftItem {
 	buyerName?: string;
 	productId?: string;
 	productName?: string;
-	candidates?: AccessBar[];
+	candidates?: Candidate[];
 	status: 'ok' | 'ambiguous' | 'notfound' | 'skip';
 	/** Причина, если позицию нельзя записать. */
 	note?: string;
@@ -265,6 +272,11 @@ export class BotCommandsService {
 				if (cand) {
 					item.productId = cand.id;
 					item.productName = cand.name;
+					// Для закупа/прихода подставляем цену из каталога;
+					// для продажи спортпита цену вводит работник — не трогаем.
+					if (session.flow !== 'sp_sale') {
+						item.price = cand.price;
+					}
 					item.status = 'ok';
 				}
 			}
@@ -460,7 +472,8 @@ export class BotCommandsService {
 		const buttons: TelegramBot.InlineKeyboardButton[][] = [];
 		if (item.status === 'ambiguous' && item.candidates) {
 			for (const c of item.candidates) {
-				buttons.push([{ text: c.name, callback_data: `${CB}pick:${idx}:${c.id}` }]);
+				const label = c.price > 0 ? `${c.name} — ${this.money(c.price)}` : `${c.name} (цена не задана)`;
+				buttons.push([{ text: label, callback_data: `${CB}pick:${idx}:${c.id}` }]);
 			}
 			buttons.push([{ text: '⛔ Пропустить', callback_data: `${CB}skip:${idx}` }]);
 			await this.bot?.sendMessage(
@@ -654,7 +667,9 @@ export class BotCommandsService {
 		}
 		return {
 			status: 'ambiguous',
-			candidates: products.slice(0, MAX_CANDIDATES).map((p) => ({ id: p.id, name: p.name })),
+			candidates: products
+				.slice(0, MAX_CANDIDATES)
+				.map((p) => ({ id: p.id, name: p.name, price: this.sellPrice(p, barId) })),
 		};
 	}
 
