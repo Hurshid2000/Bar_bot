@@ -29,25 +29,32 @@
 .bar-dashboard-date-nav {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	justify-content: center;
+	gap: 12px;
+	margin-bottom: 24px;
 }
 
 .bar-dashboard-day-arrow {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 36px;
-	height: 36px;
+	width: 44px;
+	height: 44px;
 	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
-	border-radius: 8px;
-	background: var(--color-bg-elevated, rgba(255, 255, 255, 0.05));
-	color: var(--color-text-primary, inherit);
+	border-radius: var(--radius-sm, 8px);
+	background: var(--color-background-muted, #1f2d3d);
+	color: var(--color-text-primary, #e5eaf0);
 	cursor: pointer;
 	flex-shrink: 0;
+	transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.bar-dashboard-day-arrow:hover:not(:disabled) {
+	background: var(--color-primary-700, #3468a8);
 }
 
 .bar-dashboard-day-arrow:disabled {
-	opacity: 0.35;
+	opacity: 0.3;
 	cursor: default;
 }
 

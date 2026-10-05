@@ -110,26 +110,27 @@ export function BarDashboardPage() {
 				<div>
 					<h1 className="bar-dashboard-title">{bar.name}</h1>
 				</div>
-				<div className="bar-dashboard-date-nav">
-					<button
-						type="button"
-						className="bar-dashboard-day-arrow"
-						onClick={() => setSelectedDate((d) => addDays(d, -1))}
-						aria-label="Предыдущий день"
-					>
-						<ChevronLeft size={20} />
-					</button>
-					<DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
-					<button
-						type="button"
-						className="bar-dashboard-day-arrow"
-						onClick={() => setSelectedDate((d) => addDays(d, 1))}
-						disabled={!isBefore(selectedDate, startOfToday())}
-						aria-label="Следующий день"
-					>
-						<ChevronRight size={20} />
-					</button>
-				</div>
+			</div>
+
+			<div className="bar-dashboard-date-nav">
+				<button
+					type="button"
+					className="bar-dashboard-day-arrow"
+					onClick={() => setSelectedDate((d) => addDays(d, -1))}
+					aria-label="Предыдущий день"
+				>
+					<ChevronLeft size={22} />
+				</button>
+				<DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+				<button
+					type="button"
+					className="bar-dashboard-day-arrow"
+					onClick={() => setSelectedDate((d) => addDays(d, 1))}
+					disabled={!isBefore(selectedDate, startOfToday())}
+					aria-label="Следующий день"
+				>
+					<ChevronRight size={22} />
+				</button>
 			</div>
 
 			<div className="bar-dashboard-metrics">
