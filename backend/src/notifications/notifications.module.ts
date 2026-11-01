@@ -11,6 +11,7 @@ import { PurchasesModule } from '../purchases/purchases.module';
 import { SalesModule } from '../sales/sales.module';
 import { ProductsModule } from '../products/products.module';
 import { ArrivalsModule } from '../arrivals/arrivals.module';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
 	imports: [
@@ -21,6 +22,7 @@ import { ArrivalsModule } from '../arrivals/arrivals.module';
 		SalesModule,
 		ProductsModule,
 		forwardRef(() => ArrivalsModule),
+		ClientsModule,
 	],
 	controllers: [NotificationsController],
 	providers: [NotificationsService, NotificationsScheduler, BotCommandsService, AiParserService],

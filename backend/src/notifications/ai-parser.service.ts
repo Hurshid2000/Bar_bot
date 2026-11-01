@@ -13,6 +13,18 @@ export interface ParsedLine {
 
 export type ParseFlow = 'purchase' | 'sp_arrival' | 'sp_sale';
 
+/** Разобранная запись долга/оплаты из свободного текста. */
+export interface ParsedDebt {
+	/** Имя человека. */
+	name: string;
+	/** Сумма в сумах, положительное целое. */
+	amount: number;
+	/** Тип операции: новый долг или возврат (оплата). */
+	type: 'debt' | 'payment';
+	/** Комментарий/за что (необязательно). */
+	comment?: string;
+}
+
 /**
  * Разбор свободного текста списка товаров через Claude.
  * Если ключ ANTHROPIC_API_KEY не задан или запрос не удался — возвращает null,
@@ -90,6 +102,56 @@ export class AiParserService {
 			return items.length > 0 ? items : null;
 		} catch (e: any) {
 			this.logger.warn(`AI parse failed, fallback to heuristic: ${e?.message || e}`);
+			return null;
+		}
+	}
+
+	/**
+	 * Разбор свободного текста о долгах клиентов через Claude.
+	 * Возвращает список записей или null (тогда вызывающий код откатывается на эвристику).
+	 */
+	async parseDebts(text: string): Promise<ParsedDebt[] | null> {
+		if (!this.client) return null;
+
+		const system = [
+			'Ты извлекаешь записи о долгах клиентов бара из сообщения работника.',
+			'Верни СТРОГО JSON-массив объектов вида',
+			'{"name": string, "amount": integer>=1 (сумма в сумах), "type": "debt"|"payment", "comment": string|null}.',
+			'Никакого текста вне JSON. Если запись нельзя понять — пропусти её.',
+			'name — имя человека без суммы и лишних слов.',
+			'amount — целое число в сумах. Раскрывай сокращения: "к"/"k"/"тыс" = тысячи (50к = 50000), "млн"/"кк" = миллионы (1.5млн = 1500000).',
+			'type — "payment" если человек вернул/отдал/погасил/заплатил/оплатил/внёс деньги; иначе "debt" (взял в долг, должен, записать долг).',
+			'comment — за что долг (например "пиво", "кальян"), если указано; иначе null.',
+		].join(' ');
+
+		try {
+			const msg = await this.client.messages.create({
+				model: this.model,
+				max_tokens: 1024,
+				system,
+				messages: [{ role: 'user', content: text }],
+			});
+			const block = msg.content.find((c) => c.type === 'text');
+			const raw = block && 'text' in block ? block.text : '';
+			const arr = this.extractJsonArray(raw);
+			if (!Array.isArray(arr)) return null;
+
+			const debts: ParsedDebt[] = [];
+			for (const el of arr) {
+				if (!el || typeof el.name !== 'string') continue;
+				const amount = Math.round(Number(el.amount));
+				if (!Number.isFinite(amount) || amount < 1) continue;
+				const type: 'debt' | 'payment' = el.type === 'payment' ? 'payment' : 'debt';
+				const debt: ParsedDebt = { name: el.name.trim(), amount, type };
+				if (el.comment && typeof el.comment === 'string') {
+					const c = el.comment.trim();
+					if (c) debt.comment = c;
+				}
+				if (debt.name) debts.push(debt);
+			}
+			return debts.length > 0 ? debts : null;
+		} catch (e: any) {
+			this.logger.warn(`AI debt parse failed, fallback to heuristic: ${e?.message || e}`);
 			return null;
 		}
 	}

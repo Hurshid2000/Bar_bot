@@ -5,9 +5,10 @@ import { NotificationsService } from './notifications.service';
 import { PurchasesService } from '../purchases/purchases.service';
 import { SalesService } from '../sales/sales.service';
 import { ArrivalsService } from '../arrivals/arrivals.service';
+import { ClientsService } from '../clients/clients.service';
 import { AiParserService } from './ai-parser.service';
 import * as TelegramBot from 'node-telegram-bot-api';
-import { RoleType, ProductType, ArrivalType } from '@prisma/client';
+import { RoleType, ProductType, ArrivalType, ClientTransactionType } from '@prisma/client';
 
 /** Время жизни диалоговой сессии (ожидание ввода суммы и т.п.). */
 const SESSION_TTL_MS = 15 * 60 * 1000;
@@ -27,12 +28,22 @@ const BTN_MONTH = '📊 Сводка за месяц';
 const BTN_PURCHASE = '📦 Закуп';
 const BTN_SP_ARRIVAL = '🏋️ Приход спортпита';
 const BTN_SP_SALE = '🛒 Продажа спортпита';
+const BTN_DEBT = '💰 Долги';
+const BTN_DEBTORS = '📋 Должники';
 const BTN_DESKTOP = '💻 Десктоп версия';
 
 type FlowAction = 'cash' | 'card' | 'exp' | 'view';
 /** Сценарии закупа/спортпита. */
 type ProcFlow = 'purchase' | 'sp_arrival' | 'sp_sale';
-type Awaiting = 'amount' | 'expense' | 'manualDate' | 'items' | null;
+type Awaiting =
+	| 'amount'
+	| 'expense'
+	| 'manualDate'
+	| 'items'
+	| 'debts'
+	| 'newClientName'
+	| 'newClientPhone'
+	| null;
 
 interface AccessBar {
 	id: string;
@@ -61,6 +72,34 @@ interface DraftItem {
 	note?: string;
 }
 
+/** Кандидат-клиент при неоднозначном сопоставлении имени. */
+interface ClientCandidate {
+	id: string;
+	name: string;
+	balance: number;
+}
+
+/** Разобранная запись долга/оплаты, которую сопоставляем с клиентами бара. */
+interface DebtDraftItem {
+	rawName: string;
+	amount: number;
+	type: 'debt' | 'payment';
+	comment?: string;
+	clientId?: string;
+	clientName?: string;
+	/** Текущий баланс клиента (для предпросмотра). */
+	balance?: number;
+	candidates?: ClientCandidate[];
+	status: 'ok' | 'ambiguous' | 'notfound' | 'skip';
+}
+
+/** Состояние добавления нового человека (клиента). */
+interface NewClientState {
+	name?: string;
+	/** Индекс строки долга, к которой вернуться после создания (если запущено из долга). */
+	debtIndex?: number;
+}
+
 interface Session {
 	userId: string;
 	userName: string;
@@ -77,6 +116,14 @@ interface Session {
 	flow?: ProcFlow;
 	/** Разобранные позиции для закупа/прихода/продажи. */
 	draft?: DraftItem[];
+	/** Активен сценарий ввода долгов. */
+	debtMode?: boolean;
+	/** Разобранные записи долгов/оплат. */
+	debtDraft?: DebtDraftItem[];
+	/** Активен сценарий добавления человека. */
+	addingClient?: boolean;
+	/** Данные нового человека в процессе добавления. */
+	newClient?: NewClientState;
 	awaiting: Awaiting;
 	expiresAt: number;
 }
@@ -96,6 +143,7 @@ export class BotCommandsService {
 		private salesService: SalesService,
 		@Inject(forwardRef(() => ArrivalsService))
 		private arrivalsService: ArrivalsService,
+		private clientsService: ClientsService,
 		private aiParser: AiParserService,
 		private config: ConfigService,
 	) {}
@@ -169,6 +217,10 @@ export class BotCommandsService {
 				return this.startProcurement(chatId, msg.from?.id, 'sp_arrival');
 			case BTN_SP_SALE:
 				return this.startProcurement(chatId, msg.from?.id, 'sp_sale');
+			case BTN_DEBT:
+				return this.startDebts(chatId, msg.from?.id);
+			case BTN_DEBTORS:
+				return this.startDebtors(chatId, msg.from?.id);
 			case BTN_DESKTOP:
 				return this.sendDesktopLink(chatId);
 		}
@@ -193,6 +245,15 @@ export class BotCommandsService {
 		}
 		if (session.awaiting === 'items') {
 			return this.handleItemsInput(chatId, session, text);
+		}
+		if (session.awaiting === 'debts') {
+			return this.handleDebtsInput(chatId, session, text);
+		}
+		if (session.awaiting === 'newClientName') {
+			return this.handleNewClientName(chatId, session, text);
+		}
+		if (session.awaiting === 'newClientPhone') {
+			return this.handleNewClientPhone(chatId, session, text);
 		}
 	}
 
@@ -300,6 +361,53 @@ export class BotCommandsService {
 			this.sessions.delete(chatId);
 			await this.send(chatId, 'Отменено.');
 			return;
+		}
+
+		// ── Долги: сопоставление клиентов ──
+		if (kind === 'dpick') {
+			const index = Number(params[0]);
+			const clientId = params.slice(1).join(':');
+			const item = session.debtDraft?.[index];
+			if (item && item.candidates) {
+				const cand = item.candidates.find((c) => c.id === clientId);
+				if (cand) {
+					item.clientId = cand.id;
+					item.clientName = cand.name;
+					item.balance = cand.balance;
+					item.status = 'ok';
+				}
+			}
+			this.touch(session);
+			return this.resolveDebtNext(chatId, session);
+		}
+
+		if (kind === 'dskip') {
+			const index = Number(params[0]);
+			const item = session.debtDraft?.[index];
+			if (item) item.status = 'skip';
+			this.touch(session);
+			return this.resolveDebtNext(chatId, session);
+		}
+
+		// Добавить человека для ненайденной строки долга
+		if (kind === 'dnew') {
+			const index = Number(params[0]);
+			return this.startAddClientForDebt(chatId, session, index);
+		}
+
+		if (kind === 'dconfirm') {
+			return this.commitDebts(chatId, session);
+		}
+
+		if (kind === 'dcancel') {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Отменено.');
+			return;
+		}
+
+		// Добавить человека (из списка должников / меню долгов)
+		if (kind === 'newclient') {
+			return this.startAddClient(chatId, session);
 		}
 	}
 
@@ -743,6 +851,466 @@ export class BotCommandsService {
 		return Number.isFinite(n) ? n : 0;
 	}
 
+	// ───────────────── Долги клиентов ─────────────────
+
+	private async startDebts(chatId: number, fromId: number | undefined) {
+		const user = await this.loadUser(fromId);
+		if (!user) {
+			await this.send(chatId, 'Вы не зарегистрированы в Bar Bot.');
+			return;
+		}
+		if (user.bars.length === 0) {
+			await this.send(chatId, 'К вашему аккаунту не привязан ни один бар. Обратитесь к администратору.');
+			return;
+		}
+		const session = this.newSession(user);
+		session.debtMode = true;
+		this.sessions.set(chatId, session);
+		// continueFlow выберет бар (или спросит), затем вызовет promptDebts.
+		return this.continueFlow(chatId, session);
+	}
+
+	/** Просит работника прислать список долгов (текстом). */
+	private async promptDebts(chatId: number, session: Session) {
+		session.awaiting = 'debts';
+		this.touch(session);
+		await this.send(
+			chatId,
+			`Бар: ${session.barName}\n\n💰 Долги. Напишите, кто сколько должен — имя и сумму, каждая запись с новой строки.\n` +
+				`Можно указать «за что» и возвраты.\nНапример:\n` +
+				`Иван 50к за пиво\n` +
+				`Сардор 120000\n` +
+				`Акмаль вернул 30000`,
+		);
+	}
+
+	/** Разбирает присланный список долгов и сопоставляет имена с клиентами бара. */
+	private async handleDebtsInput(chatId: number, session: Session, text: string) {
+		if (!session.barId || !session.debtMode) {
+			await this.send(chatId, 'Что-то пошло не так. Начните заново через меню.');
+			this.sessions.delete(chatId);
+			return;
+		}
+
+		// Сначала умный разбор через Claude, при неудаче — эвристика.
+		let parsed = await this.aiParser.parseDebts(text);
+		if (!parsed || parsed.length === 0) {
+			parsed = this.parseDebtLines(text);
+		}
+		if (parsed.length === 0) {
+			await this.send(
+				chatId,
+				'Не удалось разобрать. Напишите каждую запись с новой строки: имя и сумму. Например: Иван 50000',
+			);
+			return;
+		}
+
+		const draft: DebtDraftItem[] = [];
+		for (const p of parsed) {
+			const m = await this.matchClient(session.barId, p.name);
+			draft.push({
+				rawName: p.name,
+				amount: p.amount,
+				type: p.type,
+				comment: p.comment,
+				clientId: m.clientId,
+				clientName: m.clientName,
+				balance: m.balance,
+				candidates: m.candidates,
+				status: m.status,
+			});
+		}
+
+		session.debtDraft = draft;
+		session.awaiting = null;
+		this.touch(session);
+		return this.resolveDebtNext(chatId, session);
+	}
+
+	/** Сопоставляет имя с клиентом бара. */
+	private async matchClient(
+		barId: string,
+		term: string,
+	): Promise<{
+		status: 'ok' | 'ambiguous' | 'notfound';
+		clientId?: string;
+		clientName?: string;
+		balance?: number;
+		candidates?: ClientCandidate[];
+	}> {
+		const search = term.trim();
+		const base = { barId, isActive: true };
+
+		// 1. Точное совпадение
+		let clients = await this.prisma.client.findMany({
+			where: { ...base, name: { equals: search, mode: 'insensitive' } },
+			select: { id: true, name: true, balance: true },
+			take: 2,
+		});
+
+		// 2. Частичное совпадение
+		if (clients.length !== 1) {
+			clients = await this.prisma.client.findMany({
+				where: { ...base, name: { contains: search, mode: 'insensitive' } },
+				select: { id: true, name: true, balance: true },
+				orderBy: { name: 'asc' },
+				take: MAX_CANDIDATES + 1,
+			});
+			// 3. По первому слову
+			if (clients.length === 0) {
+				const firstWord = search.split(/\s+/)[0];
+				if (firstWord && firstWord.length >= 3 && firstWord !== search) {
+					clients = await this.prisma.client.findMany({
+						where: { ...base, name: { contains: firstWord, mode: 'insensitive' } },
+						select: { id: true, name: true, balance: true },
+						orderBy: { name: 'asc' },
+						take: MAX_CANDIDATES + 1,
+					});
+				}
+			}
+		}
+
+		if (clients.length === 0) return { status: 'notfound' };
+		if (clients.length === 1) {
+			const c = clients[0];
+			return { status: 'ok', clientId: c.id, clientName: c.name, balance: c.balance };
+		}
+		return {
+			status: 'ambiguous',
+			candidates: clients.slice(0, MAX_CANDIDATES).map((c) => ({ id: c.id, name: c.name, balance: c.balance })),
+		};
+	}
+
+	/** Находит следующую неоднозначную/ненайденную запись и просит уточнить; иначе — подтверждение. */
+	private async resolveDebtNext(chatId: number, session: Session) {
+		const draft = session.debtDraft ?? [];
+		const idx = draft.findIndex((d) => d.status === 'ambiguous' || d.status === 'notfound');
+		if (idx === -1) {
+			return this.showDebtConfirm(chatId, session);
+		}
+
+		const item = draft[idx];
+		const opLabel = item.type === 'payment' ? 'оплата' : 'долг';
+		const buttons: TelegramBot.InlineKeyboardButton[][] = [];
+		if (item.status === 'ambiguous' && item.candidates) {
+			for (const c of item.candidates) {
+				buttons.push([{ text: `${c.name} (${this.balanceLabel(c.balance)})`, callback_data: `${CB}dpick:${idx}:${c.id}` }]);
+			}
+			buttons.push([{ text: '⛔ Пропустить', callback_data: `${CB}dskip:${idx}` }]);
+			await this.bot?.sendMessage(
+				chatId,
+				`«${item.rawName}» — уточните, кто это (${opLabel} ${this.money(item.amount)} сум):`,
+				{ reply_markup: { inline_keyboard: buttons } },
+			);
+		} else {
+			// notfound
+			buttons.push([{ text: `➕ Добавить «${item.rawName}»`, callback_data: `${CB}dnew:${idx}` }]);
+			buttons.push([{ text: '⛔ Пропустить', callback_data: `${CB}dskip:${idx}` }]);
+			await this.bot?.sendMessage(
+				chatId,
+				`«${item.rawName}» — не найден среди клиентов бара. Добавьте человека или пропустите.`,
+				{ reply_markup: { inline_keyboard: buttons } },
+			);
+		}
+	}
+
+	/** Показывает итоговый список долгов на подтверждение. */
+	private async showDebtConfirm(chatId: number, session: Session) {
+		const draft = session.debtDraft ?? [];
+		const okItems = draft.filter((d) => d.status === 'ok' && d.clientId);
+		const excluded = draft.filter((d) => d.status === 'skip' || d.status === 'notfound');
+
+		if (okItems.length === 0) {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Нет записей для сохранения. Операция отменена.');
+			return;
+		}
+
+		const lines: string[] = [`Бар: ${session.barName}`, '', '💰 Долги — проверьте:'];
+		for (const d of okItems) {
+			const op = d.type === 'payment' ? 'оплата' : 'долг';
+			// Предпросмотр нового баланса: долг уменьшает, оплата увеличивает.
+			const cur = d.balance ?? 0;
+			const next = d.type === 'payment' ? cur + d.amount : cur - d.amount;
+			const note = d.comment ? ` (${d.comment})` : '';
+			lines.push(
+				`  • ${d.clientName} — ${op} ${this.money(d.amount)} сум${note}\n     баланс: ${this.balanceLabel(cur)} → ${this.balanceLabel(next)}`,
+			);
+		}
+		if (excluded.length > 0) {
+			lines.push('', 'Не будут записаны:');
+			for (const d of excluded) {
+				lines.push(`  ⛔ ${d.rawName}`);
+			}
+		}
+
+		await this.bot?.sendMessage(chatId, lines.join('\n'), {
+			reply_markup: {
+				inline_keyboard: [
+					[
+						{ text: '✅ Подтвердить', callback_data: `${CB}dconfirm` },
+						{ text: 'Отмена', callback_data: `${CB}dcancel` },
+					],
+					[{ text: '➕ Добавить человека', callback_data: `${CB}newclient` }],
+				],
+			},
+		});
+	}
+
+	/** Записывает подтверждённые долги/оплаты в базу. */
+	private async commitDebts(chatId: number, session: Session) {
+		const draft = session.debtDraft ?? [];
+		const okItems = draft.filter((d) => d.status === 'ok' && d.clientId);
+		if (!session.barId || okItems.length === 0) {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Нечего записывать.');
+			return;
+		}
+
+		const done: string[] = [];
+		const failed: string[] = [];
+		for (const d of okItems) {
+			try {
+				const { client } = await this.clientsService.createTransaction(session.userId, {
+					clientId: d.clientId!,
+					type: d.type === 'payment' ? ClientTransactionType.PAYMENT : ClientTransactionType.DEBT,
+					amount: d.amount,
+					comment: d.comment,
+				});
+				const op = d.type === 'payment' ? 'оплата' : 'долг';
+				done.push(`${d.clientName} — ${op} ${this.money(d.amount)} → баланс ${this.balanceLabel(client.balance)}`);
+			} catch (e: any) {
+				failed.push(`${d.clientName} — ${e?.message || 'ошибка'}`);
+			}
+		}
+
+		this.sessions.delete(chatId);
+		const lines = [`💰 Долги — ${session.barName}`];
+		if (done.length) lines.push('', '✅ Записано:', ...done.map((s) => `  • ${s}`));
+		if (failed.length) lines.push('', '❌ Не записано:', ...failed.map((s) => `  • ${s}`));
+		await this.send(chatId, lines.join('\n'));
+	}
+
+	/** Эвристический разбор строк «имя сумма [за что]» для долгов. */
+	private parseDebtLines(
+		text: string,
+	): Array<{ name: string; amount: number; type: 'debt' | 'payment'; comment?: string }> {
+		const chunks = text.split(/[\n;]+/).map((s) => s.trim()).filter(Boolean);
+		const res: Array<{ name: string; amount: number; type: 'debt' | 'payment'; comment?: string }> = [];
+		for (const c of chunks) {
+			const low = c.toLowerCase();
+			const type: 'debt' | 'payment' = /(вернул|верну|отдал|отда|погас|заплат|оплат|вн[еёо]с|занёс|занес)/.test(low)
+				? 'payment'
+				: 'debt';
+			// Сумма: число с возможными разделителями и суффиксом к/тыс/млн/кк.
+			const m = c.match(/(\d[\d\s]*(?:[.,]\d+)?)\s*(млн|кк|тыс\.?|к|k|m)?/i);
+			if (!m) continue;
+			const amount = this.moneyWithSuffix(m[1], m[2]);
+			if (amount < 1) continue;
+			// Имя — всё, кроме найденной суммы и служебных слов о возврате/долге.
+			const name = c
+				.replace(m[0], ' ')
+				.replace(/(вернул|верну[лаи]?|отдал[аи]?|отда[лм]|погаси[лаи]?|заплати[лаи]?|оплати[лаи]?|вн[еёо]с|занёс|занес|за\s+\S+|в\s+долг|долг|сум|руб)/gi, ' ')
+				.replace(/\s+/g, ' ')
+				.trim();
+			if (!name) continue;
+			// Комментарий «за что»
+			const cm = low.match(/за\s+([a-zа-яё\s]+)/i);
+			const comment = cm ? cm[1].trim() : undefined;
+			res.push({ name, amount, type, comment: comment || undefined });
+		}
+		return res;
+	}
+
+	/** Число с суффиксом тысяч/миллионов → целое в сумах. */
+	private moneyWithSuffix(numStr: string, suffix?: string): number {
+		const n = Number(String(numStr).replace(/\s/g, '').replace(',', '.'));
+		if (!Number.isFinite(n)) return 0;
+		const s = (suffix || '').toLowerCase().replace('.', '');
+		let mult = 1;
+		if (s === 'млн' || s === 'm' || s === 'кк') mult = 1_000_000;
+		else if (s === 'тыс' || s === 'к' || s === 'k') mult = 1000;
+		return Math.round(n * mult);
+	}
+
+	// ───────────────── Должники ─────────────────
+
+	private async startDebtors(chatId: number, fromId: number | undefined) {
+		const user = await this.loadUser(fromId);
+		if (!user) {
+			await this.send(chatId, 'Вы не зарегистрированы в Bar Bot.');
+			return;
+		}
+		if (user.bars.length === 0) {
+			await this.send(chatId, 'К вашему аккаунту не привязан ни один бар.');
+			return;
+		}
+		// Сессия нужна, чтобы работала кнопка «Добавить человека».
+		const session = this.newSession(user);
+		this.sessions.set(chatId, session);
+		return this.showDebtorsList(chatId, session);
+	}
+
+	/** Показывает список клиентов с отрицательным балансом по доступным барам. */
+	private async showDebtorsList(chatId: number, session: Session) {
+		const bars = session.bars;
+		const barIds = bars.map((b) => b.id);
+		const debtors = await this.prisma.client.findMany({
+			where: { barId: { in: barIds }, isActive: true, balance: { lt: 0 } },
+			select: { name: true, balance: true, barId: true },
+			orderBy: { balance: 'asc' },
+		});
+
+		const lines: string[] = ['📋 Должники'];
+		if (debtors.length === 0) {
+			lines.push('', 'Должников нет 🎉');
+		} else {
+			let total = 0;
+			const multi = bars.length > 1;
+			for (const bar of bars) {
+				const list = debtors.filter((d) => d.barId === bar.id);
+				if (list.length === 0) continue;
+				if (multi) lines.push('', `🏠 ${bar.name}`);
+				for (const d of list) {
+					const debt = Math.abs(d.balance);
+					total += debt;
+					lines.push(`  • ${d.name} — ${this.money(debt)} сум`);
+				}
+			}
+			lines.push('', `Итого долгов: ${this.money(total)} сум (${debtors.length} чел.)`);
+		}
+
+		await this.bot?.sendMessage(chatId, lines.join('\n'), {
+			reply_markup: {
+				inline_keyboard: [[{ text: '➕ Добавить человека', callback_data: `${CB}newclient` }]],
+			},
+		});
+	}
+
+	// ───────────────── Добавление человека (клиента) ─────────────────
+
+	/** Запускает добавление человека с нуля (из меню/списка должников). */
+	private async startAddClient(chatId: number, session: Session) {
+		session.addingClient = true;
+		session.newClient = {};
+		session.flow = undefined;
+		session.debtMode = false;
+		this.touch(session);
+		// Нужен бар: если один — берём сразу, иначе спрашиваем.
+		if (!session.barId) {
+			if (session.bars.length === 1) {
+				session.barId = session.bars[0].id;
+				session.barName = session.bars[0].name;
+			} else {
+				return this.askBar(chatId, session);
+			}
+		}
+		return this.promptNewClientName(chatId, session);
+	}
+
+	/** Добавление человека для ненайденной строки долга (сохраняя черновик долгов). */
+	private async startAddClientForDebt(chatId: number, session: Session, debtIndex: number) {
+		if (!session.barId) {
+			await this.send(chatId, 'Сначала выберите бар.');
+			return;
+		}
+		session.addingClient = true;
+		session.newClient = { debtIndex };
+		this.touch(session);
+		const raw = session.debtDraft?.[debtIndex]?.rawName;
+		return this.promptNewClientName(chatId, session, raw);
+	}
+
+	private async promptNewClientName(chatId: number, session: Session, suggested?: string) {
+		session.awaiting = 'newClientName';
+		this.touch(session);
+		const hint = suggested ? `\n\nПодсказка: можно отправить «${suggested}».` : '';
+		await this.send(chatId, `➕ Добавление человека.\nБар: ${session.barName}\n\nВведите имя:${hint}`);
+	}
+
+	private async handleNewClientName(chatId: number, session: Session, text: string) {
+		const name = text.trim();
+		if (!name || name.length < 2) {
+			await this.send(chatId, 'Имя слишком короткое. Введите имя человека:');
+			return;
+		}
+		if (!session.newClient) session.newClient = {};
+		session.newClient.name = name;
+		session.awaiting = 'newClientPhone';
+		this.touch(session);
+		await this.send(chatId, 'Введите телефон (или отправьте «-», чтобы пропустить):');
+	}
+
+	private async handleNewClientPhone(chatId: number, session: Session, text: string) {
+		const raw = text.trim();
+		const skip = /^(-|нет|пропустить|skip)$/i.test(raw);
+		const phone = skip ? undefined : raw;
+		return this.finishAddClient(chatId, session, phone);
+	}
+
+	/** Создаёт клиента и, если запущено из долга, применяет отложенную запись. */
+	private async finishAddClient(chatId: number, session: Session, phone?: string) {
+		const nc = session.newClient;
+		if (!session.barId || !nc?.name) {
+			this.sessions.delete(chatId);
+			await this.send(chatId, 'Что-то пошло не так. Начните заново через меню.');
+			return;
+		}
+
+		let client: { id: string; name: string } | null = null;
+		try {
+			const created = await this.clientsService.create(session.userId, {
+				barId: session.barId,
+				name: nc.name,
+				phone,
+			});
+			client = { id: created.id, name: created.name };
+		} catch (e: any) {
+			// Возможно, человек с таким именем уже есть — попробуем найти.
+			const existing = await this.prisma.client.findUnique({
+				where: { barId_name: { barId: session.barId, name: nc.name } },
+				select: { id: true, name: true },
+			});
+			if (existing) {
+				client = existing;
+				await this.send(chatId, `Человек «${nc.name}» уже есть — использую его.`);
+			} else {
+				this.logger.warn('addClient error', e?.message || e);
+				this.sessions.delete(chatId);
+				await this.send(chatId, `Не удалось добавить человека: ${e?.message || 'ошибка'}`);
+				return;
+			}
+		}
+
+		session.addingClient = false;
+		session.awaiting = null;
+
+		// Если добавляли в рамках ввода долгов — привязываем к строке и продолжаем.
+		if (nc.debtIndex != null && session.debtDraft?.[nc.debtIndex]) {
+			const item = session.debtDraft[nc.debtIndex];
+			item.clientId = client.id;
+			item.clientName = client.name;
+			item.balance = 0;
+			item.status = 'ok';
+			session.newClient = undefined;
+			this.touch(session);
+			await this.send(chatId, `✅ Добавлен: ${client.name}`);
+			return this.resolveDebtNext(chatId, session);
+		}
+
+		session.newClient = undefined;
+		this.sessions.delete(chatId);
+		const phoneLine = phone ? `\nТелефон: ${phone}` : '';
+		await this.send(chatId, `✅ Человек добавлен.\nБар: ${session.barName}\nИмя: ${client.name}${phoneLine}`);
+	}
+
+	/** Подпись баланса: долг (−) / депозит (+) / 0. */
+	private balanceLabel(balance: number): string {
+		if (balance < -0.001) return `долг ${this.money(Math.abs(balance))}`;
+		if (balance > 0.001) return `депозит ${this.money(balance)}`;
+		return '0';
+	}
+
 	// ─────────────────────────── Ядро сценария ───────────────────────────
 
 	/** Продолжает сценарий, докупая недостающие данные (бар → день → ввод/сводка). */
@@ -755,6 +1323,16 @@ export class BotCommandsService {
 			} else {
 				return this.askBar(chatId, session);
 			}
+		}
+
+		// Добавление человека: после выбора бара спрашиваем имя.
+		if (session.addingClient) {
+			return this.promptNewClientName(chatId, session);
+		}
+
+		// Сценарий долгов: после выбора бара просим список.
+		if (session.debtMode) {
+			return this.promptDebts(chatId, session);
 		}
 
 		// Сценарии закупа/спортпита: после выбора бара просим список.
@@ -1060,6 +1638,7 @@ export class BotCommandsService {
 			[{ text: BTN_EXPENSE }, { text: BTN_OTHER_DAY }],
 			[{ text: BTN_PURCHASE }],
 			[{ text: BTN_SP_ARRIVAL }, { text: BTN_SP_SALE }],
+			[{ text: BTN_DEBT }, { text: BTN_DEBTORS }],
 		];
 		if (role === RoleType.ADMIN || role === RoleType.MANAGER) {
 			rows.push([{ text: BTN_MONTH }]);
