@@ -235,21 +235,18 @@ export class ArrivalsService {
 		userRole: string,
 		filter: ArrivalFilterDto,
 	) {
-		const where: any = {
-			type: filter.type || ArrivalType.ARRIVAL,
-		};
+		const type = filter.type || ArrivalType.ARRIVAL;
 
-		if (filter.barId) {
-			where.barId = filter.barId;
-		}
-
+		// Фильтр по дате (общий для приходов и закупов)
+		const dateWhere: any = {};
 		if (filter.startDate || filter.endDate) {
-			where.createdAt = {};
-			if (filter.startDate) where.createdAt.gte = new Date(filter.startDate);
-			if (filter.endDate) where.createdAt.lte = new Date(filter.endDate);
+			dateWhere.createdAt = {};
+			if (filter.startDate) dateWhere.createdAt.gte = new Date(filter.startDate);
+			if (filter.endDate) dateWhere.createdAt.lte = new Date(filter.endDate);
 		}
 
-		// Ограничения доступа по роли
+		// Ограничение по барам (роль)
+		let barFilter: any = filter.barId ? filter.barId : undefined;
 		if (userRole === 'WORKER' || userRole === 'MANAGER') {
 			const userBars = await this.prisma.userBar.findMany({
 				where: { userId },
@@ -262,24 +259,11 @@ export class ArrivalsService {
 				throw new BadRequestException('Access denied to this bar');
 			}
 			if (!filter.barId) {
-				where.barId = { in: barIds };
+				barFilter = { in: barIds };
 			}
 		}
 
-		const arrivals = await this.prisma.arrival.findMany({
-			where,
-			include: {
-				items: {
-					include: {
-						product: {
-							select: { id: true, name: true, type: true },
-						},
-					},
-				},
-			},
-		});
-
-		// Группируем по productId
+		// Группировка по productId
 		const map = new Map<
 			string,
 			{
@@ -292,30 +276,94 @@ export class ArrivalsService {
 			}
 		>();
 
+		const addItem = (
+			productId: string,
+			productName: string,
+			productType: string,
+			quantity: number,
+			amount: number,
+			isNewDelivery: boolean,
+		) => {
+			const existing = map.get(productId);
+			if (existing) {
+				existing.totalQuantity += quantity;
+				existing.totalAmount += amount;
+				if (isNewDelivery) existing.deliveriesCount += 1;
+			} else {
+				map.set(productId, {
+					productId,
+					productName,
+					productType,
+					totalQuantity: quantity,
+					totalAmount: amount,
+					deliveriesCount: 1,
+				});
+			}
+		};
+
+		// --- 1. Приходы/списания (таблица Arrival) ---
+		const arrivalWhere: any = { type, ...dateWhere };
+		if (barFilter !== undefined) arrivalWhere.barId = barFilter;
+
+		const arrivals = await this.prisma.arrival.findMany({
+			where: arrivalWhere,
+			include: {
+				items: {
+					include: {
+						product: { select: { id: true, name: true, type: true } },
+					},
+				},
+			},
+		});
+
 		for (const arrival of arrivals) {
-			const productIdsInArrival = new Set<string>();
+			const seen = new Set<string>();
 			for (const item of arrival.items) {
 				const product = item.product;
 				if (!product) continue;
-				const existing = map.get(product.id);
-				if (existing) {
-					existing.totalQuantity += item.quantity;
-					existing.totalAmount += item.price * item.quantity;
-					if (!productIdsInArrival.has(product.id)) {
-						existing.deliveriesCount += 1;
-					}
-				} else {
-					map.set(product.id, {
-						productId: product.id,
-						productName: product.name,
-						productType: product.type,
-						totalQuantity: item.quantity,
-						totalAmount: item.price * item.quantity,
-						deliveriesCount: 1,
-					});
-				}
-				productIdsInArrival.add(product.id);
+				addItem(
+					product.id,
+					product.name,
+					product.type,
+					item.quantity,
+					item.price * item.quantity,
+					!seen.has(product.id),
+				);
+				seen.add(product.id);
 			}
+		}
+
+		let totalDeliveries = arrivals.length;
+
+		// --- 2. Закупы (таблица Purchase) — только для прихода ---
+		// Закуп всегда означает поступление товара, поэтому включаем его
+		// в сводку приходов. Для списаний (WRITE_OFF) закупы не учитываем.
+		if (type === ArrivalType.ARRIVAL) {
+			const purchaseWhere: any = { ...dateWhere };
+			if (barFilter !== undefined) purchaseWhere.barId = barFilter;
+
+			const purchases = await this.prisma.purchase.findMany({
+				where: purchaseWhere,
+				include: { items: true },
+			});
+
+			for (const purchase of purchases) {
+				const seen = new Set<string>();
+				for (const it of purchase.items) {
+					const parsed = this.parsePurchaseItem(it);
+					addItem(
+						parsed.productId,
+						parsed.productName,
+						parsed.productType,
+						parsed.quantity,
+						parsed.price * parsed.quantity,
+						!seen.has(parsed.productId),
+					);
+					seen.add(parsed.productId);
+				}
+			}
+
+			totalDeliveries += purchases.length;
 		}
 
 		const items = Array.from(map.values()).sort(
@@ -324,7 +372,42 @@ export class ArrivalsService {
 
 		return {
 			items,
-			totalDeliveries: arrivals.length,
+			totalDeliveries,
+		};
+	}
+
+	/**
+	 * Разбирает позицию закупа. Начиная с последних версий поле `name`
+	 * хранит JSON { productName, productType, productId, price, quantity }.
+	 * Для старых записей (plain-строка) бережно откатываемся к сырому имени.
+	 */
+	private parsePurchaseItem(it: { name: string; amount: number }): {
+		productId: string;
+		productName: string;
+		productType: string;
+		price: number;
+		quantity: number;
+	} {
+		try {
+			const d = JSON.parse(it.name);
+			if (d && d.productId) {
+				return {
+					productId: String(d.productId),
+					productName: String(d.productName ?? 'Без названия'),
+					productType: String(d.productType ?? 'PRODUCT'),
+					price: Number(d.price) || 0,
+					quantity: Number(d.quantity ?? it.amount) || 0,
+				};
+			}
+		} catch {
+			// старый формат — name это просто строка
+		}
+		return {
+			productId: `raw:${it.name}`,
+			productName: it.name,
+			productType: 'PRODUCT',
+			price: 0,
+			quantity: Number(it.amount) || 0,
 		};
 	}
 
