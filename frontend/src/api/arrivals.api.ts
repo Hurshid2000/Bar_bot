@@ -37,9 +37,30 @@ export interface ArrivalSummaryItem {
 	totalAmount: number;
 }
 
+export interface ArrivalDeliveryItem {
+	productId: string;
+	productName: string;
+	productType: string;
+	quantity: number;
+	price: number;
+	amount: number;
+}
+
+export interface ArrivalDelivery {
+	id: string;
+	source: 'arrival' | 'purchase';
+	type: 'ARRIVAL' | 'WRITE_OFF';
+	date: string;
+	comment: string | null;
+	itemsCount: number;
+	totalAmount: number;
+	items: ArrivalDeliveryItem[];
+}
+
 export interface ArrivalSummaryResponse {
 	items: ArrivalSummaryItem[];
 	totalDeliveries: number;
+	deliveries: ArrivalDelivery[];
 }
 
 export const arrivalsApi = {

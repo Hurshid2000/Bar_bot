@@ -253,7 +253,8 @@ export class ArrivalsService {
 				select: { barId: true },
 			});
 			const barIds = userBars.map((ub) => ub.barId);
-			if (barIds.length === 0) return { items: [], totalDeliveries: 0 };
+			if (barIds.length === 0)
+				return { items: [], totalDeliveries: 0, deliveries: [] };
 
 			if (userRole === 'MANAGER' && filter.barId && !barIds.includes(filter.barId)) {
 				throw new BadRequestException('Access denied to this bar');
@@ -301,6 +302,27 @@ export class ArrivalsService {
 			}
 		};
 
+		// Список каждой поставки отдельно (приход/списание/закуп) с датой
+		type DeliveryItem = {
+			productId: string;
+			productName: string;
+			productType: string;
+			quantity: number;
+			price: number;
+			amount: number;
+		};
+		type Delivery = {
+			id: string;
+			source: 'arrival' | 'purchase';
+			type: string;
+			date: Date;
+			comment: string | null;
+			itemsCount: number;
+			totalAmount: number;
+			items: DeliveryItem[];
+		};
+		const deliveries: Delivery[] = [];
+
 		// --- 1. Приходы/списания (таблица Arrival) ---
 		const arrivalWhere: any = { type, ...dateWhere };
 		if (barFilter !== undefined) arrivalWhere.barId = barFilter;
@@ -318,19 +340,41 @@ export class ArrivalsService {
 
 		for (const arrival of arrivals) {
 			const seen = new Set<string>();
+			const dItems: DeliveryItem[] = [];
+			let dTotal = 0;
 			for (const item of arrival.items) {
 				const product = item.product;
 				if (!product) continue;
+				const amount = item.price * item.quantity;
 				addItem(
 					product.id,
 					product.name,
 					product.type,
 					item.quantity,
-					item.price * item.quantity,
+					amount,
 					!seen.has(product.id),
 				);
 				seen.add(product.id);
+				dItems.push({
+					productId: product.id,
+					productName: product.name,
+					productType: product.type,
+					quantity: item.quantity,
+					price: item.price,
+					amount,
+				});
+				dTotal += amount;
 			}
+			deliveries.push({
+				id: arrival.id,
+				source: 'arrival',
+				type: arrival.type,
+				date: arrival.createdAt,
+				comment: arrival.comment,
+				itemsCount: dItems.length,
+				totalAmount: dTotal,
+				items: dItems,
+			});
 		}
 
 		let totalDeliveries = arrivals.length;
@@ -349,18 +393,40 @@ export class ArrivalsService {
 
 			for (const purchase of purchases) {
 				const seen = new Set<string>();
+				const dItems: DeliveryItem[] = [];
+				let dTotal = 0;
 				for (const it of purchase.items) {
 					const parsed = this.parsePurchaseItem(it);
+					const amount = parsed.price * parsed.quantity;
 					addItem(
 						parsed.productId,
 						parsed.productName,
 						parsed.productType,
 						parsed.quantity,
-						parsed.price * parsed.quantity,
+						amount,
 						!seen.has(parsed.productId),
 					);
 					seen.add(parsed.productId);
+					dItems.push({
+						productId: parsed.productId,
+						productName: parsed.productName,
+						productType: parsed.productType,
+						quantity: parsed.quantity,
+						price: parsed.price,
+						amount,
+					});
+					dTotal += amount;
 				}
+				deliveries.push({
+					id: purchase.id,
+					source: 'purchase',
+					type: ArrivalType.ARRIVAL,
+					date: purchase.createdAt,
+					comment: null,
+					itemsCount: dItems.length,
+					totalAmount: dTotal,
+					items: dItems,
+				});
 			}
 
 			totalDeliveries += purchases.length;
@@ -370,9 +436,13 @@ export class ArrivalsService {
 			(a, b) => b.totalQuantity - a.totalQuantity,
 		);
 
+		// Поставки — новейшие сверху
+		deliveries.sort((a, b) => b.date.getTime() - a.date.getTime());
+
 		return {
 			items,
 			totalDeliveries,
+			deliveries,
 		};
 	}
 

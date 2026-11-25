@@ -145,3 +145,95 @@
 	font-size: 12px;
 	color: var(--color-text-secondary, #6b7280);
 }
+
+/* Переключатель вида: по товарам / по поставкам */
+.arrivals-summary-view-toggle {
+	display: flex;
+	gap: 8px;
+}
+
+/* Карточка отдельной поставки (приход/закуп) */
+.arrivals-delivery-card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px 16px;
+}
+
+.arrivals-delivery-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}
+
+.arrivals-delivery-head-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	flex-wrap: wrap;
+}
+
+.arrivals-delivery-badge {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	padding: 3px 8px;
+	border-radius: 999px;
+	white-space: nowrap;
+	background: var(--color-border, #e5e7eb);
+	color: var(--color-text, #111);
+}
+
+.arrivals-delivery-badge-purchase {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.arrivals-delivery-badge-arrival {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.arrivals-delivery-date {
+	font-size: 13px;
+	color: var(--color-text-secondary, #6b7280);
+}
+
+.arrivals-delivery-total {
+	font-size: 16px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.arrivals-delivery-items {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	border-top: 1px solid var(--color-border, #e5e7eb);
+	padding-top: 10px;
+}
+
+.arrivals-delivery-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 10px;
+	font-size: 14px;
+}
+
+.arrivals-delivery-item-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.arrivals-delivery-item-calc {
+	text-align: right;
+	color: var(--color-text-secondary, #6b7280);
+	font-size: 13px;
+	white-space: nowrap;
+}
