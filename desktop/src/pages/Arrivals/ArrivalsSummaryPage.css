@@ -1,245 +1,454 @@
-.arrivals-summary-page {
-	padding: 16px;
-	max-width: 900px;
+.pm-page {
+	padding: 12px 16px 32px;
+	max-width: 720px;
 	margin: 0 auto;
+	color: var(--color-text-primary, #e5eaf0);
 }
 
-.arrivals-summary-header {
+/* Header */
+.pm-header {
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	margin-bottom: 16px;
+	gap: 10px;
+	margin-bottom: 14px;
 }
 
-.arrivals-summary-back-btn {
+.pm-back {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border: none;
+	border-radius: var(--radius-sm, 8px);
+	background: var(--color-background-card, #141f32);
+	color: var(--color-text-primary, #e5eaf0);
+	cursor: pointer;
 }
 
-.arrivals-summary-title {
-	font-size: 22px;
-	font-weight: 600;
+.pm-title {
 	margin: 0;
+	font-size: 20px;
+	font-weight: 700;
 }
 
-.arrivals-summary-filters {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	margin-bottom: 16px;
-	padding: 16px;
-}
-
-.arrivals-summary-type-toggle {
+/* Chips (type + period presets) */
+.pm-chips {
 	display: flex;
 	gap: 8px;
+	margin-bottom: 10px;
 }
 
-.arrivals-summary-date-row {
+.pm-chips-scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+}
+.pm-chips-scroll::-webkit-scrollbar {
+	display: none;
+}
+
+.pm-chip {
+	flex: 0 0 auto;
+	padding: 8px 16px;
+	border-radius: 999px;
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	background: var(--color-background-card, #141f32);
+	color: var(--color-text-secondary, #8a94a6);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	white-space: nowrap;
+}
+
+.pm-chip-active {
+	background: var(--color-primary-500, #4a90e2);
+	border-color: var(--color-primary-500, #4a90e2);
+	color: #fff;
+}
+
+/* Custom date range */
+.pm-dates {
 	display: flex;
-	gap: 12px;
+	gap: 10px;
+	margin-bottom: 10px;
 }
 
-.arrivals-summary-date-field {
+.pm-dates label {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 	flex: 1;
+	font-size: 12px;
+	color: var(--color-text-secondary, #8a94a6);
 }
 
-.arrivals-summary-date-field label {
-	font-size: 13px;
-	color: var(--color-text-secondary, #6b7280);
-}
-
-.arrivals-summary-date-field input {
-	padding: 8px 12px;
-	border: 1px solid var(--color-border, #e5e7eb);
-	border-radius: 8px;
+.pm-dates input {
+	padding: 9px 12px;
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	border-radius: var(--radius-sm, 8px);
+	background: var(--color-background-card, #141f32);
+	color: var(--color-text-primary, #e5eaf0);
 	font-size: 14px;
-	background: var(--color-bg, #fff);
-	color: var(--color-text, #111);
+	color-scheme: dark;
 }
 
-.arrivals-summary-search {
-	padding: 10px 12px;
-	border: 1px solid var(--color-border, #e5e7eb);
-	border-radius: 8px;
-	font-size: 14px;
-	background: var(--color-bg, #fff);
-	color: var(--color-text, #111);
+.pm-search {
 	width: 100%;
 	box-sizing: border-box;
+	padding: 11px 14px;
+	margin-bottom: 14px;
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	border-radius: var(--radius-md, 12px);
+	background: var(--color-background-card, #141f32);
+	color: var(--color-text-primary, #e5eaf0);
+	font-size: 14px;
+}
+.pm-search::placeholder {
+	color: var(--color-text-secondary, #8a94a6);
 }
 
-.arrivals-summary-totals {
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 12px;
-	padding: 16px;
-	margin-bottom: 12px;
+/* Big period total (Payme-style income header) */
+.pm-total {
+	display: block;
+	width: 100%;
+	text-align: left;
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	border-radius: var(--radius-lg, 16px);
+	background: var(--color-background-card, #141f32);
+	box-shadow: var(--shadow-card, 0 8px 24px rgba(0, 0, 0, 0.35));
+	padding: 18px;
+	margin-bottom: 18px;
+	cursor: pointer;
+	transition: transform 0.12s ease;
+}
+.pm-total:active {
+	transform: scale(0.99);
+}
+.pm-total:disabled {
+	cursor: default;
+	opacity: 0.85;
+	box-shadow: none;
 }
 
-.arrivals-summary-totals > div {
+.pm-total-head {
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.arrivals-summary-totals-label {
-	font-size: 12px;
-	color: var(--color-text-secondary, #6b7280);
-	text-transform: uppercase;
-}
-
-.arrivals-summary-totals-value {
-	font-size: 18px;
-	font-weight: 600;
-}
-
-.arrivals-summary-list {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.arrivals-summary-item {
-	display: flex;
+	align-items: center;
 	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.pm-total-label {
+	font-size: 14px;
+	color: var(--color-text-secondary, #8a94a6);
+}
+
+.pm-total-more {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--color-primary-500, #4a90e2);
+	background: rgba(74, 144, 226, 0.12);
+	padding: 3px 10px;
+	border-radius: 999px;
+}
+
+.pm-total-amount {
+	font-size: 28px;
+	font-weight: 800;
+	letter-spacing: -0.5px;
+	margin-bottom: 6px;
+}
+
+.pm-total-sub {
+	font-size: 13px;
+	color: var(--color-text-secondary, #8a94a6);
+}
+
+/* Amount colors */
+.pm-pos {
+	color: var(--color-success, #10b981);
+}
+.pm-neg {
+	color: var(--color-danger, #ef4444);
+}
+
+/* Transaction list grouped by day */
+.pm-list {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.pm-group {
+	background: var(--color-background-card, #141f32);
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	border-radius: var(--radius-lg, 16px);
+	overflow: hidden;
+}
+
+.pm-group-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px 10px;
+	border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+}
+
+.pm-group-date {
+	font-size: 13px;
+	color: var(--color-text-secondary, #8a94a6);
+}
+
+.pm-group-total {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.pm-tx + .pm-tx {
+	border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+}
+
+.pm-tx-row {
+	display: flex;
 	align-items: center;
 	gap: 12px;
-	padding: 14px 16px;
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: none;
+	padding: 12px 16px;
+	cursor: pointer;
+	color: inherit;
+}
+.pm-tx-row:active {
+	background: var(--color-background-muted, #1f2d3d);
 }
 
-.arrivals-summary-item-main {
+.pm-tx-icon {
+	flex: 0 0 auto;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.pm-tx-in {
+	background: rgba(16, 185, 129, 0.15);
+	color: var(--color-success, #10b981);
+}
+.pm-tx-out {
+	background: rgba(239, 68, 68, 0.15);
+	color: var(--color-danger, #ef4444);
+}
+
+.pm-tx-main {
 	flex: 1;
 	min-width: 0;
-}
-
-.arrivals-summary-item-name {
-	margin: 0 0 4px 0;
-	font-size: 15px;
-	font-weight: 600;
-}
-
-.arrivals-summary-item-meta {
-	margin: 0;
-	font-size: 12px;
-	color: var(--color-text-secondary, #6b7280);
-}
-
-.arrivals-summary-item-numbers {
-	text-align: right;
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 }
 
-.arrivals-summary-item-qty {
-	font-size: 16px;
+.pm-tx-title {
+	font-size: 15px;
 	font-weight: 600;
+	color: var(--color-text-primary, #e5eaf0);
 }
 
-.arrivals-summary-item-amount {
+.pm-tx-meta {
 	font-size: 12px;
-	color: var(--color-text-secondary, #6b7280);
+	color: var(--color-text-secondary, #8a94a6);
 }
 
-@media (max-width: 640px) {
-	.arrivals-summary-totals {
-		grid-template-columns: repeat(2, 1fr);
-	}
-}
-
-/* Переключатель вида: по товарам / по поставкам */
-.arrivals-summary-view-toggle {
-	display: flex;
-	gap: 8px;
-}
-
-/* Карточка отдельной поставки (приход/закуп) */
-.arrivals-delivery-card {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	padding: 14px 16px;
-}
-
-.arrivals-delivery-head {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 12px;
-}
-
-.arrivals-delivery-head-left {
+.pm-tx-right {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	min-width: 0;
-	flex-wrap: wrap;
+	gap: 6px;
+	flex: 0 0 auto;
 }
 
-.arrivals-delivery-badge {
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-	padding: 3px 8px;
-	border-radius: 999px;
-	white-space: nowrap;
-	background: var(--color-border, #e5e7eb);
-	color: var(--color-text, #111);
-}
-
-.arrivals-delivery-badge-purchase {
-	background: #dbeafe;
-	color: #1e40af;
-}
-
-.arrivals-delivery-badge-arrival {
-	background: #dcfce7;
-	color: #166534;
-}
-
-.arrivals-delivery-date {
-	font-size: 13px;
-	color: var(--color-text-secondary, #6b7280);
-}
-
-.arrivals-delivery-total {
-	font-size: 16px;
+.pm-tx-amount {
+	font-size: 15px;
 	font-weight: 700;
 	white-space: nowrap;
 }
 
-.arrivals-delivery-items {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	border-top: 1px solid var(--color-border, #e5e7eb);
-	padding-top: 10px;
+.pm-tx-caret {
+	color: var(--color-text-secondary, #8a94a6);
+	transition: transform 0.18s ease;
+}
+.pm-tx-caret.pm-open {
+	transform: rotate(180deg);
 }
 
-.arrivals-delivery-item {
+.pm-tx-items {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 4px 16px 14px 68px;
+	background: var(--color-background-muted, #1f2d3d);
+}
+
+.pm-tx-item {
 	display: flex;
 	justify-content: space-between;
 	align-items: baseline;
 	gap: 10px;
-	font-size: 14px;
+	font-size: 13px;
 }
 
-.arrivals-delivery-item-name {
+.pm-tx-item-name {
 	flex: 1;
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	color: var(--color-text-primary, #e5eaf0);
 }
 
-.arrivals-delivery-item-calc {
-	text-align: right;
-	color: var(--color-text-secondary, #6b7280);
-	font-size: 13px;
+.pm-tx-item-calc {
+	color: var(--color-text-secondary, #8a94a6);
 	white-space: nowrap;
+}
+
+/* Empty / error */
+.pm-empty {
+	text-align: center;
+	padding: 32px 16px;
+	color: var(--color-text-secondary, #8a94a6);
+	background: var(--color-background-card, #141f32);
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	border-radius: var(--radius-lg, 16px);
+}
+
+/* Period products modal */
+.pm-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.pm-modal {
+	width: 100%;
+	max-width: 720px;
+	max-height: 85vh;
+	display: flex;
+	flex-direction: column;
+	background: var(--color-background-base, #0a1628);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+	border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+	padding: 16px 16px 24px;
+	box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.pm-modal-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 6px;
+}
+
+.pm-modal-title {
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.pm-modal-sub {
+	font-size: 13px;
+	color: var(--color-text-secondary, #8a94a6);
+	margin-top: 2px;
+}
+
+.pm-modal-close {
+	flex: 0 0 auto;
+	width: 34px;
+	height: 34px;
+	border: none;
+	border-radius: 50%;
+	background: var(--color-background-muted, #1f2d3d);
+	color: var(--color-text-primary, #e5eaf0);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.pm-modal-total {
+	font-size: 24px;
+	font-weight: 800;
+	margin: 6px 0 14px;
+}
+
+.pm-modal-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	overflow-y: auto;
+}
+
+.pm-modal-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	background: var(--color-background-card, #141f32);
+	border-radius: var(--radius-md, 12px);
+}
+
+.pm-modal-item-main {
+	flex: 1;
+	min-width: 0;
+}
+
+.pm-modal-item-name {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-primary, #e5eaf0);
+}
+
+.pm-tag {
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	padding: 2px 7px;
+	border-radius: 999px;
+	background: rgba(74, 144, 226, 0.15);
+	color: var(--color-primary-500, #4a90e2);
+}
+
+.pm-modal-item-meta {
+	font-size: 12px;
+	color: var(--color-text-secondary, #8a94a6);
+	margin-top: 2px;
+}
+
+.pm-modal-item-numbers {
+	text-align: right;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 0 0 auto;
+}
+
+.pm-modal-item-qty {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--color-text-primary, #e5eaf0);
+}
+
+.pm-modal-item-sum {
+	font-size: 12px;
+	color: var(--color-text-secondary, #8a94a6);
 }
