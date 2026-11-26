@@ -37,7 +37,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && node dist/main"
+    command: sh -c "node prisma/baseline.js && npx prisma migrate deploy && node dist/main"
     networks:
       - bar-bot-network
     restart: unless-stopped
